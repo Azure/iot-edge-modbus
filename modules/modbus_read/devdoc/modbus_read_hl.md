@@ -74,11 +74,11 @@ The following Gateway config file will contain a module called "modbus_read_hl" 
 
 **SRS_MODBUS_READ_HL_99_003: [** If `configuration` is NULL then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_011: [** If configuration is not a JSON object, then `ModbusRead_HL_Create` shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_011: [** If `configuration` is not a JSON object, then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_012: [** If the JSON value does not contain `args` array then `ModbusRead_HL_Create` shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_012: [** If the JSON value does not contain "args" array then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_013: [** If the JSON object of `args` array does not contain `operations` array then `ModbusRead_HL_Create` shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_013: [** If the JSON object of `args` array does not contain "operations" array then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
 **SRS_MODBUS_READ_HL_99_005: [** `ModbusRead_HL_Create` shall pass `broker` and the entire config to `ModbusRead_Create`. **]**
 
@@ -86,31 +86,31 @@ The following Gateway config file will contain a module called "modbus_read_hl" 
 
 **SRS_MODBUS_READ_HL_99_007: [** If `ModbusRead_Create` fails then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_014: [** If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_014: [** If the `args` object does not contain a value named "serverConnectionString" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_015: [** If the `args` object does not contain a value named "macAddress" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_015: [** If the `args` object does not contain a value named "macAddress" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_016: [** If the `args` object does not contain a value named "interval" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_016: [** If the `args` object does not contain a value named "interval" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_026: [** If the `args` object does not contain a value named "deviceType" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_026: [** If the `args` object does not contain a value named "deviceType" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_021: [** `ModbusRead_HL_Create` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an MODBUS_READ_CONFIG structure and add this element to the link list. **]**
+**SRS_MODBUS_READ_HL_99_021: [** `ModbusRead_HL_Create` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an `MODBUS_READ_CONFIG` structure and add this element to the link list. **]**
 
-**SRS_MODBUS_READ_HL_99_017: [** If the `operations` object does not contain a value named "unitId" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_017: [** If the `operations` object does not contain a value named "unitId" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_018: [** If the `operations` object does not contain a value named "functionCode" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_018: [** If the `operations` object does not contain a value named "functionCode" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_019: [** If the `operations` object does not contain a value named "startingAddress" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_019: [** If the `operations` object does not contain a value named "startingAddress" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_020: [** If the `operations` object does not contain a value named "length" then ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_020: [** If the `operations` object does not contain a value named "length" then `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_022: [** `ModbusRead_HL_Create` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an MODBUS_READ_OPERATION structure and add this element to the link list. **]**
+**SRS_MODBUS_READ_HL_99_022: [** `ModbusRead_HL_Create` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an `MODBUS_READ_OPERATION` structure and add this element to the link list. **]**
 
-**SRS_MODBUS_READ_HL_99_023: [** If the 'malloc' for `config` fail, ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_023: [** If the `malloc` for `config` fail, `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_024: [** If the 'malloc' for `operation` fail, ModbusRead_HL_Create shall fail and return NULL. **]**
+**SRS_MODBUS_READ_HL_99_024: [** If the `malloc` for `operation` fail, `ModbusRead_HL_Create` shall fail and return NULL. **]**
 
-**SRS_MODBUS_READ_HL_99_025: [** ModbusRead_HL_Create shall walk through each object of the array. **]**
+**SRS_MODBUS_READ_HL_99_025: [** `ModbusRead_HL_Create` shall walk through each object of the array. **]**
 
 ## ModbusRead_HL_Receive
 ```c
@@ -129,4 +129,4 @@ void ModbusRead_HL_Destroy(MODULE_HANDLE moduleHandle);
 ```c
 extern const void Module_GetAPIS(MODULE_APIS* apis);
 ```
-**SRS_MODBUS_READ_HL_99_010: [** `Module_GetAPIS` shall fill the provided MODULE_APIS structure with the required function pointers. **]**
+**SRS_MODBUS_READ_HL_99_010: [** `Module_GetAPIS` shall fill the provided `MODULE_APIS` structure with the required function pointers. **]**
