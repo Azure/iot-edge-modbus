@@ -1,0 +1,71 @@
+{
+  "modules": [
+    {
+      "module name": "IoTHub",
+      "module path": "../../modules/iothub/libiothub_hl.so",
+      "args": {
+        "IoTHubName": "YOUR IOT HUB NAME",
+        "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
+        "Transport": "TRANSPORT PROTOCOL"
+      }
+    },
+    {
+      "module name": "mapping",
+      "module path": "../../modules/identitymap/libidentity_map_hl.so",
+      "args": [
+        {
+          "macAddress": "01:01:01:01:01:01",
+          "deviceId": "YOUR DEVICE ID",
+          "deviceKey": "YOUR DEVICE KEY"
+        }
+      ]
+    },
+    {
+      "module name": "logger_hl",
+      "module path": "../../modules/logger/liblogger_hl.so",
+      "args": { "filename": "log.txt" }
+    },
+    {
+      "module name": "modbus_read",
+      "module path": "../../modules/modbus_read/libmodbus_read_hl.so",
+      "args": [
+        {
+          "serverConnectionString": "COM1",
+          "interval": "2000",
+          "macAddress": "01:01:01:01:01:01",
+          "deviceType": "powerMeter",
+          "operations": [
+            {
+              "unitId": "1",
+              "functionCode": "3",
+              "startingAddress": "0",
+              "length": "5"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "source": "mapping",
+      "sink": "IoTHub"
+    },
+    {
+      "source": "IoTHub",
+      "sink": "mapping"
+    },
+    {
+      "source": "mapping",
+      "sink": "modbus_read"
+    },
+    {
+      "source": "modbus_read",
+      "sink": "mapping"
+    },
+    {
+      "source": "modbus_read",
+      "sink": "logger_hl"
+    }
+  ]
+}
