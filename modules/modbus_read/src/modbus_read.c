@@ -175,7 +175,7 @@ static void encode_write_PDU(unsigned char * buf, unsigned short address, unsign
 {
 	unsigned short * _pU16;
 	//encoding PDU
-	buf[0] = ((address / 10000) == 4) ? 6 : 5;  //function code
+	buf[0] = address / 10000;  //function code
 	_pU16 = (unsigned short *)(buf + 1);
 	*_pU16 = htons((address % 10000) - 1);         //addr (2 bytes)
 	_pU16 = (unsigned short *)(buf + 3);

@@ -257,14 +257,13 @@ to craft and send JSON messages that are handled and passed on to the Modbus dev
 by the Modbus module. For example, sending the following JSON messages to the device
 via IoT Hub will write value 9999 to the Holding Register 1:
 
-  * Set value of the Holding Register 1 to 9999
-  * "address" field is the 5-digit decimal address of the destination cell, 
-	prefix with the function code, in this case 6 + 00001 = 600001
+  * Set the value of the Holding Register #1 to 9999.
+  * "address" field is the 4-digit decimal address of the destination cell, prefix with the function code, in this case 6 + 0001 = 60001. [More details about address field](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
   * Function code 6 is "Write Single Holding Register". [Check more function codes](https://en.wikipedia.org/wiki/Modbus#Format_of_data_of_requests_and_responses_for_main_function_codes)
 
     ```json
     {
-      "address": "600001",
+      "address": "60001",
       "value": "9999",
       "uid": "1"
     }
