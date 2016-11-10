@@ -128,8 +128,8 @@ of this sample.
     "args" : 
     {
         "IoTHubName" : "YOUR IOT HUB NAME",
-        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX"
-        "Transport": "TRANSPORT PROTOCOL"
+        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX",
+        "Transport" : "TRANSPORT PROTOCOL"
     }
 }
 ```
@@ -197,8 +197,8 @@ of this sample.
     "args" : 
     {
         "IoTHubName" : "YOUR IOT HUB NAME",
-        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX"
-        "Transport": "TRANSPORT PROTOCOL"
+        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX",
+        "Transport" : "TRANSPORT PROTOCOL"
     }
 }
 ```
