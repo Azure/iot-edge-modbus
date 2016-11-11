@@ -4,11 +4,11 @@
 cmake_minimum_required(VERSION 2.8.11)
 
 set(modbus_read_sources
-	./src/modbus_read.c
+    ./src/modbus_read.c
 )
 
 set(modbus_read_headers
-	./inc/modbus_read.h
+    ./inc/modbus_read.h
 )
 
 include_directories(./inc)
@@ -30,6 +30,6 @@ add_module_to_solution(modbus_read)
 add_subdirectory(tests)
 
 if(install_executables)
-	install(TARGETS modbus_read LIBRARY DESTINATION lib) 
+    install(TARGETS modbus_read LIBRARY DESTINATION lib) 
 endif()
 
