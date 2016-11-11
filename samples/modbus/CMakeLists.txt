@@ -30,7 +30,7 @@ include_directories(../../modules/common)
 
 add_executable(modbus_sample ${modbus_headers} ${modules_path_file} ${modbus_sources})
 
-add_dependencies(modbus_sample logger_hl identity_map_hl iothub_hl modbus_read_hl)
+add_dependencies(modbus_sample logger identity_map iothub modbus_read)
 
 target_link_libraries(modbus_sample gateway nanomsg)
 linkSharedUtil(modbus_sample)

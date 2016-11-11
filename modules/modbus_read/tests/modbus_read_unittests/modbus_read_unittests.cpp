@@ -15,6 +15,7 @@
 #include "message.h"
 #include "azure_c_shared_utility/threadapi.h"
 #include "messageproperties.h"
+#include "module_access.h"
 
 #include "parson.h"
 
@@ -56,9 +57,11 @@ static MICROMOCK_MUTEX_HANDLE g_testByTest;
 static MICROMOCK_GLOBAL_SEMAPHORE_HANDLE g_dllByDll;
 
 /*these are simple cached variables*/
+static pfModule_CreateFromJson Module_CreateFromJson = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Create Module_Create = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Destroy Module_Destroy = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Receive Module_Receive = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
+static pfModule_Start Module_Start = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 
 #define GBALLOC_H
 
@@ -132,6 +135,14 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
 		}
 		MOCK_METHOD_END(JSON_Value*, value);
 
+		MOCK_STATIC_METHOD_1(, JSON_Array*, json_value_get_array, const JSON_Value*, value)
+			JSON_Array* object = NULL;
+		if (value != NULL)
+		{
+			object = (JSON_Array*)0x43;
+		}
+		MOCK_METHOD_END(JSON_Array*, object);
+
 		MOCK_STATIC_METHOD_1(, JSON_Object*, json_value_get_object, const JSON_Value*, value)
 			JSON_Object* object = NULL;
 		if (value != NULL)
@@ -140,9 +151,49 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
 		}
 		MOCK_METHOD_END(JSON_Object*, object);
 
+		MOCK_STATIC_METHOD_2(, JSON_Array *, json_object_get_array, const JSON_Object*, object, const char*, name)
+			JSON_Array* array = NULL;
+		if (object != NULL)
+		{
+			array = (JSON_Array*)0x44;
+		}
+		MOCK_METHOD_END(JSON_Array*, array);
+
 		MOCK_STATIC_METHOD_2(, const char*, json_object_get_string, const JSON_Object*, object, const char*, name)
 			const char * result2;
-		if (strcmp(name, "address") == 0)
+        if (strcmp(name, "macAddress") == 0)
+        {
+            result2 = "mac";
+        }
+        else if (strcmp(name, "serverConnectionString") == 0)
+        {
+            result2 = "server";
+        }
+        else if (strcmp(name, "interval") == 0)
+        {
+            result2 = "int";
+        }
+        else if (strcmp(name, "deviceType") == 0)
+        {
+            result2 = "type";
+        }
+        else if (strcmp(name, "unitId") == 0)
+        {
+            result2 = "unit";
+        }
+        else if (strcmp(name, "functionCode") == 0)
+        {
+            result2 = "function";
+        }
+        else if (strcmp(name, "startingAddress") == 0)
+        {
+            result2 = "address";
+        }
+        else if (strcmp(name, "length") == 0)
+        {
+            result2 = "length";
+        }
+        else if (strcmp(name, "address") == 0)
 		{
 			result2 = "0000";
 		}
@@ -159,6 +210,17 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
 			result2 = NULL;
 		}
 		MOCK_METHOD_END(const char*, result2);
+
+		MOCK_STATIC_METHOD_2(, JSON_Object *, json_array_get_object, const JSON_Array *, array, size_t, index)
+			JSON_Object* object = NULL;
+		if (array != NULL)
+		{
+			object = (JSON_Object*)0x42;
+		}
+		MOCK_METHOD_END(JSON_Object*, object);
+
+		MOCK_STATIC_METHOD_1(, size_t, json_array_get_count, const JSON_Array *, array)
+		MOCK_METHOD_END(size_t, (size_t)0);
 
 		MOCK_STATIC_METHOD_1(, void, json_value_free, JSON_Value*, value)
 			free(value);
@@ -341,8 +403,12 @@ DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void*, gballoc_malloc, size_t, 
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void, gballoc_free, void*, ptr);
 
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , JSON_Value*, json_parse_string, const char *, filename);
+DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , JSON_Array*, json_value_get_array, const JSON_Value*, value);
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , JSON_Object*, json_value_get_object, const JSON_Value*, value);
 DECLARE_GLOBAL_MOCK_METHOD_2(CModbusreadMocks, , const char*, json_object_get_string, const JSON_Object*, object, const char*, name);
+DECLARE_GLOBAL_MOCK_METHOD_2(CModbusreadMocks, , JSON_Array *, json_object_get_array, const JSON_Object*, object, const char*, name);
+DECLARE_GLOBAL_MOCK_METHOD_2(CModbusreadMocks, , JSON_Object *, json_array_get_object, const JSON_Array *, array, size_t, index);
+DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , size_t, json_array_get_count, const JSON_Array *, array);
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void, json_value_free, JSON_Value*, value);
 
 DECLARE_GLOBAL_MOCK_METHOD_0(CModbusreadMocks, , BROKER_HANDLE, Broker_Create);
@@ -391,11 +457,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         g_testByTest = MicroMockCreateMutex();
         ASSERT_IS_NOT_NULL(g_testByTest);
 
-		MODULE_APIS apis;
-		Module_GetAPIS(&apis);
-		Module_Create = apis.Module_Create;
-		Module_Destroy = apis.Module_Destroy;
-		Module_Receive = apis.Module_Receive;
+        const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
+		Module_CreateFromJson = MODULE_CREATE_FROM_JSON(apis);
+		Module_Create = MODULE_CREATE(apis);
+		Module_Destroy = MODULE_DESTROY(apis);
+		Module_Receive = MODULE_RECEIVE(apis);
+		Module_Start = MODULE_START(apis);
     }
 
     TEST_SUITE_CLEANUP(TestClassCleanup)
@@ -422,22 +489,983 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
     }
 
-	//Tests_SRS_MODBUS_READ_99_016: [ `Module_GetAPIS` shall return a non - NULL pointer to a structure of type MODULE_APIS that has all fields non - NULL. ]
+	//Tests_SRS_MODBUS_READ_99_016: [`Module_GetApi` shall return a pointer to a `MODULE_API` structure with the required function pointers.]
 	TEST_FUNCTION(ModbusRead_GetAPIs_Success)
 	{
 		///Arrange
 		CModbusreadMocks mocks;
 
 		///Act
-		MODULE_APIS apis;
-		Module_GetAPIS(&apis);
+        const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
 
 		///Assert
-		ASSERT_IS_NOT_NULL(apis.Module_Create);
-		ASSERT_IS_NOT_NULL(apis.Module_Destroy);
-		ASSERT_IS_NOT_NULL(apis.Module_Receive);
+        ASSERT_IS_NOT_NULL(MODULE_CREATE_FROM_JSON(apis));
+        ASSERT_IS_NOT_NULL(MODULE_CREATE(apis));
+        ASSERT_IS_NOT_NULL(MODULE_DESTROY(apis));
+        ASSERT_IS_NOT_NULL(MODULE_RECEIVE(apis));
 
 		///Ablution
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_021: [ If broker is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_Bus_Null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		BROKER_HANDLE broker = NULL;
+		char config;
+
+		///Act
+		auto n = Module_CreateFromJson(broker, &config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+
+		///Ablution
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_023: [ If configuration is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_Config_Null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		char* config = NULL;
+
+		///Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+
+		///Ablution
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_025: [** `ModbusRead_CreateFromJson` shall pass `broker` and the entire config to `ModbusRead_Create`. ]
+	//Tests_SRS_MODBUS_READ_JSON_99_026: [** If `ModbusRead_Create` succeeds then `ModbusRead_CreateFromJson` shall succeed and return a non - NULL value. ]
+	//Tests_SRS_MODBUS_READ_JSON_99_041: [** `ModbusRead_CreateFromJson` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an MODBUS_READ_CONFIG structure and add this element to the link list. ]
+	//Tests_SRS_MODBUS_READ_JSON_99_042: [** `ModbusRead_CreateFromJson` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an MODBUS_READ_OPERATION structure and add this element to the link list. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_Success)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+        STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
+            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1);
+
+        // ModbusRead_Create
+        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, Lock_Init());
+        STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+            .IgnoreArgument(1)
+            .IgnoreArgument(2)
+            .IgnoreArgument(3);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NOT_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+	//Tests_SRS_MODBUS_READ_JSON_99_045: [ ModbusRead_CreateFromJson shall walk through each object of the array. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_Success_with_2x2_element_array)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)2);
+
+		{
+			STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+				.IgnoreArgument(1);
+            STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+                .IgnoreArgument(1);
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+                .IgnoreArgument(1)
+                .SetReturn("COM1");
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+                .IgnoreArgument(1)
+                .SetReturn("00:00:00:00:00:00");
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+				.IgnoreArgument(1);
+
+            STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
+                .IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+				.IgnoreArgument(1)
+				.SetReturn((size_t)2);
+			{
+				STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+					.IgnoreArgument(1);
+                STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+                    .IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+					.IgnoreArgument(1);
+			}
+			{
+				STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+					.IgnoreArgument(1);
+                STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 1))
+                    .IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+					.IgnoreArgument(1);
+			}
+		}
+		{
+			STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+				.IgnoreArgument(1);
+            STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 1))
+                .IgnoreArgument(1);
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+                .IgnoreArgument(1)
+                .SetReturn("COM1");
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+                .IgnoreArgument(1)
+                .SetReturn("00:00:00:00:00:00");
+            STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+				.IgnoreArgument(1);
+
+            STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
+                .IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+				.IgnoreArgument(1)
+				.SetReturn((size_t)2);
+			{
+				STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+					.IgnoreArgument(1);
+                STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+                    .IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+					.IgnoreArgument(1);
+			}
+			{
+				STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+					.IgnoreArgument(1);
+                STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 1))
+                    .IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+					.IgnoreArgument(1);
+				STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+					.IgnoreArgument(1);
+			}
+		}
+
+        // ModbusRead_Create
+        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, Lock_Init());
+        STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+            .IgnoreArgument(1)
+            .IgnoreArgument(2)
+            .IgnoreArgument(3);
+
+        //Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NOT_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_027: [ If ModbusRead_Create fails then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_Create_failed_returns_null)
+	{
+
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+            .IgnoreArgument(1);
+
+        STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
+            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1);
+
+        // ModbusRead_Create will fail because earlier serverConnectionString is malformed
+        STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+            .IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_malloc_config_failed_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1)
+			.SetFailReturn((void*)NULL);
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_044: [ If the 'malloc' for `operation` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_malloc_operation_failed_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1)
+			.SetFailReturn((void*)NULL);
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_server_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_035: [ If the `args` object does not contain a value named "macAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_macaddress_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_036: [ If the `args` object does not contain a value named "interval" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_interval_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_046: [ If the `args` object does not contain a value named "deviceType" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_devicetype_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_037 : [** If the `operations` object does not contain a value named "unitId" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_unitid_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_038 : [** If the `operations` object does not contain a value named "functionCode" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_functioncode_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_039 : [** If the `operations` object does not contain a value named "startingAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_startaddress_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_040 : [** If the `operations` object does not contain a value named "length" then ModbusRead_CreateFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_length_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_032: [ If the JSON value does not contain `args` array then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_args_array_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetFailReturn((JSON_Array*)NULL);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_033: [ If the JSON object of `args` array does not contain `operations` array then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_no_operations_array_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2)
+			.SetFailReturn((JSON_Array*)NULL);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+
+		Module_Destroy(n);
+	}
+
+	//Tests_SRS_MODBUS_READ_JSON_99_031: [ If configuration is not a JSON object, then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_CreateFromJson_parse_fails_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config))
+			.SetFailReturn((JSON_Value*)NULL);
+
+		//Act
+		auto n = Module_CreateFromJson(broker, config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
 	}
 
 	//Tests_SRS_MODBUS_READ_99_001: [ If broker is NULL then ModbusRead_Create shall fail and return NULL. ]
@@ -457,7 +1485,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 		///Ablution
 	}
 
-	//Tests_SRS_IDMAP_99_002: [ If configuration is NULL then ModbusRead_Create shall fail and return NULL. ]
+	//Tests_SRS_MODBUS_READ_99_002: [ If configuration is NULL then ModbusRead_Create shall fail and return NULL. ]
 	TEST_FUNCTION(ModbusRead_Create_Config_Null)
 	{
 		///Arrange

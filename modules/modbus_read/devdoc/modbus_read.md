@@ -26,6 +26,104 @@ typedef struct MODBUS_READ_CONFIG_TAG
 	int time_check;
 }MODBUS_READ_CONFIG;
 ```
+## ModbusRead_CreateFromJson
+```c
+MODULE_HANDLE ModbusRead_CreateFromJson(BROKER_HANDLE broker, const void* configuration);
+```
+Creates a new MODBUS_READ module instance. `configuration` is a pointer to a `const char*` that contains a json object as supplied by `Gateway_CreateFromJson`.
+By convention the json object should contain the target modbus server and related read operation settings.
+
+### Expected Arguments
+
+The arguments to this module is a JSON object with the following information:
+```json
+{
+		"serverConnectionString": "<ip address or COM port number of the modbus connection>",
+		"interval": "<the interval value in ms between each cell's update>",
+		"deviceType": "<string value to describe the type of the modbus device>",
+		"macAddress": "<mac address in canonical form>",
+		"operations": [
+		{
+			"unitId": "<station/slave address of modbus device>",
+			"functionCode": "<function code of the read request>",
+			"startingAddress": "<starting cell address of the read request>",
+			"length": "<number of cells of the read request>"
+		}
+    ]
+}	
+```
+Example:
+The following Gateway config file describes an instance of the "modbus_read" module, available .\modbus_read.dll:
+```json
+{
+    "modules" :
+    [ 
+        {
+            "module name" : "modbus_read",
+			"loading args": {
+				"module path": "modbus_read.dll"
+			},
+            "args" : 
+            {
+              "serverConnectionString": "127.0.0.1",
+              "interval": "10000",
+			  "deviceType": "powerMeter",
+              "macAddress": "01:01:01:01:01:01",
+              "operations": [
+                {
+                  "unitId": "1",
+                  "functionCode": "3",
+                  "startingAddress": "0",
+                  "length": "5"
+                }
+              ]
+            }
+        }
+   ]
+}
+```
+
+**SRS_MODBUS_READ_JSON_99_021: [** If `broker` is NULL then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_023: [** If `configuration` is NULL then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_031: [** If `configuration` is not a JSON object, then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_032: [** If the JSON value does not contain "args" array then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_033: [** If the JSON object of `args` array does not contain "operations" array then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_025: [** `ModbusRead_CreateFromJson` shall pass `broker` and the entire config to `ModbusRead_Create`. **]**
+
+**SRS_MODBUS_READ_JSON_99_026: [** If `ModbusRead_Create` succeeds then `ModbusRead_CreateFromJson` shall succeed and return a non-NULL value. **]**
+
+**SRS_MODBUS_READ_JSON_99_027: [** If `ModbusRead_Create` fails then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_034: [** If the `args` object does not contain a value named "serverConnectionString" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_035: [** If the `args` object does not contain a value named "macAddress" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_036: [** If the `args` object does not contain a value named "interval" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_046: [** If the `args` object does not contain a value named "deviceType" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_041: [** `ModbusRead_CreateFromJson` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an `MODBUS_READ_CONFIG` structure and add this element to the link list. **]**
+
+**SRS_MODBUS_READ_JSON_99_037: [** If the `operations` object does not contain a value named "unitId" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_038: [** If the `operations` object does not contain a value named "functionCode" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_039: [** If the `operations` object does not contain a value named "startingAddress" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_040: [** If the `operations` object does not contain a value named "length" then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_042: [** `ModbusRead_CreateFromJson` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an `MODBUS_READ_OPERATION` structure and add this element to the link list. **]**
+
+**SRS_MODBUS_READ_JSON_99_043: [** If the `malloc` for `config` fail, `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_044: [** If the `malloc` for `operation` fail, `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
+
+**SRS_MODBUS_READ_JSON_99_045: [** `ModbusRead_CreateFromJson` shall walk through each object of the array. **]**
 
 ## ModbusRead_Create
 ```c
@@ -72,6 +170,7 @@ void ModbusRead_Destroy(MODULE_HANDLE moduleHandle);
 
 ## Module_GetAPIs
 ```c
-extern const void Module_GetAPIS(MODULE_APIS* apis);
+extern const MODULE_API* MODULE_STATIC_GETAPI(MODBUSREAD_MODULE)(const MODULE_API_VERSION gateway_api_version);
+extern const MODULE_API* Module_GetApi(const MODULE_API_VERSION gateway_api_version)
 ```
-**SRS_MODBUS_READ_99_016: [**`Module_GetAPIS` shall fill the provided `MODULE_APIS` structure with the required function pointers.**]**
+**SRS_MODBUS_READ_99_016: [**`Module_GetApi` shall return a pointer to a `MODULE_API` structure with the required function pointers.**]**

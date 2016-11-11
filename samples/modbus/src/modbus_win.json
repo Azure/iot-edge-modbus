@@ -2,7 +2,9 @@
   "modules": [
     {
       "module name": "IoTHub",
-      "module path": "..\\..\\..\\modules\\iothub\\Debug\\iothub_hl.dll",
+      "loading args": {
+        "module path": "..\\..\\..\\modules\\iothub\\Debug\\iothub.dll"
+      },
       "args": {
         "IoTHubName": "YOUR IOT HUB NAME",
         "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
@@ -11,7 +13,9 @@
     },
     {
       "module name": "mapping",
-      "module path": "..\\..\\..\\modules\\identitymap\\Debug\\identity_map_hl.dll",
+      "loading args": {
+        "module path": "..\\..\\..\\modules\\identitymap\\Debug\\identity_map.dll"
+      },
       "args": [
         {
           "macAddress": "01:01:01:01:01:01",
@@ -21,13 +25,19 @@
       ]
     },
     {
-      "module name": "logger_hl",
-      "module path": "..\\..\\..\\modules\\logger\\Debug\\logger_hl.dll",
-      "args": { "filename": "c:\\log.txt" }
+      "module name": "logger",
+      "loading args": {
+        "module path": "..\\..\\..\\modules\\logger\\Debug\\logger.dll"
+      },
+      "args": {
+        "filename": "log.txt"
+      }
     },
     {
       "module name": "modbus_read",
-      "module path": "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read_hl.dll",
+      "loading args": {
+        "module path": "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read.dll"
+      },
       "args": [
         {
           "serverConnectionString": "127.0.0.1",
@@ -65,8 +75,7 @@
     },
     {
       "source": "modbus_read",
-      "sink": "logger_hl"
+      "sink": "logger"
     }
   ]
 }
-

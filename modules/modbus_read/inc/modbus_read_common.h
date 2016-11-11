@@ -32,7 +32,6 @@
 #define SNPRINTF_S snprintf
 #endif
 
-/*the below data structures are used by all versions of ModbusRead (static/dynamic vanilla/hl)*/
 typedef struct MODBUS_READ_OPERATION_TAG
 {
 	struct MODBUS_READ_OPERATION_TAG * p_next;

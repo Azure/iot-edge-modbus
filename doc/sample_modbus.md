@@ -42,14 +42,12 @@ below:
 
 ![](./media/gateway_modbus_command_data_flow.png)
 
-  1. The IoT Hub module periodically polls Azure IoT Hub for new command
-     messages that might be available.
-  2. When the IoT Hub module receives a new command message, it publishes
-     it on to the message broker.
-  3. The Identity Mapping module picks up the message and translates the Azure
+  1. The IoT Hub module receives a new command message from IoT Hub and it
+     publishes it to the message broker.
+  2. The Identity Mapping module picks up the message and translates the Azure
      IoT Hub device ID to a device MAC address and publishes a new message to
      the message broker including the MAC address in the message's properties map.
-  4. The Modbus module then picks up this message and executes the Modbus write 
+  3. The Modbus module then picks up this message and executes the Modbus write 
 	 operation by communicating with the Modbus device.
 
 ## Building the sample ##
@@ -88,9 +86,13 @@ of this sample.
 
 ```json
 {
-    "module name" : "logger_hl",
-    "module path" : "../../modules/logger/liblogger_hl.so",
-    "args" : {"filename":"log.txt"}
+    "module name": "logger",
+    "loading args": {
+        "module path": "../../modules/logger/liblogger.so"
+    },
+    "args": {
+        "filename": "log.txt"
+    }
 }
 ```
 
@@ -98,24 +100,26 @@ of this sample.
 
 ```json
 {
-    "module name" : "modbus_read",
-    "module path" : "../../modules/modbus_read/libmodbus_read_hl.so",
-    "args" : [
-    {
-        "serverConnectionString": "COM1",
-        "interval": "2000",
-        "deviceType": "powerMeter",
-        "macAddress": "01:01:01:01:01:01",
-        "operations": [
+    "module name": "modbus_read",
+    "loading args": {
+        "module path": "../../modules/modbus_read/libmodbus_read.so"
+    },
+    "args": [
         {
-            "unitId": "1",
-            "functionCode": "3",
-            "startingAddress": "1",
-            "length": "5"
+            "serverConnectionString": "COM1",
+            "interval": "2000",
+            "macAddress": "01:01:01:01:01:01",
+            "deviceType": "powerMeter",
+            "operations": [
+                {
+                    "unitId": "1",
+                    "functionCode": "3",
+                    "startingAddress": "1",
+                    "length": "5"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 
@@ -123,13 +127,14 @@ of this sample.
 
 ```json
 {
-    "module name" : "IoTHub",
-    "module path" : "../../modules/iothub/libiothub_hl.so",
-    "args" : 
-    {
-        "IoTHubName" : "YOUR IOT HUB NAME",
-        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX",
-        "Transport" : "TRANSPORT PROTOCOL"
+    "module name": "IoTHub",
+    "loading args": {
+        "module path": "../../modules/iothub/libiothub.so"
+    },
+    "args": {
+        "IoTHubName": "YOUR IOT HUB NAME",
+        "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
+        "Transport": "TRANSPORT PROTOCOL"
     }
 }
 ```
@@ -138,14 +143,15 @@ of this sample.
 
 ```json
 {
-    "module name" : "mapping",
-    "module path" : "../../modules/identitymap/libidentity_map_hl.so",
-    "args" : 
-    [
+    "module name": "mapping",
+    "loading args": {
+        "module path": "../../modules/identitymap/libidentity_map.so"
+    },
+    "args": [
         {
-            "macAddress" : "01:01:01:01:01:01",
-            "deviceId"   : "YOUR DEVICE ID",
-            "deviceKey"  : "YOUR DEVICE KEY"
+            "macAddress": "01:01:01:01:01:01",
+            "deviceId": "YOUR DEVICE ID",
+            "deviceKey": "YOUR DEVICE KEY"
         }
     ]
 }
@@ -157,9 +163,13 @@ of this sample.
 
 ```json
 {
-    "module name" : "logger_hl",
-    "module path" : "..\\..\\..\\modules\\logger\\Debug\\logger_hl.dll",
-    "args" : {"filename":"c:\\log.txt"}
+    "module name": "logger",
+    "loading args": {
+        "module path": "..\\..\\..\\modules\\logger\\Debug\\logger.dll"
+    },
+    "args": {
+        "filename": "log.txt"
+    }
 }
 ```
 
@@ -167,24 +177,26 @@ of this sample.
 
 ```json
 {
-    "module name" : "modbus_read",
-    "module path" : "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read_hl.dll",
+    "module name": "modbus_read",
+    "loading args": {
+        "module path": "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read.dll"
+    },
     "args": [
-    {
-        "serverConnectionString": "127.0.0.1",
-        "interval": "2000",
-        "deviceType": "powerMeter",
-        "macAddress": "01:01:01:01:01:01",
-        "operations": [
         {
-            "unitId": "1",
-            "functionCode": "3",
-            "startingAddress": "1",
-            "length": "1"
+            "serverConnectionString": "127.0.0.1",
+            "interval": "2000",
+            "macAddress": "01:01:01:01:01:01",
+            "deviceType": "powerMeter",
+            "operations": [
+                {
+                    "unitId": "1",
+                    "functionCode": "3",
+                    "startingAddress": "1",
+                    "length": "1"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 
@@ -192,13 +204,14 @@ of this sample.
 
 ```json
 {
-    "module name" : "IoTHub",
-    "module path" : "..\\..\\..\\modules\\iothub\\Debug\\iothub_hl.dll",
-    "args" : 
-    {
-        "IoTHubName" : "YOUR IOT HUB NAME",
-        "IoTHubSuffix" : "YOUR IOT HUB SUFFIX",
-        "Transport" : "TRANSPORT PROTOCOL"
+    "module name": "IoTHub",
+    "loading args": {
+        "module path": "..\\..\\..\\modules\\iothub\\Debug\\iothub.dll"
+    },
+    "args": {
+        "IoTHubName": "YOUR IOT HUB NAME",
+        "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
+        "Transport": "TRANSPORT PROTOCOL"
     }
 }
 ```
@@ -207,14 +220,15 @@ of this sample.
 
 ```json
 {
-    "module name" : "mapping",
-    "module path" : "..\\..\\..\\modules\\identitymap\\Debug\\identity_map_hl.dll",
-    "args" : 
-    [
+    "module name": "mapping",
+    "loading args": {
+        "module path": "..\\..\\..\\modules\\identitymap\\Debug\\identity_map.dll"
+    },
+    "args": [
         {
-            "macAddress" : "01:01:01:01:01:01",
-            "deviceId"   : "YOUR DEVICE ID",
-            "deviceKey"  : "YOUR DEVICE KEY"
+            "macAddress": "01:01:01:01:01:01",
+            "deviceId": "YOUR DEVICE ID",
+            "deviceKey": "YOUR DEVICE KEY"
         }
     ]
 }
@@ -243,7 +257,7 @@ Links are to specify the message flow controlled by the message broker.
     },
     {
       "source": "modbus_read",
-      "sink": "logger_hl"
+      "sink": "logger"
     }
   ]
 ```
@@ -254,7 +268,7 @@ The Modbus module also supports sending of instructions from the Azure IoT Hub t
 the device. You should be able to use the
 [Azure IoT Hub Device Explorer](https://github.com/Azure/azure-iot-sdks/blob/master/tools/DeviceExplorer/doc/how_to_use_device_explorer.md) or the [IoT Hub Explorer](https://github.com/Azure/azure-iot-sdks/tree/master/tools/iothub-explorer)
 to craft and send JSON messages that are handled and passed on to the Modbus device
-by the Modbus module. For example, sending the following JSON messages to the device
+by the Modbus module. For example, sending the following JSON message to the device
 via IoT Hub will write value 9999 to the Holding Register 1:
 
   * Set the value of the Holding Register #1 to 9999.
