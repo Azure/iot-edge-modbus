@@ -48,7 +48,7 @@ below:
      IoT Hub device ID to a device MAC address and publishes a new message to
      the message broker including the MAC address in the message's properties map.
   3. The Modbus module then picks up this message and executes the Modbus write 
-	 operation by communicating with the Modbus device.
+     operation by communicating with the Modbus device.
 
 ## Building the sample ##
 

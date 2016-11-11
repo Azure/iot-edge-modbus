@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 2.8.11)
 #this is CMakeLists for modbus sample
 
 set(modbus_sources
-	./src/main.c
+    ./src/main.c
 )
 if(WIN32)
     set(modbus_sources 

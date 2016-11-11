@@ -8,22 +8,22 @@ This module is mainly a Modbus reader which also performs Modbus writeback actio
 ```c
 typedef struct MODBUS_READ_OPERATION_TAG
 {
-	struct MODBUS_READ_OPERATION_TAG * p_next;
-	unsigned char unit_id;
-	unsigned char function_code;
-	unsigned short address;
-	unsigned short length;
+    struct MODBUS_READ_OPERATION_TAG * p_next;
+    unsigned char unit_id;
+    unsigned char function_code;
+    unsigned short address;
+    unsigned short length;
 }MODBUS_READ_OPERATION;
 
 typedef struct MODBUS_READ_CONFIG_TAG
 {
-	struct MOD_BUS_READ_CONFIG_TAG * p_next;
-	struct MODBUS_READ_OPERATION_TAG * p_operation;
-	unsigned int interval;
-	char server_ip[16];
-	char mac_address[18];
-	SOCKET_TYPE s;
-	int time_check;
+    struct MOD_BUS_READ_CONFIG_TAG * p_next;
+    struct MODBUS_READ_OPERATION_TAG * p_operation;
+    unsigned int interval;
+    char server_ip[16];
+    char mac_address[18];
+    SOCKET_TYPE s;
+    int time_check;
 }MODBUS_READ_CONFIG;
 ```
 ## ModbusRead_CreateFromJson
@@ -38,19 +38,19 @@ By convention the json object should contain the target modbus server and relate
 The arguments to this module is a JSON object with the following information:
 ```json
 {
-		"serverConnectionString": "<ip address or COM port number of the modbus connection>",
-		"interval": "<the interval value in ms between each cell's update>",
-		"deviceType": "<string value to describe the type of the modbus device>",
-		"macAddress": "<mac address in canonical form>",
-		"operations": [
-		{
-			"unitId": "<station/slave address of modbus device>",
-			"functionCode": "<function code of the read request>",
-			"startingAddress": "<starting cell address of the read request>",
-			"length": "<number of cells of the read request>"
-		}
+        "serverConnectionString": "<ip address or COM port number of the modbus connection>",
+        "interval": "<the interval value in ms between each cell's update>",
+        "deviceType": "<string value to describe the type of the modbus device>",
+        "macAddress": "<mac address in canonical form>",
+        "operations": [
+        {
+            "unitId": "<station/slave address of modbus device>",
+            "functionCode": "<function code of the read request>",
+            "startingAddress": "<starting cell address of the read request>",
+            "length": "<number of cells of the read request>"
+        }
     ]
-}	
+}    
 ```
 Example:
 The following Gateway config file describes an instance of the "modbus_read" module, available .\modbus_read.dll:
@@ -60,14 +60,14 @@ The following Gateway config file describes an instance of the "modbus_read" mod
     [ 
         {
             "module name" : "modbus_read",
-			"loading args": {
-				"module path": "modbus_read.dll"
-			},
+            "loading args": {
+                "module path": "modbus_read.dll"
+            },
             "args" : 
             {
               "serverConnectionString": "127.0.0.1",
               "interval": "10000",
-			  "deviceType": "powerMeter",
+              "deviceType": "powerMeter",
               "macAddress": "01:01:01:01:01:01",
               "operations": [
                 {
