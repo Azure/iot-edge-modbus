@@ -194,7 +194,7 @@ static void encode_read_PDU(unsigned char * buf, MODBUS_READ_OPERATION * operati
 	//encoding PDU
 	buf[0] = operation->function_code;  //function code
 	_pU16 = (unsigned short *)(buf + 1);
-	*_pU16 = htons(operation->address);         //addr (2 bytes)
+	*_pU16 = htons(operation->address - 1);         //addr (2 bytes)
 	_pU16 = (unsigned short *)(buf + 3);
 	*_pU16 = htons(operation->length);         //length (2 bytes)
 }
@@ -303,20 +303,20 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
 		memset(temp, 0, sizeof(temp));
 		if (step_size == 1)
 		{
-			LogInfo("status %01X%04u: <%01X>\n", start_digit, operation->address + index + 1, (buf[2 + (index / 8)] >> (index % 8)) & 1);
+			LogInfo("status %01X%04u: <%01X>\n", start_digit, operation->address + index, (buf[2 + (index / 8)] >> (index % 8)) & 1);
 
 			if (SNPRINTF_S(temp, sizeof(temp), "\"address_%01X%04u\": \"%01X\"",
-				start_digit, operation->address + index + 1, (buf[2 + (index / 8)] >> (index % 8)) & 1) < 0)
+				start_digit, operation->address + index, (buf[2 + (index / 8)] >> (index % 8)) & 1) < 0)
 			{
 				LogError("Failed to set message text");
 			}
 		}
 		else
 		{
-			LogInfo("register %01X%04u: <%02X%02X>\n", start_digit, operation->address + (index / 2) + 1, buf[2 + index], buf[3 + index]);
+			LogInfo("register %01X%04u: <%02X%02X>\n", start_digit, operation->address + (index / 2), buf[2 + index], buf[3 + index]);
 
 			if (SNPRINTF_S(temp, sizeof(temp), "\"address_%01X%04u\": \"%05u\"",
-				start_digit, operation->address + (index / 2) + 1, buf[2 + index] * (0x100) + buf[3 + index]) < 0)
+				start_digit, operation->address + (index / 2), buf[2 + index] * (0x100) + buf[3 + index]) < 0)
 			{
 				LogError("Failed to set message text");
 			}

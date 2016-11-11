@@ -110,7 +110,7 @@ of this sample.
         {
             "unitId": "1",
             "functionCode": "3",
-            "startingAddress": "0",
+            "startingAddress": "1",
             "length": "5"
         }
       ]
@@ -179,7 +179,7 @@ of this sample.
         {
             "unitId": "1",
             "functionCode": "3",
-            "startingAddress": "0",
+            "startingAddress": "1",
             "length": "1"
         }
       ]
