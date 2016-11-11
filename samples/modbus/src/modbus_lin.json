@@ -2,7 +2,9 @@
   "modules": [
     {
       "module name": "IoTHub",
-      "module path": "../../modules/iothub/libiothub_hl.so",
+      "loading args": {
+        "module path": "../../modules/iothub/libiothub.so"
+      },
       "args": {
         "IoTHubName": "YOUR IOT HUB NAME",
         "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
@@ -11,7 +13,9 @@
     },
     {
       "module name": "mapping",
-      "module path": "../../modules/identitymap/libidentity_map_hl.so",
+      "loading args": {
+        "module path": "../../modules/identitymap/libidentity_map.so"
+      },
       "args": [
         {
           "macAddress": "01:01:01:01:01:01",
@@ -21,13 +25,19 @@
       ]
     },
     {
-      "module name": "logger_hl",
-      "module path": "../../modules/logger/liblogger_hl.so",
-      "args": { "filename": "log.txt" }
+      "module name": "logger",
+      "loading args": {
+        "module path": "../../modules/logger/liblogger.so"
+      },
+      "args": {
+        "filename": "log.txt"
+      }
     },
     {
       "module name": "modbus_read",
-      "module path": "../../modules/modbus_read/libmodbus_read_hl.so",
+      "loading args": {
+        "module path": "../../modules/modbus_read/libmodbus_read.so"
+      },
       "args": [
         {
           "serverConnectionString": "COM1",
@@ -65,7 +75,7 @@
     },
     {
       "source": "modbus_read",
-      "sink": "logger_hl"
+      "sink": "logger"
     }
   ]
 }

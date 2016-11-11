@@ -1,18 +1,18 @@
 #Copyright (c) Microsoft. All rights reserved.
 #Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#this is CMakeLists.txt for modbusread_unittests
 cmake_minimum_required(VERSION 2.8.11)
 
 compileAsC99()
+
 set(theseTestsName modbus_read_unittests)
+
 set(${theseTestsName}_cpp_files
-${theseTestsName}.cpp
+    ${theseTestsName}.cpp
 )
 
 set(${theseTestsName}_c_files
-	../../src/modbus_read.c
-	
+    ../../src/modbus_read.c
 )
 
 set(${theseTestsName}_h_files
