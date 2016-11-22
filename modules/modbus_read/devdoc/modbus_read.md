@@ -26,11 +26,11 @@ typedef struct MODBUS_READ_CONFIG_TAG
     int time_check;
 }MODBUS_READ_CONFIG;
 ```
-## ModbusRead_CreateFromJson
+## ModbusRead_ParseConfigurationFromJson
 ```c
-MODULE_HANDLE ModbusRead_CreateFromJson(BROKER_HANDLE broker, const void* configuration);
+void* ModbusRead_ParseConfigurationFromJson(const void* configuration);
 ```
-Creates a new MODBUS_READ module instance. `configuration` is a pointer to a `const char*` that contains a json object as supplied by `Gateway_CreateFromJson`.
+Creates a new configuration for MODBUS_READ module instance from a JSON string.`configuration` is a pointer to a `const char*` that contains a json object as supplied by `Gateway_CreateFromJson`.
 By convention the json object should contain the target modbus server and related read operation settings.
 
 ### Expected Arguments
@@ -59,9 +59,12 @@ The following Gateway config file describes an instance of the "modbus_read" mod
     "modules" :
     [ 
         {
-            "module name" : "modbus_read",
-            "loading args": {
-                "module path": "modbus_read.dll"
+            "name" : "modbus_read",
+            "loader": {
+                "type": "native",
+                "entrypoint": {
+                    "module path" : "modbus_read.dll"
+                }
             },
             "args" : 
             {
@@ -82,6 +85,7 @@ The following Gateway config file describes an instance of the "modbus_read" mod
    ]
 }
 ```
+
 
 **SRS_MODBUS_READ_JSON_99_021: [** If `broker` is NULL then `ModbusRead_CreateFromJson` shall fail and return NULL. **]**
 
@@ -125,6 +129,7 @@ The following Gateway config file describes an instance of the "modbus_read" mod
 
 **SRS_MODBUS_READ_JSON_99_045: [** `ModbusRead_CreateFromJson` shall walk through each object of the array. **]**
 
+
 ## ModbusRead_Create
 ```c
 MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configuration);
@@ -139,10 +144,12 @@ Creates a new `MODBUS_READ` instance. `configuration` is a pointer to a `MODBUS_
 
 **SRS_MODBUS_READ_99_008: [**Otherwise `ModbusRead_Create` shall return a non-NULL pointer.**]**
 
+
 ## ModbusRead_Receive
 ```c
 void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messageHandle);
 ```
+
 
 **SRS_MODBUS_READ_99_009: [**If `moduleHandle` is NULL then `ModbusRead_Receive` shall fail and return.**]**
 
@@ -157,6 +164,13 @@ void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messageHandle
 **SRS_MODBUS_READ_99_017: [**`ModbusRead_Receive` shall return.**]**
 
 **SRS_MODBUS_READ_99_018: [**If content of `messageHandle` is not a JSON value, then `ModbusRead_Receive` shall fail and return NULL.**]**
+
+
+## ModbusRead_FreeConfiguration
+```c
+void ModbusRead_FreeConfiguration(void* configuration);
+```
+**SRS_MODBUS_READ_99_006: [**`ModbusRead_FreeConfiguration` shall do nothing, cleanup is done in `ModbusRead_Destroy`.**]**
 
 
 ## ModbusRead_Destroy

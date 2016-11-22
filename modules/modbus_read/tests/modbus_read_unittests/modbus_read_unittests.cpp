@@ -57,7 +57,8 @@ static MICROMOCK_MUTEX_HANDLE g_testByTest;
 static MICROMOCK_GLOBAL_SEMAPHORE_HANDLE g_dllByDll;
 
 /*these are simple cached variables*/
-static pfModule_CreateFromJson Module_CreateFromJson = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
+static pfModule_ParseConfigurationFromJson Module_ParseConfigurationFromJson = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
+static pfModule_FreeConfiguration Module_FreeConfiguration = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Create Module_Create = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Destroy Module_Destroy = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Receive Module_Receive = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
@@ -458,7 +459,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ASSERT_IS_NOT_NULL(g_testByTest);
 
         const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
-        Module_CreateFromJson = MODULE_CREATE_FROM_JSON(apis);
+		Module_ParseConfigurationFromJson = MODULE_PARSE_CONFIGURATION_FROM_JSON(apis);
+		Module_FreeConfiguration = MODULE_FREE_CONFIGURATION(apis);
         Module_Create = MODULE_CREATE(apis);
         Module_Destroy = MODULE_DESTROY(apis);
         Module_Receive = MODULE_RECEIVE(apis);
@@ -498,34 +500,20 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Act
         const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
 
+		///assert
+		ASSERT_IS_NOT_NULL(apis);
         ///Assert
-        ASSERT_IS_NOT_NULL(MODULE_CREATE_FROM_JSON(apis));
-        ASSERT_IS_NOT_NULL(MODULE_CREATE(apis));
-        ASSERT_IS_NOT_NULL(MODULE_DESTROY(apis));
-        ASSERT_IS_NOT_NULL(MODULE_RECEIVE(apis));
+		ASSERT_IS_TRUE(MODULE_PARSE_CONFIGURATION_FROM_JSON(apis) != NULL);
+		ASSERT_IS_TRUE(MODULE_FREE_CONFIGURATION(apis) != NULL);
+		ASSERT_IS_TRUE(MODULE_CREATE(apis));
+		ASSERT_IS_TRUE(MODULE_DESTROY(apis));
+        ASSERT_IS_TRUE(MODULE_RECEIVE(apis));
 
         ///Ablution
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_021: [ If broker is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_Bus_Null)
-    {
-        ///Arrange
-        CModbusreadMocks mocks;
-        BROKER_HANDLE broker = NULL;
-        char config;
-
-        ///Act
-        auto n = Module_CreateFromJson(broker, &config);
-
-        ///Assert
-        ASSERT_IS_NULL(n);
-
-        ///Ablution
-    }
-
-    //Tests_SRS_MODBUS_READ_JSON_99_023: [ If configuration is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_Config_Null)
+    //Tests_SRS_MODBUS_READ_JSON_99_023: [ If configuration is NULL then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_Config_Null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -534,7 +522,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         char* config = NULL;
 
         ///Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
@@ -542,11 +530,11 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Ablution
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_025: [** `ModbusRead_CreateFromJson` shall pass `broker` and the entire config to `ModbusRead_Create`. ]
-    //Tests_SRS_MODBUS_READ_JSON_99_026: [** If `ModbusRead_Create` succeeds then `ModbusRead_CreateFromJson` shall succeed and return a non - NULL value. ]
-    //Tests_SRS_MODBUS_READ_JSON_99_041: [** `ModbusRead_CreateFromJson` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an MODBUS_READ_CONFIG structure and add this element to the link list. ]
-    //Tests_SRS_MODBUS_READ_JSON_99_042: [** `ModbusRead_CreateFromJson` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an MODBUS_READ_OPERATION structure and add this element to the link list. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_Success)
+    //Tests_SRS_MODBUS_READ_JSON_99_025: [** `ModbusRead_ParseConfigurationFromJson` shall pass `broker` and the entire config to `ModbusRead_Create`. ]
+    //Tests_SRS_MODBUS_READ_JSON_99_026: [** If `ModbusRead_Create` succeeds then `ModbusRead_ParseConfigurationFromJson` shall succeed and return a non - NULL value. ]
+    //Tests_SRS_MODBUS_READ_JSON_99_041: [** `ModbusRead_ParseConfigurationFromJson` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an MODBUS_READ_CONFIG structure and add this element to the link list. ]
+    //Tests_SRS_MODBUS_READ_JSON_99_042: [** `ModbusRead_ParseConfigurationFromJson` shall use "unitId", "functionCode", "startingAddress" and "length" values as the fields for an MODBUS_READ_OPERATION structure and add this element to the link list. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_Success)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -597,28 +585,19 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
             .IgnoreArgument(1);
 
-        // ModbusRead_Create
-        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, Lock_Init());
-        STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
-            .IgnoreArgument(1)
-            .IgnoreArgument(2)
-            .IgnoreArgument(3);
-
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NOT_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
+		auto handle = Module_Create(broker, n);
+        Module_Destroy(handle);
     }
-    //Tests_SRS_MODBUS_READ_JSON_99_045: [ ModbusRead_CreateFromJson shall walk through each object of the array. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_Success_with_2x2_element_array)
+    //Tests_SRS_MODBUS_READ_JSON_99_045: [ ModbusRead_ParseConfigurationFromJson shall walk through each object of the array. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_Success_with_2x2_element_array)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -736,17 +715,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             }
         }
 
-        // ModbusRead_Create
-        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, Lock_Init());
-        STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
-            .IgnoreArgument(1)
-            .IgnoreArgument(2)
-            .IgnoreArgument(3);
-
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NOT_NULL(n);
@@ -754,79 +724,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
         ///Cleanup
 
-        Module_Destroy(n);
+		auto handle = Module_Create(broker, n);
+		Module_Destroy(handle);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_027: [ If ModbusRead_Create fails then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_Create_failed_returns_null)
-    {
-
-        ///Arrange
-        CModbusreadMocks mocks;
-        unsigned char fake;
-        BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        const char* config = "pretend this is a valid JSON string";
-
-        STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
-
-        STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
-            .IgnoreArgument(1)
-            .SetReturn((size_t)1);
-        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
-            .IgnoreArgument(1)
-            .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
-            .IgnoreArgument(1);
-
-        STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
-            .IgnoreArgument(1)
-            .SetReturn((size_t)1);
-        STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "unitId"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "length"))
-            .IgnoreArgument(1);
-
-        // ModbusRead_Create will fail because earlier serverConnectionString is malformed
-        STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
-
-        //Act
-        auto n = Module_CreateFromJson(broker, config);
-
-        ///Assert
-        ASSERT_IS_NULL(n);
-        mocks.AssertActualAndExpectedCalls();
-
-        ///Cleanup
-
-    }
-
-    //Tests_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_malloc_config_failed_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_malloc_config_failed_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -847,19 +750,16 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .SetFailReturn((void*)NULL);
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
-        ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_044: [ If the 'malloc' for `operation` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_malloc_operation_failed_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_044: [ If the 'malloc' for `operation` fail, ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_malloc_operation_failed_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -881,10 +781,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -900,19 +802,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .SetFailReturn((void*)NULL);
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_server_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_server_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -938,7 +838,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -947,19 +848,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_035: [ If the `args` object does not contain a value named "macAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_macaddress_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_035: [ If the `args` object does not contain a value named "macAddress" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_macaddress_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -982,7 +881,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
@@ -994,19 +894,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_036: [ If the `args` object does not contain a value named "interval" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_interval_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_036: [ If the `args` object does not contain a value named "interval" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_interval_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1028,10 +926,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
@@ -1041,19 +941,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_046: [ If the `args` object does not contain a value named "deviceType" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_devicetype_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_046: [ If the `args` object does not contain a value named "deviceType" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_devicetype_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1075,10 +973,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1088,19 +988,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_037 : [** If the `operations` object does not contain a value named "unitId" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_unitid_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_037 : [** If the `operations` object does not contain a value named "unitId" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_unitid_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1122,10 +1020,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1155,19 +1055,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_038 : [** If the `operations` object does not contain a value named "functionCode" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_functioncode_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_038 : [** If the `operations` object does not contain a value named "functionCode" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_functioncode_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1189,10 +1087,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1222,19 +1122,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_039 : [** If the `operations` object does not contain a value named "startingAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_startaddress_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_039 : [** If the `operations` object does not contain a value named "startingAddress" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_startaddress_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1257,9 +1155,11 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1289,19 +1189,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_040 : [** If the `operations` object does not contain a value named "length" then ModbusRead_CreateFromJson shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_length_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_040 : [** If the `operations` object does not contain a value named "length" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_length_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1324,9 +1222,11 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+            .IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1356,19 +1256,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_032: [ If the JSON value does not contain `args` array then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_args_array_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_032: [ If the JSON value does not contain `args` array then `ModbusRead_ParseConfigurationFromJson` shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_args_array_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1385,19 +1283,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((JSON_Array*)NULL);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_033: [ If the JSON object of `args` array does not contain `operations` array then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_no_operations_array_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_033: [ If the JSON object of `args` array does not contain `operations` array then `ModbusRead_ParseConfigurationFromJson` shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_operations_array_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1420,10 +1316,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-            .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1435,19 +1333,17 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((JSON_Array*)NULL);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-
-        Module_Destroy(n);
     }
 
-    //Tests_SRS_MODBUS_READ_JSON_99_031: [ If configuration is not a JSON object, then `ModbusRead_CreateFromJson` shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_CreateFromJson_parse_fails_returns_null)
+    //Tests_SRS_MODBUS_READ_JSON_99_031: [ If configuration is not a JSON object, then `ModbusRead_ParseConfigurationFromJson` shall fail and return NULL. ]
+    TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_parse_fails_returns_null)
     {
         ///Arrange
         CModbusreadMocks mocks;
@@ -1459,7 +1355,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((JSON_Value*)NULL);
 
         //Act
-        auto n = Module_CreateFromJson(broker, config);
+        auto n = Module_ParseConfigurationFromJson(config);
 
         ///Assert
         ASSERT_IS_NULL(n);

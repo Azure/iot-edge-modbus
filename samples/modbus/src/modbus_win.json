@@ -1,9 +1,12 @@
 {
   "modules": [
     {
-      "module name": "IoTHub",
-      "loading args": {
-        "module path": "..\\..\\..\\modules\\iothub\\Debug\\iothub.dll"
+      "name": "IoTHub",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "..\\..\\..\\modules\\iothub\\Debug\\iothub.dll"
+        }
       },
       "args": {
         "IoTHubName": "YOUR IOT HUB NAME",
@@ -12,9 +15,12 @@
       }
     },
     {
-      "module name": "mapping",
-      "loading args": {
-        "module path": "..\\..\\..\\modules\\identitymap\\Debug\\identity_map.dll"
+      "name": "mapping",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "..\\..\\..\\modules\\identitymap\\Debug\\identity_map.dll"
+        }
       },
       "args": [
         {
@@ -25,18 +31,24 @@
       ]
     },
     {
-      "module name": "logger",
-      "loading args": {
-        "module path": "..\\..\\..\\modules\\logger\\Debug\\logger.dll"
+      "name": "logger",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "..\\..\\..\\modules\\logger\\Debug\\logger.dll"
+        }
       },
       "args": {
         "filename": "log.txt"
       }
     },
     {
-      "module name": "modbus_read",
-      "loading args": {
-        "module path": "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read.dll"
+      "name": "modbus_read",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "..\\..\\..\\modules\\modbus_read\\Debug\\modbus_read.dll"
+        }
       },
       "args": [
         {

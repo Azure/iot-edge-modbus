@@ -1,9 +1,12 @@
 {
   "modules": [
     {
-      "module name": "IoTHub",
-      "loading args": {
-        "module path": "../../modules/iothub/libiothub.so"
+      "name": "IoTHub",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/iothub/libiothub.so"
+        }
       },
       "args": {
         "IoTHubName": "YOUR IOT HUB NAME",
@@ -12,9 +15,12 @@
       }
     },
     {
-      "module name": "mapping",
-      "loading args": {
-        "module path": "../../modules/identitymap/libidentity_map.so"
+      "name": "mapping",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/identitymap/libidentity_map.so"
+        }
       },
       "args": [
         {
@@ -25,18 +31,24 @@
       ]
     },
     {
-      "module name": "logger",
-      "loading args": {
-        "module path": "../../modules/logger/liblogger.so"
+      "name": "logger",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/logger/liblogger.so"
+        }
       },
       "args": {
         "filename": "log.txt"
       }
     },
     {
-      "module name": "modbus_read",
-      "loading args": {
-        "module path": "../../modules/modbus_read/libmodbus_read.so"
+      "name": "modbus_read",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/modbus_read/libmodbus_read.so"
+        }
       },
       "args": [
         {

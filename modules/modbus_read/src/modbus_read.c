@@ -51,6 +51,68 @@ static void modbus_config_cleanup(MODBUS_READ_CONFIG * config)
         free(temp_config);
     }
 }
+static bool isValidMac(char* mac)
+{
+	//format XX:XX:XX:XX:XX:XX
+	bool ret = true;
+	int len = strlen(mac);
+
+	if (len != MACSTRLEN)
+	{
+		LogError("invalid mac length: %d", len);
+		ret = false;
+	}
+	else
+	{
+		for (int mac_char = 0; mac_char < MACSTRLEN; mac_char++)
+		{
+			if (((mac_char + 1) % 3 == 0))
+			{
+				if (mac[mac_char] != ':')
+				{
+					ret = false;
+					break;
+				}
+			}
+			else
+			{
+				if (!((mac[mac_char] >= '0' && mac[mac_char] <= '9') || (mac[mac_char] >= 'a' && mac[mac_char] <= 'f') || (mac[mac_char] >= 'A' && mac[mac_char] <= 'F')))
+				{
+					ret = false;
+					break;
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+static bool isValidServer(char* server)
+{
+	//ipv4 format XXX.XXX.XXX.XXX
+	//serial port format COMX
+	bool ret = true;
+
+	if (memcmp(server, "COM", 3) == 0)
+	{
+		if (0 > atoi(server + 3))
+		{
+			LogError("invalid COM port: %s", server);
+			ret = false;
+		}
+	}
+	else
+	{
+		if (inet_addr(server) == INADDR_NONE)
+		{
+			LogError("invalid ipv4: %s", server);
+			ret = false;
+		}
+	}
+
+	return ret;
+}
+
 
 static bool addOneOperation(MODBUS_READ_OPERATION * operation, JSON_Object * operation_obj)
 {
@@ -106,13 +168,13 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     const char* mac_address = json_object_get_string(arg_obj, "macAddress");
     const char* interval = json_object_get_string(arg_obj, "interval");
     const char* device_type = json_object_get_string(arg_obj, "deviceType");
-    if (server_str == NULL)
+    if (server_str == NULL || !isValidServer(server_str))
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
         LogError("Did not find expected %s configuration", "serverConnectionString");
         result = false;
     }
-    else if (mac_address == NULL)
+    else if (mac_address == NULL || !isValidMac(mac_address))
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_035: [ If the `args` object does not contain a value named "macAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
         LogError("Did not find expected %s configuration", "macAddress");
@@ -148,68 +210,6 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     config->read_interval = atoi(interval);
 
     return result;
-}
-
-static bool isValidMac(char* mac)
-{
-    //format XX:XX:XX:XX:XX:XX
-    bool ret = true;
-    int len = strlen(mac);
-
-    if (len != MACSTRLEN)
-    {
-        LogError("invalid mac length: %d", len);
-        ret = false;
-    }
-    else
-    {
-        for (int mac_char = 0; mac_char < MACSTRLEN; mac_char++)
-        {
-            if (((mac_char + 1) % 3 == 0) )
-            {
-                if (mac[mac_char] != ':')
-                {
-                    ret = false;
-                    break;
-                }
-            }
-            else
-            {
-                if (!((mac[mac_char] >= '0' && mac[mac_char] <= '9') || (mac[mac_char] >= 'a' && mac[mac_char] <= 'f') || (mac[mac_char] >= 'A' && mac[mac_char] <= 'F')))
-                {
-                    ret = false;
-                    break;
-                }
-            }
-        }
-    }
-    return ret;
-}
-
-static bool isValidServer(char* server)
-{
-    //ipv4 format XXX.XXX.XXX.XXX
-    //serial port format COMX
-    bool ret = true;
-
-    if (memcmp(server, "COM", 3) == 0)
-    {
-        if (0 > atoi(server + 3))
-        {
-            LogError("invalid COM port: %s", server);
-            ret = false;
-        }
-    }
-    else
-    {
-        if (inet_addr(server) == INADDR_NONE)
-        {
-            LogError("invalid ipv4: %s", server);
-            ret = false;
-        }
-    }
-
-    return ret;
 }
 
 static int get_crc(unsigned char * message, int length, unsigned short * out)//refer to J.J. Lee's code
@@ -806,58 +806,38 @@ static MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configu
 
         MODBUS_READ_CONFIG *cur_config = (MODBUS_READ_CONFIG *)configuration;
 
-        while (cur_config)
+        result = malloc(sizeof(MODBUSREAD_HANDLE_DATA));
+        if (result == NULL)
         {
-            if (!isValidMac(cur_config->mac_address))
-            {
-                LogError("invalid mac: %s", cur_config->mac_address);
-                isValidConfig = false;
-                break;
-            }
-            if (!isValidServer(cur_config->server_str))
-            {
-                LogError("invalid server: %s", cur_config->server_str);
-                isValidConfig = false;
-                break;
-            }
-            cur_config = cur_config->p_next;
+            /*Codes_SRS_MODBUS_READ_99_007: [If ModbusRead_Create encounters any errors while creating the MODBUSREAD_HANDLE_DATA then it shall fail and return NULL.]*/
+            LogError("unable to malloc");
         }
-
-        if (isValidConfig)
+        else
         {
-            result = malloc(sizeof(MODBUSREAD_HANDLE_DATA));
-            if (result == NULL)
+            result->lockHandle = Lock_Init();
+            if (result->lockHandle == NULL)
             {
-                /*Codes_SRS_MODBUS_READ_99_007: [If ModbusRead_Create encounters any errors while creating the MODBUSREAD_HANDLE_DATA then it shall fail and return NULL.]*/
-                LogError("unable to malloc");
+                LogError("unable to Lock_Init");
+                free(result);
+                result = NULL;
             }
             else
             {
-                result->lockHandle = Lock_Init();
-                if (result->lockHandle == NULL)
+                result->stopThread = 0;
+                result->broker = broker;
+                result->config = (MODBUS_READ_CONFIG *)configuration;
+                if (ThreadAPI_Create(&result->threadHandle, modbusReadThread, result) != THREADAPI_OK)
                 {
-                    LogError("unable to Lock_Init");
+                    LogError("failed to spawn a thread");
+                    (void)Lock_Deinit(result->lockHandle);
                     free(result);
                     result = NULL;
                 }
                 else
                 {
-                    result->stopThread = 0;
-                    result->broker = broker;
-                    result->config = (MODBUS_READ_CONFIG *)configuration;
-                    if (ThreadAPI_Create(&result->threadHandle, modbusReadThread, result) != THREADAPI_OK)
-                    {
-                        LogError("failed to spawn a thread");
-                        (void)Lock_Deinit(result->lockHandle);
-                        free(result);
-                        result = NULL;
-                    }
-                    else
-                    {
-                        /*all is fine apparently*/
-                    }
-                    /*Codes_SRS_MODBUS_READ_99_008: [Otherwise ModbusRead_Create shall return a non - NULL pointer.]*/
+                    /*all is fine apparently*/
                 }
+                /*Codes_SRS_MODBUS_READ_99_008: [Otherwise ModbusRead_Create shall return a non - NULL pointer.]*/
             }
         }
     }
@@ -984,18 +964,16 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
         /*Codes_SRS_MODBUS_READ_99_017 : [ModbusRead_Receive shall return.]*/
 }
 
-static MODULE_HANDLE ModbusRead_CreateFromJson(BROKER_HANDLE broker, const void* configuration)
+static void* ModbusRead_ParseConfigurationFromJson(const void* configuration)
 {
 
-    MODULE_HANDLE result = NULL;
-    /*Codes_SRS_MODBUS_READ_JSON_99_021: [ If broker is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
+	MODBUS_READ_CONFIG * result = NULL;
     /*Codes_SRS_MODBUS_READ_JSON_99_023: [ If configuration is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
     if (
-        (broker == NULL) ||
         (configuration == NULL)
         )
     {
-        LogError("NULL parameter detected broker=%p configuration=%p", broker, configuration);
+        LogError("NULL parameter detected configuration=%p", configuration);
     }
     else
     {
@@ -1093,20 +1071,9 @@ static MODULE_HANDLE ModbusRead_CreateFromJson(BROKER_HANDLE broker, const void*
                 if (!parse_fail)
                 {
                     /*Codes_SRS_MODBUS_READ_JSON_99_025: [ ModbusRead_CreateFromJson shall pass broker and the entire config to ModbusRead_Create. ]*/
-                    result = ModbusRead_Create(broker, prev_config);
-                    if (result == NULL)
-                    {
-                        /*Codes_SRS_MODBUS_READ_JSON_99_027: [ If ModbusRead_Create fails then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
-                        /*return result "as is" - that is - NULL*/
-                        LogError("unable to Module_Create MODBUSREAD static");
-                    }
-                    else
-                    {
-                        /*Codes_SRS_MODBUS_READ_JSON_99_026: [ If ModbusRead_Create succeeds then ModbusRead_CreateFromJson shall succeed and return a non-NULL value. ]*/
-                        /*return result "as is" - that is - not NULL*/
-                    }
+					result = prev_config;/*return result "as is" - that is - not NULL*/
                 }
-                if (result == NULL)
+				else
                     modbus_config_cleanup(prev_config);
             }
             json_value_free(json);
@@ -1115,11 +1082,16 @@ static MODULE_HANDLE ModbusRead_CreateFromJson(BROKER_HANDLE broker, const void*
     return result;
 }
 
+static void ModbusRead_FreeConfiguration(void* configuration)
+{
+		/*Codes_SRS_MODBUS_READ_99_006: [ ModbusRead_FreeConfiguration shall do nothing, cleanup is done in ModbusRead_Destroy. ]*/
+}
 static const MODULE_API_1 moduleInterface = 
 {
     {MODULE_API_VERSION_1},
 
-    ModbusRead_CreateFromJson,
+	ModbusRead_ParseConfigurationFromJson,
+	ModbusRead_FreeConfiguration,
     ModbusRead_Create,
     ModbusRead_Destroy,
     ModbusRead_Receive,
