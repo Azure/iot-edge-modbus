@@ -298,6 +298,7 @@ via IoT Hub will write value 9999 to the Holding Register 1:
   * Set the value of the Holding Register #1 to 9999.
   * Function code 6 is "Write Single Holding Register". [Check more function codes](https://en.wikipedia.org/wiki/Modbus#Format_of_data_of_requests_and_responses_for_main_function_codes)
   * startingAddress is the offset of Holding Register. [Check holding register numbers start with](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
+
     ```json
     {
       "functionCode": "6",
