@@ -55,7 +55,7 @@ typedef struct MODBUS_READ_CONFIG_TAG
     FILE_TYPE files;
     size_t time_check;
     int(*encode_read_cb)(void*, void*, void*);
-    int(*encode_write_cb)(void*, void*, unsigned char, unsigned short, unsigned short);
+    int(*encode_write_cb)(void*, void*, unsigned char, unsigned char, unsigned short, unsigned short);
     int(*decode_response_cb)(void*, void*, void*);
     int(*send_request_cb)(struct MODBUS_READ_CONFIG_TAG *, unsigned char*, int, unsigned char*);
     void(*close_server_cb)(struct MODBUS_READ_CONFIG_TAG *);

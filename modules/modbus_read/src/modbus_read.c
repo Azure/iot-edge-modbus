@@ -289,13 +289,13 @@ static int send_request_tcp(MODBUS_READ_CONFIG * config, unsigned char * request
         return response[MODBUS_TCP_OFFSET+1];
     return 0;
 }
-static void encode_write_PDU(unsigned char * buf, unsigned short address, unsigned short value)
+static void encode_write_PDU(unsigned char * buf, unsigned char functionCode, unsigned short startingAddress, unsigned short value)
 {
     unsigned short * _pU16;
     //encoding PDU
-    buf[0] = address / 10000;  //function code
+    buf[0] = functionCode;  //function code
     _pU16 = (unsigned short *)(buf + 1);
-    *_pU16 = htons((address % 10000) - 1);         //addr (2 bytes)
+    *_pU16 = htons(startingAddress - 1);         //addr (2 bytes)
     _pU16 = (unsigned short *)(buf + 3);
     if (buf[0] == 5)//single coil
     {
@@ -328,11 +328,11 @@ static void encode_MBAP(unsigned char * buf, int uid)
     *_pU16 = htons(6);         //Length (2 bytes)
     buf[6] = uid;      //Unit ID (1 byte)
 }
-static int encode_write_request_tcp(unsigned char * buf, int * len, unsigned char uid, unsigned short address, unsigned short value)
+static int encode_write_request_tcp(unsigned char * buf, int * len, unsigned char uid, unsigned char functionCode, unsigned short startingAddres, unsigned short value)
 {
     encode_MBAP(buf, uid);
 
-    encode_write_PDU(buf + MODBUS_TCP_OFFSET, address, value);
+    encode_write_PDU(buf + MODBUS_TCP_OFFSET, functionCode, startingAddres, value);
 
     *len = 12;
 
@@ -348,7 +348,7 @@ static int encode_read_request_tcp(unsigned char * buf, int * len, MODBUS_READ_O
 
     return 0;
 }
-static int encode_write_request_com(unsigned char * buf, int * len, unsigned char uid, unsigned short address, unsigned short value)
+static int encode_write_request_com(unsigned char * buf, int * len, unsigned char uid, unsigned char functionCode, unsigned short startingAddress, unsigned short value)
 {
     unsigned short * _pU16;
     unsigned short crc;
@@ -356,7 +356,7 @@ static int encode_write_request_com(unsigned char * buf, int * len, unsigned cha
 
     buf[0] = uid;      //Unit ID (1 byte)
 
-    encode_write_PDU(buf + MODBUS_COM_OFFSET, address, value);
+    encode_write_PDU(buf + MODBUS_COM_OFFSET, functionCode, startingAddress, value);
 
     if (get_crc(buf, 6, &crc) == -1)
         ret = -1;
@@ -900,7 +900,8 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                 MODBUS_READ_CONFIG * modbus_config = get_config_by_mac(mac_address, handleData->config);
                 if (modbus_config != NULL)
                 {
-                    unsigned short address; // function code + address
+					unsigned char functionCode;
+					unsigned short startingAddress;
                     unsigned short value;
                     unsigned char uid;
                     const CONSTBUFFER * content = Message_GetContent(messageHandle); /*by contract, this is never NULL*/
@@ -920,17 +921,18 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                         else
                         {
                             //expect a JSON format writeback request
-                            address = atoi(json_object_get_string(obj, "address"));
+							functionCode = atoi(json_object_get_string(obj, "functionCode"));
+							startingAddress = atoi(json_object_get_string(obj, "startingAddress"));
                             value = atoi(json_object_get_string(obj, "value"));
                             uid = atoi(json_object_get_string(obj, "uid"));
-                            LogInfo("WriteBack to address: %hu, value: %hu, uid: %hhu recived\n", address, value, uid);
+                            LogInfo("WriteBack to functionCode: %hu, startingAddress: %hu, value: %hu, uid: %hhu recived\n", functionCode, startingAddress, value, uid);
 
                             unsigned char request[256];
                             unsigned char response[256];
                             int request_len = 0;
 
                             if (modbus_config->encode_write_cb)
-                                modbus_config->encode_write_cb(request, &request_len, uid, address, value);
+                                modbus_config->encode_write_cb(request, &request_len, uid, functionCode, startingAddress, value);
 
                             while (Lock(handleData->lockHandle) != LOCK_OK)
                             {
