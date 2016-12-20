@@ -1833,11 +1833,15 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetReturn(json);
         STRICT_EXPECTED_CALL(mocks, json_value_get_object(IGNORED_PTR_ARG))
             .IgnoreArgument(1)
-            .SetReturn(obj); 
-        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "address"))
+            .SetReturn(obj);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2)
+			.SetReturn("6");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
-            .SetReturn("40001");
+            .SetReturn("1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "value"))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
