@@ -6,10 +6,10 @@ Using this module, developers can build Azure IoT Gateway solutions with Modbus 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
 ## Azure IoT Gateway SDK compatibility
-Current version of the module is targeted for the Azure IoT Gateway SDK 2016-11-18 version.
+Current version of the module is targeted for the Azure IoT Gateway SDK 2016-12-16 version.
 Use the following script to download the compatible version Azure IoT Gateway SDK.
 ```
-git clone -b "2016-11-18" --recursive https://github.com/Azure/azure-iot-gateway-sdk.git
+git clone -b "2016-12-16" --recursive https://github.com/Azure/azure-iot-gateway-sdk.git
 ```
 
 ## Operating system compatibility
