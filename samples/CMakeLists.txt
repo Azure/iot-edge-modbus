@@ -25,4 +25,4 @@ if(${enable_ble_module} AND LINUX)
     add_subdirectory(ble_gateway)
 endif()
 
-add_subdirectory(modbus)
+add_subdirectory(modbus_sample)
