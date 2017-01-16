@@ -32,7 +32,16 @@
 #define SNPRINTF_S snprintf
 #endif
 
-typedef struct MODBUS_READ_OPERATION_TAG
+typedef struct MODBUS_READ_CONFIG_TAG MODBUS_READ_CONFIG;
+typedef struct MODBUS_READ_OPERATION_TAG MODBUS_READ_OPERATION;
+
+typedef int(*encode_read_cb_type)(void*, void*, void*);
+typedef int(*encode_write_cb_type)(void*, void*, unsigned char, unsigned char, unsigned short, unsigned short);
+typedef int(*decode_response_cb_type)(void*, void*, void*);
+typedef int(*send_request_cb_type)(MODBUS_READ_CONFIG *, unsigned char*, int, unsigned char*);
+typedef void(*close_server_cb_type)(MODBUS_READ_CONFIG *);
+
+struct MODBUS_READ_OPERATION_TAG
 {
     struct MODBUS_READ_OPERATION_TAG * p_next;
     unsigned char unit_id;
@@ -41,11 +50,11 @@ typedef struct MODBUS_READ_OPERATION_TAG
     unsigned short length;
     unsigned char read_request[256];
     int read_request_len;
-}MODBUS_READ_OPERATION;
+};
 
-typedef struct MODBUS_READ_CONFIG_TAG
+struct MODBUS_READ_CONFIG_TAG
 {
-    struct MODBUS_READ_CONFIG_TAG * p_next;
+	MODBUS_READ_CONFIG * p_next;
     MODBUS_READ_OPERATION * p_operation;
     size_t read_interval;
     char server_str[16];
@@ -54,11 +63,11 @@ typedef struct MODBUS_READ_CONFIG_TAG
     SOCKET_TYPE socks;
     FILE_TYPE files;
     size_t time_check;
-    int(*encode_read_cb)(void*, void*, void*);
-    int(*encode_write_cb)(void*, void*, unsigned char, unsigned char, unsigned short, unsigned short);
-    int(*decode_response_cb)(void*, void*, void*);
-    int(*send_request_cb)(struct MODBUS_READ_CONFIG_TAG *, unsigned char*, int, unsigned char*);
-    void(*close_server_cb)(struct MODBUS_READ_CONFIG_TAG *);
-}MODBUS_READ_CONFIG; /*this needs to be passed to the Module_Create function*/
+	encode_read_cb_type encode_read_cb;
+	encode_write_cb_type encode_write_cb;
+	decode_response_cb_type decode_response_cb;
+	send_request_cb_type send_request_cb;
+	close_server_cb_type close_server_cb;
+}; /*this needs to be passed to the Module_Create function*/
 
 #endif /*MODBUS_READ_COMMON_H*/

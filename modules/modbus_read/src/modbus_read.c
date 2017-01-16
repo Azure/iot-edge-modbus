@@ -168,13 +168,13 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     const char* mac_address = json_object_get_string(arg_obj, "macAddress");
     const char* interval = json_object_get_string(arg_obj, "interval");
     const char* device_type = json_object_get_string(arg_obj, "deviceType");
-    if (server_str == NULL || !isValidServer(server_str))
+    if (server_str == NULL || !isValidServer((char *)server_str))
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
         LogError("Did not find expected %s configuration", "serverConnectionString");
         result = false;
     }
-    else if (mac_address == NULL || !isValidMac(mac_address))
+    else if (mac_address == NULL || !isValidMac((char *)mac_address))
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_035: [ If the `args` object does not contain a value named "macAddress" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
         LogError("Did not find expected %s configuration", "macAddress");
@@ -678,11 +678,11 @@ static int modbusReadThread(void *param)
                 LogError("unable to connect to modbus server %s", server_config->server_str);
                 return 1;
             }
-            server_config->encode_read_cb = (int*)encode_read_request_com;
-            server_config->encode_write_cb = (int*)encode_write_request_com;
-            server_config->decode_response_cb = (int*)decode_response_com;
-            server_config->send_request_cb = (int*)send_request_com;
-            server_config->close_server_cb = (void*)close_server_com;
+            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_com;
+            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_com;
+            server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
+            server_config->send_request_cb = (send_request_cb_type)send_request_com;
+            server_config->close_server_cb = (close_server_cb_type)close_server_com;
 
         }
         else
@@ -694,11 +694,11 @@ static int modbusReadThread(void *param)
                 LogError("unable to connect to modbus server %s", server_config->server_str);
                 return 1;
             }
-            server_config->encode_read_cb = (int*)encode_read_request_tcp;
-            server_config->encode_write_cb = (int*)encode_write_request_tcp;
-            server_config->decode_response_cb = (int*)decode_response_tcp;
-            server_config->send_request_cb = (int*)send_request_tcp;
-            server_config->close_server_cb = (void*)close_server_tcp;
+            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_tcp;
+            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_tcp;
+            server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
+            server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
+            server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
 
         }
         MODBUS_READ_OPERATION * request_operation = server_config->p_operation;
@@ -966,7 +966,7 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
         /*Codes_SRS_MODBUS_READ_99_017 : [ModbusRead_Receive shall return.]*/
 }
 
-static void* ModbusRead_ParseConfigurationFromJson(const void* configuration)
+static void* ModbusRead_ParseConfigurationFromJson(const char* configuration)
 {
 
 	MODBUS_READ_CONFIG * result = NULL;
