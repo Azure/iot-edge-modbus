@@ -55,64 +55,64 @@ static void modbus_config_cleanup(MODBUS_READ_CONFIG * config)
 }
 static bool isValidMac(char* mac)
 {
-	//format XX:XX:XX:XX:XX:XX
-	bool ret = true;
-	int len = strlen(mac);
+    //format XX:XX:XX:XX:XX:XX
+    bool ret = true;
+    int len = strlen(mac);
 
-	if (len != MACSTRLEN)
-	{
-		LogError("invalid mac length: %d", len);
-		ret = false;
-	}
-	else
-	{
-		for (int mac_char = 0; mac_char < MACSTRLEN; mac_char++)
-		{
-			if (((mac_char + 1) % 3 == 0))
-			{
-				if (mac[mac_char] != ':')
-				{
-					ret = false;
-					break;
-				}
-			}
-			else
-			{
-				if (!((mac[mac_char] >= '0' && mac[mac_char] <= '9') || (mac[mac_char] >= 'a' && mac[mac_char] <= 'f') || (mac[mac_char] >= 'A' && mac[mac_char] <= 'F')))
-				{
-					ret = false;
-					break;
-				}
-			}
-		}
-	}
-	return ret;
+    if (len != MACSTRLEN)
+    {
+        LogError("invalid mac length: %d", len);
+        ret = false;
+    }
+    else
+    {
+        for (int mac_char = 0; mac_char < MACSTRLEN; mac_char++)
+        {
+            if (((mac_char + 1) % 3 == 0))
+            {
+                if (mac[mac_char] != ':')
+                {
+                    ret = false;
+                    break;
+                }
+            }
+            else
+            {
+                if (!((mac[mac_char] >= '0' && mac[mac_char] <= '9') || (mac[mac_char] >= 'a' && mac[mac_char] <= 'f') || (mac[mac_char] >= 'A' && mac[mac_char] <= 'F')))
+                {
+                    ret = false;
+                    break;
+                }
+            }
+        }
+    }
+    return ret;
 }
 
 static bool isValidServer(char* server)
 {
-	//ipv4 format XXX.XXX.XXX.XXX
-	//serial port format COMX
-	bool ret = true;
+    //ipv4 format XXX.XXX.XXX.XXX
+    //serial port format COMX
+    bool ret = true;
 
-	if (memcmp(server, "COM", 3) == 0)
-	{
-		if (0 > atoi(server + 3))
-		{
-			LogError("invalid COM port: %s", server);
-			ret = false;
-		}
-	}
-	else
-	{
-		if (inet_addr(server) == INADDR_NONE)
-		{
-			LogError("invalid ipv4: %s", server);
-			ret = false;
-		}
-	}
+    if (memcmp(server, "COM", 3) == 0)
+    {
+        if (0 > atoi(server + 3))
+        {
+            LogError("invalid COM port: %s", server);
+            ret = false;
+        }
+    }
+    else
+    {
+        if (inet_addr(server) == INADDR_NONE)
+        {
+            LogError("invalid ipv4: %s", server);
+            ret = false;
+        }
+    }
 
-	return ret;
+    return ret;
 }
 
 
@@ -401,7 +401,7 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
     int step_size = 0;
     unsigned char start_digit;
     char tempKey[64];
-	char tempValue[64];
+    char tempValue[64];
 
     if (buf[0] == 1 || buf[0] == 2)//discrete input or coil status 1 bit
     {
@@ -422,30 +422,30 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
     while (count > index)
     {
         memset(tempKey, 0, sizeof(tempKey));
-		memset(tempValue, 0, sizeof(tempValue));
+        memset(tempValue, 0, sizeof(tempValue));
         if (step_size == 1)
         {
             LogInfo("status %01X%04u: <%01X>\n", start_digit, operation->address + index, (buf[2 + (index / 8)] >> (index % 8)) & 1);
 
             if (SNPRINTF_S(tempKey, sizeof(tempKey), "address_%01X%04u", start_digit, operation->address + index)<0 ||
-				SNPRINTF_S(tempValue, sizeof(tempValue), "%01X", (buf[2 + (index / 8)] >> (index % 8)) & 1)< 0)
+                SNPRINTF_S(tempValue, sizeof(tempValue), "%01X", (buf[2 + (index / 8)] >> (index % 8)) & 1)< 0)
             {
                 LogError("Failed to set message text");
             }
-			else
-				json_object_set_string(root_object, tempKey, tempValue);
+            else
+                json_object_set_string(root_object, tempKey, tempValue);
         }
         else
         {
             LogInfo("register %01X%04u: <%02X%02X>\n", start_digit, operation->address + (index / 2), buf[2 + index], buf[3 + index]);
 
-			if (SNPRINTF_S(tempKey, sizeof(tempKey), "address_%01X%04u", start_digit, operation->address + (index / 2))<0 ||
-				SNPRINTF_S(tempValue, sizeof(tempValue), "%05u", buf[2 + index] * (0x100) + buf[3 + index])< 0)
+            if (SNPRINTF_S(tempKey, sizeof(tempKey), "address_%01X%04u", start_digit, operation->address + (index / 2))<0 ||
+                SNPRINTF_S(tempValue, sizeof(tempValue), "%05u", buf[2 + index] * (0x100) + buf[3 + index])< 0)
             {
                 LogError("Failed to set message text");
             }
-			else
-				json_object_set_string(root_object, tempKey, tempValue);
+            else
+                json_object_set_string(root_object, tempKey, tempValue);
         }
         index += step_size;
     }
@@ -471,8 +471,8 @@ static void modbus_publish(BROKER_HANDLE broker, MODULE_HANDLE * handle, MESSAGE
         (void)Broker_Publish(broker, handle, modbusMessage);
         Message_Destroy(modbusMessage);
     }
-	json_free_serialized_string(serialized_string);
-	json_value_free(root_value);
+    json_free_serialized_string(serialized_string);
+    json_value_free(root_value);
 }
 void close_server_tcp(MODBUS_READ_CONFIG * config)
 {
@@ -553,17 +553,17 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
     int request_len = 0;
     int offset;
 
-	root_value = json_value_init_object();
-	root_object = json_value_get_object(root_value);
+    root_value = json_value_init_object();
+    root_object = json_value_get_object(root_value);
 
     char timetemp[MAX_TIME_STR] = { 0 };
 
     if (get_timestamp(timetemp) != 0)
         return -1;
 
-	json_object_set_string(root_object, "DataTimestamp", timetemp);
-	json_object_set_string(root_object, "mac_address", config->mac_address);
-	json_object_set_string(root_object, "device_type", config->device_type);
+    json_object_set_string(root_object, "DataTimestamp", timetemp);
+    json_object_set_string(root_object, "mac_address", config->mac_address);
+    json_object_set_string(root_object, "device_type", config->device_type);
 
     MODBUS_READ_OPERATION * request_operation = operation;
     while (request_operation) 
@@ -589,15 +589,15 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
         request_operation = request_operation->p_next;
     }
 
-	serialized_string = json_serialize_to_string_pretty(root_value);
+    serialized_string = json_serialize_to_string_pretty(root_value);
 
     return 0;
 }
 static MODBUS_READ_CONFIG * get_config_by_mac(const char * mac_address, MODBUS_READ_CONFIG * config)
 {
     MODBUS_READ_CONFIG * modbus_config = config;
-	if ((mac_address == NULL) || (modbus_config == NULL))
-		return NULL;
+    if ((mac_address == NULL) || (modbus_config == NULL))
+        return NULL;
     while (modbus_config)
     {
         if (strcmp(mac_address, modbus_config->mac_address) == 0)
@@ -764,8 +764,8 @@ static int modbusReadThread(void *param)
                                     }
                                     else
                                     {
-										msgConfig.source = (const unsigned char *)serialized_string;
-										msgConfig.size = strlen(serialized_string);
+                                        msgConfig.source = (const unsigned char *)serialized_string;
+                                        msgConfig.size = strlen(serialized_string);
                                         modbus_publish(handleData->broker, (MODULE_HANDLE *)param, &msgConfig);
                                     }
                                 }
@@ -792,24 +792,24 @@ static int modbusReadThread(void *param)
 }
 static void ModbusRead_Start(MODULE_HANDLE module)
 {
-	MODBUSREAD_HANDLE_DATA* handleData = module;
-	if (handleData != NULL)
-	{
-		if (Lock(handleData->lockHandle) != LOCK_OK)
-		{
-			LogError("not able to Lock, still setting the thread to finish");
-			handleData->stopThread = 1;
-		}
-		else
-		{
-			if (ThreadAPI_Create(&handleData->threadHandle, modbusReadThread, handleData) != THREADAPI_OK)
-			{
-				LogError("failed to spawn a thread");
-				handleData->threadHandle = NULL;
-			}
-			(void)Unlock(handleData->lockHandle);
-		}
-	}
+    MODBUSREAD_HANDLE_DATA* handleData = module;
+    if (handleData != NULL)
+    {
+        if (Lock(handleData->lockHandle) != LOCK_OK)
+        {
+            LogError("not able to Lock, still setting the thread to finish");
+            handleData->stopThread = 1;
+        }
+        else
+        {
+            if (ThreadAPI_Create(&handleData->threadHandle, modbusReadThread, handleData) != THREADAPI_OK)
+            {
+                LogError("failed to spawn a thread");
+                handleData->threadHandle = NULL;
+            }
+            (void)Unlock(handleData->lockHandle);
+        }
+    }
 }
 
 static MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configuration)
@@ -851,7 +851,7 @@ static MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configu
                 result->stopThread = 0;
                 result->broker = broker;
                 result->config = (MODBUS_READ_CONFIG *)configuration;
-				result->threadHandle = NULL;
+                result->threadHandle = NULL;
             }
         }
     }
@@ -914,8 +914,8 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                 MODBUS_READ_CONFIG * modbus_config = get_config_by_mac(mac_address, handleData->config);
                 if (modbus_config != NULL)
                 {
-					unsigned char functionCode;
-					unsigned short startingAddress;
+                    unsigned char functionCode;
+                    unsigned short startingAddress;
                     unsigned short value;
                     unsigned char uid;
                     const CONSTBUFFER * content = Message_GetContent(messageHandle); /*by contract, this is never NULL*/
@@ -935,8 +935,8 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                         else
                         {
                             //expect a JSON format writeback request
-							functionCode = atoi(json_object_get_string(obj, "functionCode"));
-							startingAddress = atoi(json_object_get_string(obj, "startingAddress"));
+                            functionCode = atoi(json_object_get_string(obj, "functionCode"));
+                            startingAddress = atoi(json_object_get_string(obj, "startingAddress"));
                             value = atoi(json_object_get_string(obj, "value"));
                             uid = atoi(json_object_get_string(obj, "uid"));
                             LogInfo("WriteBack to functionCode: %hu, startingAddress: %hu, value: %hu, uid: %hhu recived\n", functionCode, startingAddress, value, uid);
@@ -983,7 +983,7 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
 static void* ModbusRead_ParseConfigurationFromJson(const char* configuration)
 {
 
-	MODBUS_READ_CONFIG * result = NULL;
+    MODBUS_READ_CONFIG * result = NULL;
     /*Codes_SRS_MODBUS_READ_JSON_99_023: [ If configuration is NULL then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
     if (
         (configuration == NULL)
@@ -1087,9 +1087,9 @@ static void* ModbusRead_ParseConfigurationFromJson(const char* configuration)
                 if (!parse_fail)
                 {
                     /*Codes_SRS_MODBUS_READ_JSON_99_025: [ ModbusRead_CreateFromJson shall pass broker and the entire config to ModbusRead_Create. ]*/
-					result = prev_config;/*return result "as is" - that is - not NULL*/
+                    result = prev_config;/*return result "as is" - that is - not NULL*/
                 }
-				else
+                else
                     modbus_config_cleanup(prev_config);
             }
             json_value_free(json);
@@ -1100,18 +1100,18 @@ static void* ModbusRead_ParseConfigurationFromJson(const char* configuration)
 
 static void ModbusRead_FreeConfiguration(void* configuration)
 {
-		/*Codes_SRS_MODBUS_READ_99_006: [ ModbusRead_FreeConfiguration shall do nothing, cleanup is done in ModbusRead_Destroy. ]*/
+        /*Codes_SRS_MODBUS_READ_99_006: [ ModbusRead_FreeConfiguration shall do nothing, cleanup is done in ModbusRead_Destroy. ]*/
 }
 static const MODULE_API_1 moduleInterface = 
 {
     {MODULE_API_VERSION_1},
 
-	ModbusRead_ParseConfigurationFromJson,
-	ModbusRead_FreeConfiguration,
+    ModbusRead_ParseConfigurationFromJson,
+    ModbusRead_FreeConfiguration,
     ModbusRead_Create,
     ModbusRead_Destroy,
     ModbusRead_Receive,
-    NULL
+    ModbusRead_Start
 };
 
 #ifdef BUILD_MODULE_TYPE_STATIC

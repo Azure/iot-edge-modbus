@@ -43,7 +43,7 @@ typedef void(*close_server_cb_type)(MODBUS_READ_CONFIG *);
 
 struct MODBUS_READ_OPERATION_TAG
 {
-    struct MODBUS_READ_OPERATION_TAG * p_next;
+    MODBUS_READ_OPERATION * p_next;
     unsigned char unit_id;
     unsigned char function_code;
     unsigned short address;
@@ -54,7 +54,7 @@ struct MODBUS_READ_OPERATION_TAG
 
 struct MODBUS_READ_CONFIG_TAG
 {
-	MODBUS_READ_CONFIG * p_next;
+    MODBUS_READ_CONFIG * p_next;
     MODBUS_READ_OPERATION * p_operation;
     size_t read_interval;
     char server_str[16];
@@ -63,11 +63,11 @@ struct MODBUS_READ_CONFIG_TAG
     SOCKET_TYPE socks;
     FILE_TYPE files;
     size_t time_check;
-	encode_read_cb_type encode_read_cb;
-	encode_write_cb_type encode_write_cb;
-	decode_response_cb_type decode_response_cb;
-	send_request_cb_type send_request_cb;
-	close_server_cb_type close_server_cb;
+    encode_read_cb_type encode_read_cb;
+    encode_write_cb_type encode_write_cb;
+    decode_response_cb_type decode_response_cb;
+    send_request_cb_type send_request_cb;
+    close_server_cb_type close_server_cb;
 }; /*this needs to be passed to the Module_Create function*/
 
 #endif /*MODBUS_READ_COMMON_H*/

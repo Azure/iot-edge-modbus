@@ -459,8 +459,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ASSERT_IS_NOT_NULL(g_testByTest);
 
         const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
-		Module_ParseConfigurationFromJson = MODULE_PARSE_CONFIGURATION_FROM_JSON(apis);
-		Module_FreeConfiguration = MODULE_FREE_CONFIGURATION(apis);
+        Module_ParseConfigurationFromJson = MODULE_PARSE_CONFIGURATION_FROM_JSON(apis);
+        Module_FreeConfiguration = MODULE_FREE_CONFIGURATION(apis);
         Module_Create = MODULE_CREATE(apis);
         Module_Destroy = MODULE_DESTROY(apis);
         Module_Receive = MODULE_RECEIVE(apis);
@@ -500,13 +500,14 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Act
         const MODULE_API* apis = Module_GetApi(MODULE_API_VERSION_1);
 
-		///assert
-		ASSERT_IS_NOT_NULL(apis);
+        ///assert
+        ASSERT_IS_NOT_NULL(apis);
         ///Assert
-		ASSERT_IS_TRUE(MODULE_PARSE_CONFIGURATION_FROM_JSON(apis) != NULL);
-		ASSERT_IS_TRUE(MODULE_FREE_CONFIGURATION(apis) != NULL);
-		ASSERT_IS_TRUE(MODULE_CREATE(apis));
-		ASSERT_IS_TRUE(MODULE_DESTROY(apis));
+        ASSERT_IS_TRUE(MODULE_PARSE_CONFIGURATION_FROM_JSON(apis) != NULL);
+        ASSERT_IS_TRUE(MODULE_FREE_CONFIGURATION(apis) != NULL);
+        ASSERT_IS_TRUE(MODULE_CREATE(apis));
+        ASSERT_IS_TRUE(MODULE_START(apis));
+        ASSERT_IS_TRUE(MODULE_DESTROY(apis));
         ASSERT_IS_TRUE(MODULE_RECEIVE(apis));
 
         ///Ablution
@@ -593,7 +594,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-		auto handle = Module_Create(broker, n);
+        auto handle = Module_Create(broker, n);
+        Module_Start(handle);
         Module_Destroy(handle);
     }
     //Tests_SRS_MODBUS_READ_JSON_99_045: [ ModbusRead_ParseConfigurationFromJson shall walk through each object of the array. ]
@@ -724,8 +726,9 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
         ///Cleanup
 
-		auto handle = Module_Create(broker, n);
-		Module_Destroy(handle);
+        auto handle = Module_Create(broker, n);
+        Module_Start(handle);
+        Module_Destroy(handle);
     }
 
     //Tests_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
@@ -781,12 +784,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -839,7 +842,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((const char*)NULL);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -882,7 +885,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
             .IgnoreArgument(1)
-			.SetReturn("COM1");
+            .SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
@@ -926,12 +929,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
@@ -973,12 +976,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1020,12 +1023,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1087,12 +1090,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1156,10 +1159,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
             .IgnoreArgument(1)
-			.SetReturn("COM1");
+            .SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1223,10 +1226,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(2);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
             .IgnoreArgument(1)
-			.SetReturn("COM1");
+            .SetReturn("COM1");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1316,12 +1319,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
             .IgnoreArgument(1)
             .IgnoreArgument(2);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
-			.IgnoreArgument(1)
-			.SetReturn("COM1");
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
-			.IgnoreArgument(1)
-			.SetReturn("00:00:00:00:00:00");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+            .IgnoreArgument(1)
+            .SetReturn("COM1");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+            .IgnoreArgument(1)
+            .SetReturn("00:00:00:00:00:00");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1406,8 +1409,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
         sprintf(config->server_str, "127.0.0.1");
         sprintf(config->device_type, "AA");
@@ -1423,6 +1426,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
         //Act
         auto n = Module_Create(broker, config);
+        Module_Start(n);
 
         ///Assert
         ASSERT_IS_NOT_NULL(n);
@@ -1440,8 +1444,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
         sprintf(config->server_str, "127.0.0.1");
         sprintf(config->device_type, "AA");
@@ -1468,8 +1472,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
         sprintf(config->server_str, "127.0.0.1");
         sprintf(config->device_type, "AA");
@@ -1499,8 +1503,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
         sprintf(config->server_str, "127.0.0.1");
         sprintf(config->device_type, "AA");
@@ -1552,8 +1556,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
         sprintf(config->server_str, "127.0.0.1");
         sprintf(config->device_type, "AA");
@@ -1568,6 +1572,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
 
         auto n = Module_Create(broker, config);
+        Module_Start(n);
 
         mocks.ResetAllCalls();
 
@@ -1723,8 +1728,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* valid_source = "mapping";
 
 
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
         sprintf(config->mac_address, "01:01:01:01:01:01");
@@ -1787,8 +1792,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         //const char* valid_json = "\"address\":\"400001\",\"value\":\"999\",\"uid\":\"1\"";
 
 
-        MODBUS_READ_CONFIG_TAG * config = (MODBUS_READ_CONFIG_TAG *)malloc(sizeof(MODBUS_READ_CONFIG_TAG));
-        memset(config, 0, sizeof(MODBUS_READ_CONFIG_TAG));
+        MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
+        memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
         JSON_Value* json = (JSON_Value*)&fake;
@@ -1834,10 +1839,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_value_get_object(IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .SetReturn(obj);
-		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
-			.IgnoreArgument(1)
-			.IgnoreArgument(2)
-			.SetReturn("6");
+        STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "functionCode"))
+            .IgnoreArgument(1)
+            .IgnoreArgument(2)
+            .SetReturn("6");
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "startingAddress"))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
