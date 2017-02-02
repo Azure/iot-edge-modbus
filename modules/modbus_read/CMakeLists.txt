@@ -27,9 +27,11 @@ linkSharedUtil(modbus_read)
 linkSharedUtil(modbus_read_static)
 
 add_module_to_solution(modbus_read)
-add_subdirectory(tests)
+if(${run_unittests})
+	add_subdirectory(tests)
+endif()
 
-if(install_executables)
-    install(TARGETS modbus_read LIBRARY DESTINATION lib) 
+if(install_modules)
+    install(TARGETS modbus_read LIBRARY DESTINATION "${LIB_INSTALL_DIR}/modules") 
 endif()
 

@@ -31,7 +31,9 @@ typedef struct MODBUSREAD_HANDLE_DATA_TAG
 #define MAX_TIME_STR 80
 #define NUMOFBITS 8
 #define MACSTRLEN 17
-static char msgText[1024];
+JSON_Value *root_value;
+JSON_Object *root_object;
+char *serialized_string;
 
 static void modbus_config_cleanup(MODBUS_READ_CONFIG * config)
 {
@@ -398,7 +400,8 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
     unsigned short count;
     int step_size = 0;
     unsigned char start_digit;
-    char temp[64];
+    char tempKey[64];
+	char tempValue[64];
 
     if (buf[0] == 1 || buf[0] == 2)//discrete input or coil status 1 bit
     {
@@ -418,31 +421,32 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
 
     while (count > index)
     {
-        memset(temp, 0, sizeof(temp));
+        memset(tempKey, 0, sizeof(tempKey));
+		memset(tempValue, 0, sizeof(tempValue));
         if (step_size == 1)
         {
             LogInfo("status %01X%04u: <%01X>\n", start_digit, operation->address + index, (buf[2 + (index / 8)] >> (index % 8)) & 1);
 
-            if (SNPRINTF_S(temp, sizeof(temp), "\"address_%01X%04u\": \"%01X\"",
-                start_digit, operation->address + index, (buf[2 + (index / 8)] >> (index % 8)) & 1) < 0)
+            if (SNPRINTF_S(tempKey, sizeof(tempKey), "address_%01X%04u", start_digit, operation->address + index)<0 ||
+				SNPRINTF_S(tempValue, sizeof(tempValue), "%01X", (buf[2 + (index / 8)] >> (index % 8)) & 1)< 0)
             {
                 LogError("Failed to set message text");
             }
+			else
+				json_object_set_string(root_object, tempKey, tempValue);
         }
         else
         {
             LogInfo("register %01X%04u: <%02X%02X>\n", start_digit, operation->address + (index / 2), buf[2 + index], buf[3 + index]);
 
-            if (SNPRINTF_S(temp, sizeof(temp), "\"address_%01X%04u\": \"%05u\"",
-                start_digit, operation->address + (index / 2), buf[2 + index] * (0x100) + buf[3 + index]) < 0)
+			if (SNPRINTF_S(tempKey, sizeof(tempKey), "address_%01X%04u", start_digit, operation->address + (index / 2))<0 ||
+				SNPRINTF_S(tempValue, sizeof(tempValue), "%05u", buf[2 + index] * (0x100) + buf[3 + index])< 0)
             {
                 LogError("Failed to set message text");
             }
+			else
+				json_object_set_string(root_object, tempKey, tempValue);
         }
-        msgText[*offset] = ',';
-        *offset += 1;
-        SNPRINTF_S(msgText + *offset, sizeof(msgText) - *offset, "%s", temp);
-        *offset += strlen(temp);
         index += step_size;
     }
     return 0;
@@ -457,7 +461,6 @@ static void decode_response_com(unsigned char * buf, MODBUS_READ_OPERATION* oper
 }
 static void modbus_publish(BROKER_HANDLE broker, MODULE_HANDLE * handle, MESSAGE_CONFIG * msgConfig)
 {
-    msgConfig->size = strlen(msgText);
     MESSAGE_HANDLE modbusMessage = Message_Create(msgConfig);
     if (modbusMessage == NULL)
     {
@@ -468,6 +471,8 @@ static void modbus_publish(BROKER_HANDLE broker, MODULE_HANDLE * handle, MESSAGE
         (void)Broker_Publish(broker, handle, modbusMessage);
         Message_Destroy(modbusMessage);
     }
+	json_free_serialized_string(serialized_string);
+	json_value_free(root_value);
 }
 void close_server_tcp(MODBUS_READ_CONFIG * config)
 {
@@ -548,22 +553,17 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
     int request_len = 0;
     int offset;
 
-    memset(msgText, 0, sizeof(msgText));
-    msgText[0] = '{';
-
+	root_value = json_value_init_object();
+	root_object = json_value_get_object(root_value);
 
     char timetemp[MAX_TIME_STR] = { 0 };
 
     if (get_timestamp(timetemp) != 0)
         return -1;
 
-    SNPRINTF_S(msgText + 1, sizeof(msgText) - 1, "\"DataTimestamp\": \"%s\",", timetemp);
-
-    SNPRINTF_S(msgText + strlen(msgText), sizeof(msgText) - strlen(msgText), "\"mac_address\": \"%s\",", config->mac_address);
-
-    SNPRINTF_S(msgText + strlen(msgText), sizeof(msgText) - strlen(msgText), "\"device_type\": \"%s\"", config->device_type);
-
-    offset = strlen(msgText);
+	json_object_set_string(root_object, "DataTimestamp", timetemp);
+	json_object_set_string(root_object, "mac_address", config->mac_address);
+	json_object_set_string(root_object, "device_type", config->device_type);
 
     MODBUS_READ_OPERATION * request_operation = operation;
     while (request_operation) 
@@ -588,13 +588,16 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
         }
         request_operation = request_operation->p_next;
     }
-    msgText[offset] = '}';
-    msgText[offset+1] = '\0';
+
+	serialized_string = json_serialize_to_string_pretty(root_value);
+
     return 0;
 }
 static MODBUS_READ_CONFIG * get_config_by_mac(const char * mac_address, MODBUS_READ_CONFIG * config)
 {
     MODBUS_READ_CONFIG * modbus_config = config;
+	if ((mac_address == NULL) || (modbus_config == NULL))
+		return NULL;
     while (modbus_config)
     {
         if (strcmp(mac_address, modbus_config->mac_address) == 0)
@@ -729,7 +732,6 @@ static int modbusReadThread(void *param)
         }
         else
         {
-            msgConfig.source = (const unsigned char *)msgText;
             msgConfig.sourceProperties = propertiesMap;
 
 
@@ -762,6 +764,8 @@ static int modbusReadThread(void *param)
                                     }
                                     else
                                     {
+										msgConfig.source = (const unsigned char *)serialized_string;
+										msgConfig.size = strlen(serialized_string);
                                         modbus_publish(handleData->broker, (MODULE_HANDLE *)param, &msgConfig);
                                     }
                                 }
@@ -785,6 +789,27 @@ static int modbusReadThread(void *param)
         }
     }
     return 0;
+}
+static void ModbusRead_Start(MODULE_HANDLE module)
+{
+	MODBUSREAD_HANDLE_DATA* handleData = module;
+	if (handleData != NULL)
+	{
+		if (Lock(handleData->lockHandle) != LOCK_OK)
+		{
+			LogError("not able to Lock, still setting the thread to finish");
+			handleData->stopThread = 1;
+		}
+		else
+		{
+			if (ThreadAPI_Create(&handleData->threadHandle, modbusReadThread, handleData) != THREADAPI_OK)
+			{
+				LogError("failed to spawn a thread");
+				handleData->threadHandle = NULL;
+			}
+			(void)Unlock(handleData->lockHandle);
+		}
+	}
 }
 
 static MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configuration)
@@ -826,18 +851,7 @@ static MODULE_HANDLE ModbusRead_Create(BROKER_HANDLE broker, const void* configu
                 result->stopThread = 0;
                 result->broker = broker;
                 result->config = (MODBUS_READ_CONFIG *)configuration;
-                if (ThreadAPI_Create(&result->threadHandle, modbusReadThread, result) != THREADAPI_OK)
-                {
-                    LogError("failed to spawn a thread");
-                    (void)Lock_Deinit(result->lockHandle);
-                    free(result);
-                    result = NULL;
-                }
-                else
-                {
-                    /*all is fine apparently*/
-                }
-                /*Codes_SRS_MODBUS_READ_99_008: [Otherwise ModbusRead_Create shall return a non - NULL pointer.]*/
+				result->threadHandle = NULL;
             }
         }
     }
