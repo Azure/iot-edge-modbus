@@ -888,7 +888,7 @@ static void ModbusRead_Destroy(MODULE_HANDLE module)
         free(handleData);
     }
 }
-
+//remote command format {"functionCode":"6","startingAddress":"1","value":"100","uid":"1"}
 static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messageHandle)
 {
     if (moduleHandle == NULL || messageHandle == NULL)
@@ -914,10 +914,10 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                 MODBUS_READ_CONFIG * modbus_config = get_config_by_mac(mac_address, handleData->config);
                 if (modbus_config != NULL)
                 {
-                    unsigned char functionCode;
-                    unsigned short startingAddress;
-                    unsigned short value;
-                    unsigned char uid;
+					const char *functionCode_str;
+					const char *startingAddress_str;
+					const char *value_str;
+					const char *uid_str;
                     const CONSTBUFFER * content = Message_GetContent(messageHandle); /*by contract, this is never NULL*/
                     JSON_Value* json = json_parse_string((const char*)content->buffer);
                     if (json == NULL)
@@ -935,37 +935,43 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
                         else
                         {
                             //expect a JSON format writeback request
-                            functionCode = atoi(json_object_get_string(obj, "functionCode"));
-                            startingAddress = atoi(json_object_get_string(obj, "startingAddress"));
-                            value = atoi(json_object_get_string(obj, "value"));
-                            uid = atoi(json_object_get_string(obj, "uid"));
-                            LogInfo("WriteBack to functionCode: %hu, startingAddress: %hu, value: %hu, uid: %hhu recived\n", functionCode, startingAddress, value, uid);
+                            functionCode_str = json_object_get_string(obj, "functionCode");
+                            startingAddress_str = json_object_get_string(obj, "startingAddress");
+                            value_str = json_object_get_string(obj, "value");
+                            uid_str = json_object_get_string(obj, "uid");
 
-                            unsigned char request[256];
-                            unsigned char response[256];
-                            int request_len = 0;
+							if (functionCode_str == NULL || startingAddress_str == NULL || value_str == NULL || uid_str == NULL)
+								LogError("Invalid JSON command, please input {\"functionCode\",\"startingAddress\",\"value\",\"uid\"}");
+							else
+							{
+								LogInfo("WriteBack to functionCode: %s, startingAddress: %s, value: %s, uid: %s recived\n", functionCode_str, startingAddress_str, value_str, uid_str);
 
-                            if (modbus_config->encode_write_cb)
-                                modbus_config->encode_write_cb(request, &request_len, uid, functionCode, startingAddress, value);
+								unsigned char request[256];
+								unsigned char response[256];
+								int request_len = 0;
 
-                            while (Lock(handleData->lockHandle) != LOCK_OK)
-                            {
-                                (void)ThreadAPI_Sleep(100);
-                            }
-                            int send_ret = -1;
+								if (modbus_config->encode_write_cb)
+									modbus_config->encode_write_cb(request, &request_len, atoi(uid_str), atoi(functionCode_str), atoi(startingAddress_str), atoi(value_str));
 
-                            if (modbus_config->send_request_cb)
-                                send_ret = modbus_config->send_request_cb(modbus_config, request, request_len, response);
+								while (Lock(handleData->lockHandle) != LOCK_OK)
+								{
+									(void)ThreadAPI_Sleep(100);
+								}
+								int send_ret = -1;
 
-                            (void)Unlock(handleData->lockHandle);
-                            if (send_ret == -1)
-                            {
-                                LogError("unable to send request to modbus server");
-                            }
-                            else if (send_ret > 0)
-                            {
-                                LogError("Exception occured, error code : %X\n", send_ret);
-                            }
+								if (modbus_config->send_request_cb)
+									send_ret = modbus_config->send_request_cb(modbus_config, request, request_len, response);
+
+								(void)Unlock(handleData->lockHandle);
+								if (send_ret == -1)
+								{
+									LogError("unable to send request to modbus server");
+								}
+								else if (send_ret > 0)
+								{
+									LogError("Exception occured, error code : %X\n", send_ret);
+								}
+							}
                         }
                     }
                 }
