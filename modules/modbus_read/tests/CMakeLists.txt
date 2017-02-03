@@ -3,4 +3,4 @@
 
 cmake_minimum_required(VERSION 2.8.12)
 
-add_subdirectory(modbus_read_unittests)
+add_subdirectory(modbus_read_ut)

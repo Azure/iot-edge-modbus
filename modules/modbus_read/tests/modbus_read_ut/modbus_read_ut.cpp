@@ -227,6 +227,28 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
             free(value);
         MOCK_VOID_METHOD_END();
 
+		MOCK_STATIC_METHOD_1(, char*, json_serialize_to_string_pretty, const JSON_Value *, value)
+			char* result2 = NULL;
+		if (value != NULL)
+		{
+			result2 = (char*)malloc(4);
+			result2[0] = 'A';
+			result2[1] = 'B';
+			result2[2] = 'C';
+			result2[3] = '\0';
+		}
+		MOCK_METHOD_END(char*, result2);
+
+		MOCK_STATIC_METHOD_3(, JSON_Status, json_object_set_string, JSON_Object *, object, const char *, name, const char *, string)
+		MOCK_METHOD_END(JSON_Status, JSONSuccess);
+
+		MOCK_STATIC_METHOD_0(, JSON_Value *, json_value_init_object);
+		MOCK_METHOD_END(JSON_Value *, (JSON_Value *)0x47);
+
+		MOCK_STATIC_METHOD_1(, void, json_free_serialized_string, char*, value)
+			free(value);
+		MOCK_VOID_METHOD_END();
+
         // Broker mocks
         MOCK_STATIC_METHOD_0(, BROKER_HANDLE, Broker_Create)
             BROKER_HANDLE busResult = (BROKER_HANDLE)(new RefCountObject());
@@ -366,8 +388,8 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
             result8 = THREADAPI_OK;
         MOCK_METHOD_END(THREADAPI_RESULT, result8)
 
-            MOCK_STATIC_METHOD_1( , void, ThreadAPI_Sleep, unsigned int, milliseconds);
-        MOCK_VOID_METHOD_END()
+            MOCK_STATIC_METHOD_1( , void, ThreadAPI_Sleep, unsigned int, milliseconds)
+        MOCK_VOID_METHOD_END();
 
             //lock
             MOCK_STATIC_METHOD_0(, LOCK_HANDLE, Lock_Init)
@@ -411,6 +433,10 @@ DECLARE_GLOBAL_MOCK_METHOD_2(CModbusreadMocks, , JSON_Array *, json_object_get_a
 DECLARE_GLOBAL_MOCK_METHOD_2(CModbusreadMocks, , JSON_Object *, json_array_get_object, const JSON_Array *, array, size_t, index);
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , size_t, json_array_get_count, const JSON_Array *, array);
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void, json_value_free, JSON_Value*, value);
+DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void, json_free_serialized_string, char*, value);
+DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , char *, json_serialize_to_string_pretty, const JSON_Value*, value);
+DECLARE_GLOBAL_MOCK_METHOD_3(CModbusreadMocks, , JSON_Status, json_object_set_string, JSON_Object *, object, const char *, name, const char *, string);
+DECLARE_GLOBAL_MOCK_METHOD_0(CModbusreadMocks, , JSON_Value *, json_value_init_object);
 
 DECLARE_GLOBAL_MOCK_METHOD_0(CModbusreadMocks, , BROKER_HANDLE, Broker_Create);
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , void, Broker_Destroy, BROKER_HANDLE, bus);
@@ -1408,6 +1434,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Arrange
         CModbusreadMocks mocks;
         unsigned char fake;
+		LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
         MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
         memset(config, 0, sizeof(MODBUS_READ_CONFIG));
@@ -1418,10 +1445,14 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, Lock_Init());
+		STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
             .IgnoreArgument(3);
+		STRICT_EXPECTED_CALL(mocks, Unlock(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
 
         //Act
@@ -1497,12 +1528,13 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
     }
 
     //Tests_SRS_MODBUS_READ_99_007: [ If ModbusRead_Create encounters any errors while creating the MODBUSREAD_HANDLE_DATA then it shall fail and return NULL. ]
-    TEST_FUNCTION(ModbusRead_Create_Fail_thread_create)
+    TEST_FUNCTION(ModbusRead_Start_Fail_thread_create)
     {
         ///Arrange
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
         MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
         memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
@@ -1512,25 +1544,26 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, Lock_Init());
+		STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
             .IgnoreArgument(3)
             .SetFailReturn(THREADAPI_ERROR);
-        STRICT_EXPECTED_CALL(mocks, Lock_Deinit(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
-        STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+        STRICT_EXPECTED_CALL(mocks, Unlock(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
 
         //Act
         auto n = Module_Create(broker, config);
+		Module_Start(n);
 
         ///Assert
-        ASSERT_IS_NULL(n);
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
+		Module_Destroy(n);
     }
 
     //Tests_SRS_MODBUS_READ_99_014: [ If moduleHandle is NULL then ModbusRead_Destroy shall return. ]
