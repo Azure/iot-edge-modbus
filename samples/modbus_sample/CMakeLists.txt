@@ -32,7 +32,7 @@ add_executable(modbus_sample ${modbus_headers} ${modules_path_file} ${modbus_sou
 
 add_dependencies(modbus_sample logger identity_map iothub modbus_read)
 
-target_link_libraries(modbus_sample gateway gateway)
+target_link_libraries(modbus_sample gateway)
 linkSharedUtil(modbus_sample)
 install_broker(modbus_sample ${CMAKE_CURRENT_BINARY_DIR}/$(Configuration) )
 copy_gateway_dll(modbus_sample ${CMAKE_CURRENT_BINARY_DIR}/$(Configuration) )
