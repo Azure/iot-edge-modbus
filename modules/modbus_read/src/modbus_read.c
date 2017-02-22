@@ -28,12 +28,22 @@ typedef struct MODBUSREAD_HANDLE_DATA_TAG
 #define MODBUS_MESSAGE "modbus read"
 #define MODBUS_TCP_OFFSET 7
 #define MODBUS_COM_OFFSET 1
-#define MAX_TIME_STR 80
+#define TIMESTRLEN 19
 #define NUMOFBITS 8
 #define MACSTRLEN 17
+#define BUFSIZE 1024
+
 JSON_Value *root_value;
 JSON_Object *root_object;
 char *serialized_string;
+
+JSON_Value *sqlite_root_value;
+JSON_Object *sqlite_root_object;
+char *sqlite_serialized_string;
+
+char sqlite_upsert[BUFSIZE];
+char glob_currentTime[TIMESTRLEN + 1];
+char glob_currentMac[MACSTRLEN + 1];
 
 static void modbus_config_cleanup(MODBUS_READ_CONFIG * config)
 {
@@ -151,7 +161,6 @@ static bool addOneOperation(MODBUS_READ_OPERATION * operation, JSON_Object * ope
 
     if (!result)
     {
-        free(operation);
         return result;
     }
 
@@ -163,6 +172,37 @@ static bool addOneOperation(MODBUS_READ_OPERATION * operation, JSON_Object * ope
 
     return result;
 }
+static bool addAllOperations(MODBUS_READ_CONFIG * config, JSON_Array * operation_array)
+{
+	bool ret = true;
+	int operation_i;
+	int operation_count = json_array_get_count(operation_array);
+	/*Codes_SRS_MODBUS_READ_JSON_99_045: [** ModbusRead_CreateFromJson shall walk through each object of the array. **]*/
+	for (operation_i = 0; operation_i < operation_count; operation_i++)
+	{
+		MODBUS_READ_OPERATION * operation = malloc(sizeof(MODBUS_READ_OPERATION));
+		/*Codes_SRS_MODBUS_READ_JSON_99_044: [ If the 'malloc' for `operation` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]*/
+		if (operation == NULL)
+		{
+			ret = false;
+			break;
+		}
+		else
+		{
+			operation->p_next = config->p_operation;
+			config->p_operation = operation;
+			JSON_Object* operation_obj = json_array_get_object(operation_array, operation_i);
+
+			//add one operation
+			if (!addOneOperation(operation, operation_obj))
+			{
+				ret = false;
+				break;
+			}
+		}
+	}
+	return ret;
+}
 static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
 {
     bool result = true;
@@ -170,6 +210,7 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     const char* mac_address = json_object_get_string(arg_obj, "macAddress");
     const char* interval = json_object_get_string(arg_obj, "interval");
     const char* device_type = json_object_get_string(arg_obj, "deviceType");
+	const char* sqlite_enabled = json_object_get_string(arg_obj, "sqliteEnabled");
     if (server_str == NULL || !isValidServer((char *)server_str))
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
@@ -194,10 +235,15 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
         LogError("Did not find expected %s configuration", "deviceType");
         result = false;
     }
+	else if (sqlite_enabled == NULL)
+	{
+		/*Codes_SRS_MODBUS_READ_JSON_99_046: [ If the `args` object does not contain a value named "deviceType" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
+		LogError("Did not find expected %s configuration", "sqliteEnabled");
+		result = false;
+	}
 
     if (!result)
     {
-        free(config);
         return result;
     }
 
@@ -210,10 +256,63 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     config->device_type[strlen(device_type)] = '\0';
 
     config->read_interval = atoi(interval);
+	config->sqlite_enabled = atoi(sqlite_enabled);
 
     return result;
 }
+static MODBUS_READ_CONFIG * addAllServers(JSON_Array * arg_array)
+{
+	int arg_i;
+	int arg_count = json_array_get_count(arg_array);
+	MODBUS_READ_CONFIG * ret_config = NULL;
+	bool fail = false;
 
+	/*Codes_SRS_MODBUS_READ_JSON_99_045: [** ModbusRead_CreateFromJson shall walk through each object of the array. **]*/
+	for (arg_i = 0; arg_i < arg_count; arg_i++)
+	{
+		MODBUS_READ_CONFIG * config = malloc(sizeof(MODBUS_READ_CONFIG));
+		if (config == NULL)
+		{
+			/*Codes_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]*/
+			fail = true;
+			break;
+		}
+		else
+		{
+			memset(config, 0, sizeof(MODBUS_READ_CONFIG));// to set socket s to 0
+			config->p_next = ret_config;
+			ret_config = config;
+
+			JSON_Object* arg_obj = json_array_get_object(arg_array, arg_i);
+
+			if (!addOneServer(config, arg_obj))
+			{
+				fail = true;
+				break;
+			}
+			JSON_Array * operation_array = json_object_get_array(arg_obj, "operations");
+			if (operation_array != NULL)
+			{
+				if (!addAllOperations(config, operation_array))
+				{
+					fail = true;
+					break;
+				}
+			}
+			else
+			{
+				fail = true;
+				break;
+			}
+		}
+	}
+	if (fail)
+	{
+		modbus_config_cleanup(ret_config);
+		ret_config = NULL;
+	}
+	return ret_config;
+}
 static int get_crc(unsigned char * message, int length, unsigned short * out)//refer to J.J. Lee's code
 {
     unsigned short crcFull = 0xFFFF;
@@ -393,7 +492,7 @@ static int encode_read_request_com(unsigned char * buf, int * len, MODBUS_READ_O
 
     return ret;
 }
-static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* operation, int * offset)
+static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* operation)
 {
     unsigned char byte_count = buf[1];
     unsigned char index = 0;
@@ -432,8 +531,10 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
             {
                 LogError("Failed to set message text");
             }
-            else
-                json_object_set_string(root_object, tempKey, tempValue);
+			else
+			{
+				json_object_set_string(root_object, tempKey, tempValue);
+			}
         }
         else
         {
@@ -444,35 +545,66 @@ static int decode_response_PDU(unsigned char * buf, MODBUS_READ_OPERATION* opera
             {
                 LogError("Failed to set message text");
             }
-            else
-                json_object_set_string(root_object, tempKey, tempValue);
+			else
+			{
+				json_object_set_string(root_object, tempKey, tempValue);
+			}
         }
+		if (strlen(tempKey) > 0 && strlen(tempValue) > 0)
+		{
+			int offset = strlen(sqlite_upsert);
+			SNPRINTF_S(sqlite_upsert + offset, BUFSIZE - 1 - offset, "INSERT INTO MODBUS(VALUE,ADDRESS,MAC,DATETIME) VALUES(%s,%s,'%s','%s');", tempValue, tempKey + 8, glob_currentMac, glob_currentTime);
+			/* upsert
+			int offset = strlen(sqlite_upsert);
+			SNPRINTF_S(sqlite_upsert + offset, BUFSIZE - 1 - offset, "UPDATE MODBUS SET VALUE=%s WHERE ADDRESS=%s;", tempValue, tempKey + 8);
+			int offset = strlen(sqlite_upsert);
+			SNPRINTF_S(sqlite_upsert + offset, BUFSIZE - 1 - offset, "INSERT INTO MODBUS(VALUE,ADDRESS) SELECT %s, %s WHERE NOT EXISTS(SELECT changes() AS change FROM MODBUS WHERE change <> 0);", tempValue, tempKey + 8);
+			*/
+		}
         index += step_size;
     }
     return 0;
 }
-static void decode_response_tcp(unsigned char * buf, MODBUS_READ_OPERATION* operation, int * offset)
+static void decode_response_tcp(unsigned char * buf, MODBUS_READ_OPERATION* operation)
 {
-    decode_response_PDU(buf + MODBUS_TCP_OFFSET, operation, offset);
+    decode_response_PDU(buf + MODBUS_TCP_OFFSET, operation);
 }
-static void decode_response_com(unsigned char * buf, MODBUS_READ_OPERATION* operation, int * offset)
+static void decode_response_com(unsigned char * buf, MODBUS_READ_OPERATION* operation)
 {
-    decode_response_PDU(buf + MODBUS_COM_OFFSET, operation, offset);
+    decode_response_PDU(buf + MODBUS_COM_OFFSET, operation);
 }
-static void modbus_publish(BROKER_HANDLE broker, MODULE_HANDLE * handle, MESSAGE_CONFIG * msgConfig)
+static void modbus_publish(BROKER_HANDLE broker, MODULE_HANDLE * handle, MESSAGE_CONFIG * msgConfig, int sqlite_enabled)
 {
-    MESSAGE_HANDLE modbusMessage = Message_Create(msgConfig);
-    if (modbusMessage == NULL)
-    {
-        LogError("unable to create \"modbus read\" message");
-    }
-    else
-    {
-        (void)Broker_Publish(broker, handle, modbusMessage);
-        Message_Destroy(modbusMessage);
-    }
-    json_free_serialized_string(serialized_string);
-    json_value_free(root_value);
+	char * source;
+	JSON_Value * root;
+	MESSAGE_HANDLE modbusMessage;
+	if (sqlite_enabled == 1)
+	{
+		//to sqlite Command
+		source = sqlite_serialized_string;
+		root = sqlite_root_value;
+	}
+	else
+	{
+		//to IoTHub message
+		source = serialized_string;
+		root = root_value;
+	}
+
+	msgConfig->source = (const unsigned char *)source;
+	msgConfig->size = strlen(source);
+	modbusMessage = Message_Create(msgConfig);
+	if (modbusMessage == NULL)
+	{
+		LogError("unable to create \"modbus read\" message");
+	}
+	else
+	{
+		(void)Broker_Publish(broker, handle, modbusMessage);
+		Message_Destroy(modbusMessage);
+	}
+	json_free_serialized_string(source);
+	json_value_free(root);
 }
 void close_server_tcp(MODBUS_READ_CONFIG * config)
 {
@@ -538,7 +670,7 @@ static int get_timestamp(char* timetemp)
         }
         else
         {
-            if (strftime(timetemp, MAX_TIME_STR, "%x %r", t) == 0)
+            if (strftime(timetemp, TIMESTRLEN + 1, "%F %T", t) == 0)
             {
                 LogError("unable to strftime");
                 return -1;
@@ -551,15 +683,25 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
 {
     unsigned char response[256];
     int request_len = 0;
-    int offset;
 
     root_value = json_value_init_object();
     root_object = json_value_get_object(root_value);
 
-    char timetemp[MAX_TIME_STR] = { 0 };
+	if (config->sqlite_enabled == 1)
+	{
+		sqlite_root_value = json_value_init_object();
+		sqlite_root_object = json_value_get_object(sqlite_root_value);
+	}
+    char timetemp[TIMESTRLEN + 1] = { 0 };
 
     if (get_timestamp(timetemp) != 0)
         return -1;
+	memset(sqlite_upsert, 0, sizeof(sqlite_upsert));
+	memcpy(glob_currentTime, timetemp, strlen(timetemp));
+	memcpy(glob_currentMac, config->mac_address, strlen(config->mac_address));
+
+	glob_currentTime[strlen(timetemp)] = '\0';
+	glob_currentMac[strlen(config->mac_address)] = '\0';
 
     json_object_set_string(root_object, "DataTimestamp", timetemp);
     json_object_set_string(root_object, "mac_address", config->mac_address);
@@ -584,12 +726,18 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
         else
         {
             if (config->decode_response_cb)
-                config->decode_response_cb(response, request_operation, &offset);
+                config->decode_response_cb(response, request_operation);
         }
         request_operation = request_operation->p_next;
     }
 
     serialized_string = json_serialize_to_string_pretty(root_value);
+
+	if (config->sqlite_enabled == 1)
+	{
+		json_object_set_string(sqlite_root_object, "sqlCommand", sqlite_upsert);//testing
+		sqlite_serialized_string = json_serialize_to_string_pretty(sqlite_root_value);
+	}
 
     return 0;
 }
@@ -656,6 +804,7 @@ static int modbusReadThread(void *param)
 {
     MODBUSREAD_HANDLE_DATA* handleData = param;
     MESSAGE_CONFIG msgConfig;
+	MESSAGE_CONFIG sqlite_msgConfig;
 
     MODBUS_READ_CONFIG * server_config = handleData->config;
 
@@ -716,7 +865,8 @@ static int modbusReadThread(void *param)
     }
 
     MAP_HANDLE propertiesMap = Map_Create(NULL);
-    if(propertiesMap == NULL)
+	MAP_HANDLE sqlite_propertiesMap = Map_Create(NULL);
+    if(sqlite_propertiesMap == NULL || propertiesMap == NULL)
     {
         LogError("unable to create a Map");
     }
@@ -730,17 +880,22 @@ static int modbusReadThread(void *param)
         {
             LogError("Could not attach source property to message");
         }
+		else if (Map_AddOrUpdate(sqlite_propertiesMap, "sqlite", "modbus") != MAP_OK)
+		{
+			LogError("Could not attach sqlite property to message");
+		}
         else
         {
             msgConfig.sourceProperties = propertiesMap;
-
-
+			sqlite_msgConfig.sourceProperties = sqlite_propertiesMap;
             while (1)
             {
                 if (Lock(handleData->lockHandle) == LOCK_OK)
                 {
                     if (handleData->stopThread)
                     {
+						Map_Destroy(propertiesMap);
+						Map_Destroy(sqlite_propertiesMap);
                         (void)Unlock(handleData->lockHandle);
                         break; /*gets out of the thread*/
                     }
@@ -764,9 +919,11 @@ static int modbusReadThread(void *param)
                                     }
                                     else
                                     {
-                                        msgConfig.source = (const unsigned char *)serialized_string;
-                                        msgConfig.size = strlen(serialized_string);
-                                        modbus_publish(handleData->broker, (MODULE_HANDLE *)param, &msgConfig);
+										if (server_config->sqlite_enabled)
+										{
+											modbus_publish(handleData->broker, (MODULE_HANDLE *)param, &sqlite_msgConfig, server_config->sqlite_enabled);
+										}
+										modbus_publish(handleData->broker, (MODULE_HANDLE *)param, &msgConfig, 0);
                                     }
                                 }
                             }
@@ -974,6 +1131,7 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
 							}
                         }
                     }
+					json_value_free(json);
                 }
                 else
                 {
@@ -1015,88 +1173,7 @@ static void* ModbusRead_ParseConfigurationFromJson(const char* configuration)
             }
             else
             {
-                int arg_i;
-                int arg_count = json_array_get_count(arg_array);
-                bool parse_fail = false;
-                MODBUS_READ_CONFIG * prev_config = NULL;
-
-                /*Codes_SRS_MODBUS_READ_JSON_99_045: [** ModbusRead_CreateFromJson shall walk through each object of the array. **]*/
-                for (arg_i = 0; arg_i < arg_count; arg_i++)
-                {
-                    MODBUS_READ_CONFIG * config = malloc(sizeof(MODBUS_READ_CONFIG));
-                    if (config == NULL)
-                    {
-                        /*Codes_SRS_MODBUS_READ_JSON_99_043: [ If the 'malloc' for `config` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]*/
-                        parse_fail = true;
-                        break;
-                    }
-                    else
-                    {
-                        memset(config, 0, sizeof(MODBUS_READ_CONFIG));// to set socket s to 0
-                        config->p_next = prev_config;
-
-                        JSON_Object* arg_obj = json_array_get_object(arg_array, arg_i);
-
-                        if (!addOneServer(config, arg_obj))
-                        {
-                            parse_fail = true;
-                            break;
-                        }
-                        else
-                        {
-                            /*Codes_SRS_MODBUS_READ_JSON_99_033: [ If the JSON object of `args` array does not contain `operations` array then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
-                            JSON_Array * operation_array = json_object_get_array(arg_obj, "operations");
-                            if (operation_array == NULL)
-                            {
-                                LogError("unable to json_object_get_array operation");
-                                parse_fail = true;
-                                break;
-                            }
-                            else
-                            {
-                                int operation_i;
-                                int operation_count = json_array_get_count(operation_array);
-                                MODBUS_READ_OPERATION * prev_operation = NULL;
-                                /*Codes_SRS_MODBUS_READ_JSON_99_045: [** ModbusRead_CreateFromJson shall walk through each object of the array. **]*/
-                                for (operation_i = 0; operation_i < operation_count; operation_i++)
-                                {
-                                    MODBUS_READ_OPERATION * operation = malloc(sizeof(MODBUS_READ_OPERATION));
-                                    /*Codes_SRS_MODBUS_READ_JSON_99_044: [ If the 'malloc' for `operation` fail, ModbusRead_CreateFromJson shall fail and return NULL. ]*/
-                                    if (operation == NULL)
-                                    {
-                                        parse_fail = true;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        operation->p_next = prev_operation;
-
-                                        JSON_Object* operation_obj = json_array_get_object(operation_array, operation_i);
-
-                                        //add one operation
-                                        if (!addOneOperation(operation, operation_obj))
-                                        {
-                                            parse_fail = true;
-                                            break;
-                                        }
-                                        prev_operation = operation;
-                                    }
-                                }
-                                config->p_operation = prev_operation;
-                                if (parse_fail)
-                                    break;
-                            }
-                        }
-                        prev_config = config;
-                    }
-                }
-                if (!parse_fail)
-                {
-                    /*Codes_SRS_MODBUS_READ_JSON_99_025: [ ModbusRead_CreateFromJson shall pass broker and the entire config to ModbusRead_Create. ]*/
-                    result = prev_config;/*return result "as is" - that is - not NULL*/
-                }
-                else
-                    modbus_config_cleanup(prev_config);
+				result = addAllServers(arg_array);
             }
             json_value_free(json);
         }

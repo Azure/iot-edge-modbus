@@ -37,7 +37,7 @@ typedef struct MODBUS_READ_OPERATION_TAG MODBUS_READ_OPERATION;
 
 typedef int(*encode_read_cb_type)(void*, void*, void*);
 typedef int(*encode_write_cb_type)(void*, void*, unsigned char, unsigned char, unsigned short, unsigned short);
-typedef int(*decode_response_cb_type)(void*, void*, void*);
+typedef int(*decode_response_cb_type)(void*, void*);
 typedef int(*send_request_cb_type)(MODBUS_READ_CONFIG *, unsigned char*, int, unsigned char*);
 typedef void(*close_server_cb_type)(MODBUS_READ_CONFIG *);
 
@@ -60,6 +60,7 @@ struct MODBUS_READ_CONFIG_TAG
     char server_str[16];
     char mac_address[18];
     char device_type[64];
+	int sqlite_enabled;
     SOCKET_TYPE socks;
     FILE_TYPE files;
     size_t time_check;
