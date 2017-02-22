@@ -42,6 +42,7 @@ The arguments to this module is a JSON object with the following information:
         "interval": "<the interval value in ms between each cell's update>",
         "deviceType": "<string value to describe the type of the modbus device>",
         "macAddress": "<mac address in canonical form>",
+        "sqliteEnabled": "<0/1 to specify whether to enable SQLite module command>",
         "operations": [
         {
             "unitId": "<station/slave address of modbus device>",
@@ -72,6 +73,7 @@ The following Gateway config file describes an instance of the "modbus_read" mod
               "interval": "10000",
               "deviceType": "powerMeter",
               "macAddress": "01:01:01:01:01:01",
+              "sqliteEnabled": "0",
               "operations": [
                 {
                   "unitId": "1",

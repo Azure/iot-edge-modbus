@@ -116,6 +116,7 @@ of this sample.
             "interval": "2000",
             "macAddress": "01:01:01:01:01:01",
             "deviceType": "powerMeter",
+            "sqliteEnabled": "0",
             "operations": [
                 {
                     "unitId": "1",
@@ -205,6 +206,7 @@ of this sample.
             "interval": "2000",
             "macAddress": "01:01:01:01:01:01",
             "deviceType": "powerMeter",
+            "sqliteEnabled": "0",
             "operations": [
                 {
                     "unitId": "1",
