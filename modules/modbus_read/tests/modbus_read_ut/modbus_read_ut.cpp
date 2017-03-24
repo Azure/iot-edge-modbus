@@ -206,6 +206,10 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
         {
             result2 = "value";
         }
+		else if (strcmp(name, "sqliteEnabled") == 0)
+		{
+			result2 = "1";
+		}
         else
         {
             result2 = NULL;
@@ -227,27 +231,27 @@ TYPED_MOCK_CLASS(CModbusreadMocks, CGlobalMock)
             free(value);
         MOCK_VOID_METHOD_END();
 
-		MOCK_STATIC_METHOD_1(, char*, json_serialize_to_string_pretty, const JSON_Value *, value)
-			char* result2 = NULL;
-		if (value != NULL)
-		{
-			result2 = (char*)malloc(4);
-			result2[0] = 'A';
-			result2[1] = 'B';
-			result2[2] = 'C';
-			result2[3] = '\0';
-		}
-		MOCK_METHOD_END(char*, result2);
+        MOCK_STATIC_METHOD_1(, char*, json_serialize_to_string_pretty, const JSON_Value *, value)
+            char* result2 = NULL;
+        if (value != NULL)
+        {
+            result2 = (char*)malloc(4);
+            result2[0] = 'A';
+            result2[1] = 'B';
+            result2[2] = 'C';
+            result2[3] = '\0';
+        }
+        MOCK_METHOD_END(char*, result2);
 
-		MOCK_STATIC_METHOD_3(, JSON_Status, json_object_set_string, JSON_Object *, object, const char *, name, const char *, string)
-		MOCK_METHOD_END(JSON_Status, JSONSuccess);
+        MOCK_STATIC_METHOD_3(, JSON_Status, json_object_set_string, JSON_Object *, object, const char *, name, const char *, string)
+        MOCK_METHOD_END(JSON_Status, JSONSuccess);
 
-		MOCK_STATIC_METHOD_0(, JSON_Value *, json_value_init_object);
-		MOCK_METHOD_END(JSON_Value *, (JSON_Value *)0x47);
+        MOCK_STATIC_METHOD_0(, JSON_Value *, json_value_init_object);
+        MOCK_METHOD_END(JSON_Value *, (JSON_Value *)0x47);
 
-		MOCK_STATIC_METHOD_1(, void, json_free_serialized_string, char*, value)
-			free(value);
-		MOCK_VOID_METHOD_END();
+        MOCK_STATIC_METHOD_1(, void, json_free_serialized_string, char*, value)
+            free(value);
+        MOCK_VOID_METHOD_END();
 
         // Broker mocks
         MOCK_STATIC_METHOD_0(, BROKER_HANDLE, Broker_Create)
@@ -476,7 +480,7 @@ DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , LOCK_RESULT, Unlock, LOCK_HANDL
 DECLARE_GLOBAL_MOCK_METHOD_1(CModbusreadMocks, , LOCK_RESULT, Lock_Deinit, LOCK_HANDLE,  handle);
 
 
-BEGIN_TEST_SUITE(modbus_read_unittests)
+BEGIN_TEST_SUITE(modbus_read_ut)
 
     TEST_SUITE_INITIALIZE(TestClassInitialize)
     {
@@ -593,6 +597,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
             .IgnoreArgument(1);
@@ -657,6 +663,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
                 .IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
                 .IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+				.IgnoreArgument(1);
 
             STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
                 .IgnoreArgument(1);
@@ -707,6 +715,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
                 .IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
                 .IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+				.IgnoreArgument(1);
 
             STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, "operations"))
                 .IgnoreArgument(1);
@@ -820,6 +830,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
@@ -830,6 +842,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
             .IgnoreArgument(1)
             .SetFailReturn((void*)NULL);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
 
@@ -873,6 +887,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -919,6 +935,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -966,6 +984,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((const char*)NULL);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -1013,6 +1033,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -1026,6 +1048,54 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Cleanup
     }
 
+	//Tests_SRS_MODBUS_READ_JSON_99_046: [ If the `args` object does not contain a value named "sqliteEnable" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
+	TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_sqliteEnabled_returns_null)
+	{
+		///Arrange
+		CModbusreadMocks mocks;
+		unsigned char fake;
+		BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
+		const char* config = "pretend this is a valid JSON string";
+
+		STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_count(IGNORED_PTR_ARG))
+			.IgnoreArgument(1)
+			.SetReturn((size_t)1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_array_get_object(IGNORED_PTR_ARG, 0))
+			.IgnoreArgument(1)
+			.IgnoreArgument(2);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "serverConnectionString"))
+			.IgnoreArgument(1)
+			.SetReturn("COM1");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
+			.IgnoreArgument(1)
+			.SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1)
+			.SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+
+		//Act
+		auto n = Module_ParseConfigurationFromJson(config);
+
+		///Assert
+		ASSERT_IS_NULL(n);
+		mocks.AssertActualAndExpectedCalls();
+
+		///Cleanup
+	}
     //Tests_SRS_MODBUS_READ_JSON_99_037 : [** If the `operations` object does not contain a value named "unitId" then ModbusRead_ParseConfigurationFromJson shall fail and return NULL. ]
     TEST_FUNCTION(ModbusRead_ParseConfigurationFromJson_no_unitid_returns_null)
     {
@@ -1036,8 +1106,6 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* config = "pretend this is a valid JSON string";
 
         STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
@@ -1059,6 +1127,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
@@ -1082,6 +1152,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1103,8 +1177,6 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* config = "pretend this is a valid JSON string";
 
         STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
@@ -1126,6 +1198,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
@@ -1149,6 +1223,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1170,8 +1248,6 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* config = "pretend this is a valid JSON string";
 
         STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
@@ -1193,6 +1269,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
@@ -1216,6 +1294,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1237,8 +1319,6 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* config = "pretend this is a valid JSON string";
 
         STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
@@ -1260,6 +1340,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
@@ -1283,6 +1365,10 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .SetFailReturn((const char*)NULL);
         STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1304,12 +1390,12 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         const char* config = "pretend this is a valid JSON string";
 
         STRICT_EXPECTED_CALL(mocks, json_parse_string(config));
-        STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
-            .IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_value_get_array(IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .SetFailReturn((JSON_Array*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1355,11 +1441,15 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "sqliteEnabled"))
+			.IgnoreArgument(1);
 
         STRICT_EXPECTED_CALL(mocks, json_object_get_array(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
             .SetFailReturn((JSON_Array*)NULL);
+		STRICT_EXPECTED_CALL(mocks, gballoc_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
 
         //Act
         auto n = Module_ParseConfigurationFromJson(config);
@@ -1434,7 +1524,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         ///Arrange
         CModbusreadMocks mocks;
         unsigned char fake;
-		LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
+        LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
         MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
         memset(config, 0, sizeof(MODBUS_READ_CONFIG));
@@ -1445,14 +1535,14 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, Lock_Init());
-		STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
-			.IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
+            .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
             .IgnoreArgument(3);
-		STRICT_EXPECTED_CALL(mocks, Unlock(IGNORED_PTR_ARG))
-			.IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, Unlock(IGNORED_PTR_ARG))
+            .IgnoreArgument(1);
 
 
         //Act
@@ -1534,7 +1624,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         CModbusreadMocks mocks;
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-		LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
+        LOCK_HANDLE fake_lock = (LOCK_HANDLE)0x44;
         MODBUS_READ_CONFIG * config = (MODBUS_READ_CONFIG *)malloc(sizeof(MODBUS_READ_CONFIG));
         memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         sprintf(config->mac_address, "01:01:01:01:01:01");
@@ -1544,8 +1634,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, gballoc_malloc(IGNORED_NUM_ARG))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, Lock_Init());
-		STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
-			.IgnoreArgument(1);
+        STRICT_EXPECTED_CALL(mocks, Lock(fake_lock))
+            .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ThreadAPI_Create(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .IgnoreArgument(2)
@@ -1557,13 +1647,13 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
         //Act
         auto n = Module_Create(broker, config);
-		Module_Start(n);
+        Module_Start(n);
 
         ///Assert
         mocks.AssertActualAndExpectedCalls();
 
         ///Cleanup
-		Module_Destroy(n);
+        Module_Destroy(n);
     }
 
     //Tests_SRS_MODBUS_READ_99_014: [ If moduleHandle is NULL then ModbusRead_Destroy shall return. ]
@@ -1802,6 +1892,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         STRICT_EXPECTED_CALL(mocks, json_parse_string(IGNORED_PTR_ARG))
             .IgnoreArgument(1)
             .SetFailReturn((JSON_Value *)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ConstMap_Destroy(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -1829,7 +1921,7 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
         memset(config, 0, sizeof(MODBUS_READ_CONFIG));
         unsigned char fake;
         BROKER_HANDLE broker = (BROKER_HANDLE)&fake;
-        JSON_Value* json = (JSON_Value*)&fake;
+        JSON_Value* json = (JSON_Value*)malloc(1);
         JSON_Object * obj = (JSON_Object *)&fake;
         LOCK_HANDLE fake_lock = (LOCK_HANDLE)&fake;
         sprintf(config->mac_address, "01:01:01:01:01:01");
@@ -1892,6 +1984,8 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, Unlock(fake_lock))
             .IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_value_free(IGNORED_PTR_ARG))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, ConstMap_Destroy(IGNORED_PTR_ARG))
             .IgnoreArgument(1);
 
@@ -1905,4 +1999,4 @@ BEGIN_TEST_SUITE(modbus_read_unittests)
 
         Module_Destroy(n);
     }
-END_TEST_SUITE(modbus_read_unittests)
+END_TEST_SUITE(modbus_read_ut)
