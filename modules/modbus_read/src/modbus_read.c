@@ -8,6 +8,7 @@
 #include "azure_c_shared_utility/gballoc.h"
 
 #include "module.h"
+#include <ctype.h>
 
 #include "azure_c_shared_utility/threadapi.h"
 #include "modbus_read.h"
@@ -250,8 +251,17 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     /*Codes_SRS_MODBUS_READ_JSON_99_041: [ `ModbusRead_CreateFromJson` shall use "serverConnectionString", "macAddress", and "interval" values as the fields for an MODBUS_READ_CONFIG structure and add this element to the link list. ]*/
     memcpy(config->server_str, server_str, strlen(server_str));
     config->server_str[strlen(server_str)] = '\0';
-    memcpy(config->mac_address, mac_address, strlen(mac_address));
+
+	int i = 0;
+	char * temp = mac_address;
+	while (*temp)
+	{
+		config->mac_address[i] = toupper(*temp);
+		i++;
+		temp++;
+	}
     config->mac_address[strlen(mac_address)] = '\0';
+
     memcpy(config->device_type, device_type, strlen(device_type));
     config->device_type[strlen(device_type)] = '\0';
 
@@ -743,15 +753,37 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
 }
 static MODBUS_READ_CONFIG * get_config_by_mac(const char * mac_address, MODBUS_READ_CONFIG * config)
 {
+	char * result = NULL;
+	int status;
     MODBUS_READ_CONFIG * modbus_config = config;
     if ((mac_address == NULL) || (modbus_config == NULL))
         return NULL;
+
+	status = mallocAndStrcpy_s(&result, mac_address);
+	if (status != 0) // failure
+	{
+		return NULL;
+	}
+	else
+	{
+		char * temp = result;
+		while (*temp)
+		{
+			*temp = toupper(*temp);
+			temp++;
+		}
+	}
+
     while (modbus_config)
     {
-        if (strcmp(mac_address, modbus_config->mac_address) == 0)
+        if (strcmp(result, modbus_config->mac_address) == 0)
+        {
+			free(result);
             return modbus_config;
+        }
         modbus_config = modbus_config->p_next;
     }
+	free(result);
     return NULL;
 }
 static SOCKET_TYPE connect_modbus_server_tcp(const char * server_ip)
