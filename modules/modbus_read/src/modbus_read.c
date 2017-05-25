@@ -34,6 +34,23 @@ typedef struct MODBUSREAD_HANDLE_DATA_TAG
 #define MACSTRLEN 17
 #define BUFSIZE 1024
 
+/*
+ ----------------------- --------
+|MBAP Header description|Length  |
+ ----------------------- --------
+|Transaction Identifier |2 bytes |
+ ----------------------- --------
+|Protocol Identifier    |2 bytes |
+ ----------------------- --------
+|Length 2bytes          |2 bytes |
+ ----------------------- --------
+|Unit Identifier        |1 byte  |
+ ----------------------- --------
+|Body                   |variable|
+ ----------------------- --------
+*/
+
+
 JSON_Value *root_value;
 JSON_Object *root_object;
 char *serialized_string;
@@ -383,21 +400,60 @@ static int send_request_com(MODBUS_READ_CONFIG * config, unsigned char * request
     return 0;
 }
 
+static int send_with_len_check(SOCKET_TYPE sock, unsigned char * request, int request_len)
+{
+	int total_send = 0;
+	int send_size = 0;
+	while (request_len > 0)
+	{
+		send_size = send(sock, request + total_send, request_len, 0);
+		if (send_size < 0)
+		{
+			LogError("send failed");
+			return send_size;
+		}
+		total_send += send_size;
+		request_len -= send_size;
+	}
+	return 0;
+}
+
+static int recv_with_len_check(SOCKET_TYPE sock, unsigned char * response)
+{
+	int total_recv = 0;
+	int recv_size = 0;
+	unsigned short expected_len = 0;
+	while (total_recv < MODBUS_TCP_OFFSET || expected_len > (total_recv - 6))
+	{
+		recv_size = recv(sock, response + total_recv, (expected_len == 0) ? MODBUS_TCP_OFFSET : expected_len + 6 - total_recv, 0);
+		if (recv_size == SOCKET_ERROR || recv_size == SOCKET_CLOSED)
+		{
+			LogError("recv failed");
+			return recv_size;
+		}
+		total_recv += recv_size;
+		if (total_recv >= MODBUS_TCP_OFFSET && expected_len == 0)
+			expected_len = ntohs(*(unsigned short *)(response + 4));
+	}
+	return total_recv;
+}
+
 static int send_request_tcp(MODBUS_READ_CONFIG * config, unsigned char * request, int request_len, unsigned char * response)
 {
     int recv_size;
-    if (send(config->socks, request, request_len, 0) < 0)//MBAP+PDU
+    if (send_with_len_check(config->socks, request, request_len) < 0)//MBAP+PDU
     {
         LogError("send failed");
         return -1;
     }
-    if ((recv_size = recv(config->socks, response, 256, 0)) == SOCKET_ERROR)
+	recv_size = recv_with_len_check(config->socks, response);
+    if (recv_size == SOCKET_ERROR || recv_size == SOCKET_CLOSED)
     {
         LogError("recv failed");
         return -1;
     }
-    if (response[MODBUS_TCP_OFFSET] == (request[MODBUS_TCP_OFFSET] + 128))
-        return response[MODBUS_TCP_OFFSET+1];
+	if (response[MODBUS_TCP_OFFSET] == (request[MODBUS_TCP_OFFSET] + 128))
+		return response[MODBUS_TCP_OFFSET + 1];
     return 0;
 }
 static void encode_write_PDU(unsigned char * buf, unsigned char functionCode, unsigned short startingAddress, unsigned short value)

@@ -5,6 +5,7 @@
 #define MODBUS_READ_COMMON_H
 
 #include "parson.h"
+#define SOCKET_CLOSED (0)
 
 #ifdef WIN32
 
