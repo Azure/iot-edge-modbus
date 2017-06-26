@@ -888,6 +888,27 @@ static FILE_TYPE connect_modbus_server_com(int port)
 
     return f;
 }
+static int connect_modbus_server(MODBUS_READ_CONFIG * server_config)
+{
+	if (memcmp(server_config->server_str, "COM", 3) == 0)
+	{
+		server_config->files = connect_modbus_server_com(atoi(server_config->server_str + 3));
+		if (server_config->files == INVALID_FILE)
+		{
+			return 1;
+		}
+	}
+	else
+	{
+		server_config->socks = connect_modbus_server_tcp(server_config->server_str);
+
+		if (server_config->socks == INVALID_SOCKET)
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
 static int modbusReadThread(void *param)
 {
     MODBUSREAD_HANDLE_DATA* handleData = param;
@@ -910,37 +931,33 @@ static int modbusReadThread(void *param)
         server_config->files = INVALID_FILE;
         server_config->socks = INVALID_SOCKET;
         //connect to server
-        if (memcmp(server_config->server_str, "COM", 3) == 0)
-        {
-            server_config->files = connect_modbus_server_com(atoi(server_config->server_str + 3));
-            if (server_config->files == INVALID_FILE)
-            {
-                LogError("unable to connect to modbus server %s", server_config->server_str);
-                return 1;
-            }
-            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_com;
-            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_com;
-            server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
-            server_config->send_request_cb = (send_request_cb_type)send_request_com;
-            server_config->close_server_cb = (close_server_cb_type)close_server_com;
 
-        }
-        else
-        {
-            server_config->socks = connect_modbus_server_tcp(server_config->server_str);
+		if (connect_modbus_server(server_config) != 0)
+		{
+			LogError("unable to connect to modbus server %s", server_config->server_str);
+			return 1;
+		}
+		else
+		{
+			if (memcmp(server_config->server_str, "COM", 3) == 0)
+			{
+				server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_com;
+				server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_com;
+				server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
+				server_config->send_request_cb = (send_request_cb_type)send_request_com;
+				server_config->close_server_cb = (close_server_cb_type)close_server_com;
 
-            if (server_config->socks == INVALID_SOCKET)
-            {
-                LogError("unable to connect to modbus server %s", server_config->server_str);
-                return 1;
-            }
-            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_tcp;
-            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_tcp;
-            server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
-            server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
-            server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
+			}
+			else
+			{
+				server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_tcp;
+				server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_tcp;
+				server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
+				server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
+				server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
 
-        }
+			}
+		}
         MODBUS_READ_OPERATION * request_operation = server_config->p_operation;
         while (request_operation)
         {
@@ -998,6 +1015,7 @@ static int modbusReadThread(void *param)
                                 if (process_operation(server_config, server_config->p_operation) != 0)
                                 {
                                     LogError("unable to send request to modbus server %s", server_config->server_str);
+									connect_modbus_server(server_config);
                                 }
                                 else
                                 {
@@ -1211,6 +1229,7 @@ static void ModbusRead_Receive(MODULE_HANDLE moduleHandle, MESSAGE_HANDLE messag
 								if (send_ret == -1)
 								{
 									LogError("unable to send request to modbus server");
+									connect_modbus_server(modbus_config);
 								}
 								else if (send_ret > 0)
 								{
