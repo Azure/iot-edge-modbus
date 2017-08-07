@@ -593,6 +593,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -659,6 +669,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
                 .IgnoreArgument(1)
                 .SetReturn("00:00:00:00:00:00");
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+				.IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
                 .IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -711,6 +731,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
                 .IgnoreArgument(1)
                 .SetReturn("00:00:00:00:00:00");
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+				.IgnoreArgument(1);
+			STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+				.IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
                 .IgnoreArgument(1);
             STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -826,6 +856,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -883,6 +923,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -931,6 +981,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -979,6 +1039,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1)
             .SetFailReturn((const char*)NULL);
@@ -1028,6 +1098,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1077,6 +1157,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
 		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
 			.IgnoreArgument(1)
 			.SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
 		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
 			.IgnoreArgument(1);
 		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1123,6 +1213,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1194,6 +1294,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1265,6 +1375,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1336,6 +1456,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))
@@ -1437,6 +1567,16 @@ BEGIN_TEST_SUITE(modbus_read_ut)
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "macAddress"))
             .IgnoreArgument(1)
             .SetReturn("00:00:00:00:00:00");
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "baudRate"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "stopBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "dataBits"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "parity"))
+			.IgnoreArgument(1);
+		STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "flowControl"))
+			.IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "interval"))
             .IgnoreArgument(1);
         STRICT_EXPECTED_CALL(mocks, json_object_get_string(IGNORED_PTR_ARG, "deviceType"))

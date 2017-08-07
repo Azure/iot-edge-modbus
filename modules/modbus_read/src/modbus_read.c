@@ -226,6 +226,11 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     bool result = true;
     const char* server_str = json_object_get_string(arg_obj, "serverConnectionString");
     const char* mac_address = json_object_get_string(arg_obj, "macAddress");
+	const char* baud_rate = json_object_get_string(arg_obj, "baudRate");
+	const char* stop_bits = json_object_get_string(arg_obj, "stopBits");
+	const char* data_bits = json_object_get_string(arg_obj, "dataBits");
+	const char* parity = json_object_get_string(arg_obj, "parity");
+	const char* flow_control = json_object_get_string(arg_obj, "flowControl");
     const char* interval = json_object_get_string(arg_obj, "interval");
     const char* device_type = json_object_get_string(arg_obj, "deviceType");
 	const char* sqlite_enabled = json_object_get_string(arg_obj, "sqliteEnabled");
@@ -284,6 +289,57 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
 
     config->read_interval = atoi(interval);
 	config->sqlite_enabled = atoi(sqlite_enabled);
+
+	config->baud_rate = CBR_9600;
+	if (baud_rate != NULL)
+	{
+		config->baud_rate = atoi(baud_rate);
+	}
+
+	config->data_bits = 8;
+	if (data_bits != NULL)
+	{
+		config->data_bits = atoi(data_bits);
+	}
+
+	config->stop_bits = ONESTOPBIT;
+	if (stop_bits != NULL)
+	{
+		if (strcmp(stop_bits, "1") == 0)
+			config->stop_bits = ONESTOPBIT;
+		else if (strcmp(stop_bits, "1.5") == 0)
+			config->stop_bits = ONE5STOPBITS;
+		else if (strcmp(stop_bits, "2") == 0)
+			config->stop_bits = TWOSTOPBITS;
+	}
+
+	config->parity = NOPARITY;
+	if (parity != NULL)
+	{
+		if (strcmp(parity, "NONE") == 0)
+			config->parity = NOPARITY;
+		else if (strcmp(parity, "ODD") == 0)
+			config->parity = ODDPARITY;
+		else if (strcmp(parity, "EVEN") == 0)
+			config->parity = EVENPARITY;
+		else if (strcmp(parity, "MARK") == 0)
+			config->parity = MARKPARITY;
+		else if (strcmp(parity, "SPACE") == 0)
+			config->parity = SPACEPARITY;
+	}
+
+	config->flow_control = FLOW_CONTROL_NONE;
+	if (flow_control != NULL)
+	{
+		if (strcmp(flow_control, "NONE") == 0)
+			config->flow_control = FLOW_CONTROL_NONE;
+		else if (strcmp(flow_control, "XON") == 0)
+			config->flow_control = FLOW_CONTROL_XONOFF;
+		else if (strcmp(flow_control, "RTS") == 0)
+			config->flow_control = FLOW_CONTROL_RTSCTS;
+		else if (strcmp(flow_control, "DSR") == 0)
+			config->flow_control = FLOW_CONTROL_DSRDTR;
+	}
 
     return result;
 }
@@ -842,6 +898,88 @@ static MODBUS_READ_CONFIG * get_config_by_mac(const char * mac_address, MODBUS_R
 	free(result);
     return NULL;
 }
+static void set_com_state(MODBUS_READ_CONFIG * config)
+{
+#ifdef WIN32
+	DCB dcb;
+	bool set_res;
+
+	FillMemory(&dcb, sizeof(dcb), 0);
+	dcb.DCBlength = sizeof(dcb);
+	
+	dcb.BaudRate = config->baud_rate;
+	dcb.Parity = config->parity;
+	dcb.StopBits = config->stop_bits;
+	dcb.ByteSize = config->data_bits;
+
+	dcb.fRtsControl = RTS_CONTROL_DISABLE;
+	dcb.fDtrControl = DTR_CONTROL_DISABLE;
+
+	if (config->flow_control == FLOW_CONTROL_RTSCTS)
+	{
+		dcb.fOutX = false;
+		dcb.fInX = false;
+		dcb.fOutxCtsFlow = true;
+		dcb.fOutxDsrFlow = false;
+		dcb.fDtrControl = DTR_CONTROL_DISABLE;
+		dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
+	}
+	else if (config->flow_control == FLOW_CONTROL_DSRDTR)
+	{
+		dcb.fOutX = false;
+		dcb.fInX = false;
+		dcb.fOutxCtsFlow = false;
+		dcb.fOutxDsrFlow = true;
+		dcb.fDsrSensitivity = true;
+		dcb.fDtrControl = DTR_CONTROL_HANDSHAKE;
+		dcb.fRtsControl = RTS_CONTROL_DISABLE;
+	}
+	//else if (config->flow_control == FLOW_CONTROL_XONOFF)
+
+	set_res = SetCommState(config->files, &dcb);
+
+
+#else
+
+	struct termios settings;
+	tcgetattr(config->files, &settings);
+	cfsetospeed(&settings, config->baud_rate); /* baud rate */
+
+	if (config->parity == NOPARITY)
+	{
+		settings.c_cflag &= ~PARENB; /* no parity */
+	}
+	else if (config->parity == ODDPARITY)
+	{
+		settings.c_cflag |= PARENB;
+		settings.c_cflag |= PARODD;
+	}
+	else if (config->parity == EVENPARITY)
+	{
+		settings.c_cflag |= PARENB;
+		settings.c_cflag &= ~PARODD;
+	}
+
+	if (config->stop_bits == ONESTOPBIT)
+	{
+		settings.c_cflag &= ~CSTOPB; /* 1 stop bit */
+	}
+	else if (config->stop_bits == TWOSTOPBITS)
+	{
+		settings.c_cflag |= CSTOPB; /* 2 stop bit */
+	}
+
+	if (config->flow_control == FLOW_CONTROL_RTSCTS)
+	{
+		settings.c_cflag |= CCTS_OFLOW;
+		settings.c_cflag |= CRTS_IFLOW;
+	}
+
+	tcsetattr(config->files, TCSANOW, &settings); /* apply the settings */
+	tcflush(fdconfig->files TCOFLUSH);
+#endif
+
+}
 static SOCKET_TYPE connect_modbus_server_tcp(const char * server_ip)
 {
     SOCKET_TYPE s;
@@ -946,7 +1084,7 @@ static int modbusReadThread(void *param)
 				server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
 				server_config->send_request_cb = (send_request_cb_type)send_request_com;
 				server_config->close_server_cb = (close_server_cb_type)close_server_com;
-
+				set_com_state(server_config);
 			}
 			else
 			{
@@ -955,7 +1093,6 @@ static int modbusReadThread(void *param)
 				server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
 				server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
 				server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
-
 			}
 		}
         MODBUS_READ_OPERATION * request_operation = server_config->p_operation;

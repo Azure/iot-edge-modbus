@@ -42,6 +42,12 @@ typedef int(*decode_response_cb_type)(void*, void*);
 typedef int(*send_request_cb_type)(MODBUS_READ_CONFIG *, unsigned char*, int, unsigned char*);
 typedef void(*close_server_cb_type)(MODBUS_READ_CONFIG *);
 
+//flow control
+#define FLOW_CONTROL_NONE 0
+#define FLOW_CONTROL_XONOFF 1
+#define FLOW_CONTROL_RTSCTS 2
+#define FLOW_CONTROL_DSRDTR 3
+
 struct MODBUS_READ_OPERATION_TAG
 {
     MODBUS_READ_OPERATION * p_next;
@@ -65,6 +71,11 @@ struct MODBUS_READ_CONFIG_TAG
     SOCKET_TYPE socks;
     FILE_TYPE files;
     size_t time_check;
+	unsigned int baud_rate;
+	unsigned char stop_bits;
+	unsigned char data_bits;
+	unsigned char parity;
+	unsigned char flow_control;
     encode_read_cb_type encode_read_cb;
     encode_write_cb_type encode_write_cb;
     decode_response_cb_type decode_response_cb;
