@@ -55,6 +55,11 @@
           "serverConnectionString": "127.0.0.1",
           "interval": "2000",
           "macAddress": "01:01:01:01:01:01",
+          "baudRate": "9600",
+          "stopBits": "1",
+          "dataBits": "8",
+          "parity": "EVEN",
+          "flowControl": "NONE",
           "deviceType": "powerMeter",
           "sqliteEnabled": "0",
           "operations": [

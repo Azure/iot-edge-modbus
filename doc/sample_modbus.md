@@ -59,7 +59,7 @@ module.
 
 The Modbus devices can be connected to the Modbus module via either Modbus TCP 
 or Modbus RTU. Simply filled in the ipv4 address (XXX.XXX.XXX.XXX) or COM# to the 
-Modbus module configuration.
+Modbus module configuration. For Modbus RTU, stopBits = 1, 1.5, 2; parity = ODD, EVEN, NONE; flowControl = RTS, DSR, NONE.
 
 ## Running the sample ##
 
@@ -115,6 +115,11 @@ of this sample.
             "serverConnectionString": "COM1",
             "interval": "2000",
             "macAddress": "01:01:01:01:01:01",
+            "baudRate": "9600",
+            "stopBits": "1",
+            "dataBits": "8",
+            "parity": "EVEN",
+            "flowControl": "NONE",
             "deviceType": "powerMeter",
             "sqliteEnabled": "0",
             "operations": [
@@ -205,6 +210,11 @@ of this sample.
             "serverConnectionString": "127.0.0.1",
             "interval": "2000",
             "macAddress": "01:01:01:01:01:01",
+            "baudRate": "9600",
+            "stopBits": "1",
+            "dataBits": "8",
+            "parity": "EVEN",
+            "flowControl": "NONE",
             "deviceType": "powerMeter",
             "sqliteEnabled": "0",
             "operations": [
