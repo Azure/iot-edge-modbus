@@ -19,6 +19,7 @@
 
 #else
 
+#include <sys/termios.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -31,6 +32,7 @@
 #define INVALID_SOCKET (~0)
 #define INVALID_FILE -1
 #define SNPRINTF_S snprintf
+
 #endif
 
 typedef struct MODBUS_READ_CONFIG_TAG MODBUS_READ_CONFIG;
@@ -42,11 +44,25 @@ typedef int(*decode_response_cb_type)(void*, void*);
 typedef int(*send_request_cb_type)(MODBUS_READ_CONFIG *, unsigned char*, int, unsigned char*);
 typedef void(*close_server_cb_type)(MODBUS_READ_CONFIG *);
 
+//baud
+#define CONFIG_BAUD_9600 9600
+//stop bits
+#define CONFIG_STOP_ONE 0
+#define CONFIG_STOP_ONE5 1
+#define CONFIG_STOP_TWO 2
+//data bits
+#define CONFIG_DATA_8 8
+//parity
+#define CONFIG_PARITY_NO 0
+#define CONFIG_PARITY_ODD 1
+#define CONFIG_PARITY_EVEN 2
+#define CONFIG_PARITY_MARK 3
+#define CONFIG_PARITY_SPACE 4
 //flow control
-#define FLOW_CONTROL_NONE 0
-#define FLOW_CONTROL_XONOFF 1
-#define FLOW_CONTROL_RTSCTS 2
-#define FLOW_CONTROL_DSRDTR 3
+#define CONFIG_FLOW_CONTROL_NONE 0
+#define CONFIG_FLOW_CONTROL_XONOFF 1
+#define CONFIG_FLOW_CONTROL_RTSCTS 2
+#define CONFIG_FLOW_CONTROL_DSRDTR 3
 
 struct MODBUS_READ_OPERATION_TAG
 {

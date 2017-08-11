@@ -290,55 +290,55 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     config->read_interval = atoi(interval);
     config->sqlite_enabled = atoi(sqlite_enabled);
 
-    config->baud_rate = CBR_9600;
+    config->baud_rate = CONFIG_BAUD_9600;
     if (baud_rate != NULL)
     {
         config->baud_rate = atoi(baud_rate);
     }
 
-    config->data_bits = 8;
+    config->data_bits = CONFIG_DATA_8;
     if (data_bits != NULL)
     {
         config->data_bits = atoi(data_bits);
     }
 
-    config->stop_bits = ONESTOPBIT;
+    config->stop_bits = CONFIG_STOP_ONE;
     if (stop_bits != NULL)
     {
         if (strcmp(stop_bits, "1") == 0)
-            config->stop_bits = ONESTOPBIT;
+            config->stop_bits = CONFIG_STOP_ONE;
         else if (strcmp(stop_bits, "1.5") == 0)
-            config->stop_bits = ONE5STOPBITS;
+            config->stop_bits = CONFIG_STOP_ONE5;
         else if (strcmp(stop_bits, "2") == 0)
-            config->stop_bits = TWOSTOPBITS;
+            config->stop_bits = CONFIG_STOP_TWO;
     }
 
-    config->parity = NOPARITY;
+    config->parity = CONFIG_PARITY_NO;
     if (parity != NULL)
     {
         if (strcmp(parity, "NONE") == 0)
-            config->parity = NOPARITY;
+            config->parity = CONFIG_PARITY_NO;
         else if (strcmp(parity, "ODD") == 0)
-            config->parity = ODDPARITY;
+            config->parity = CONFIG_PARITY_ODD;
         else if (strcmp(parity, "EVEN") == 0)
-            config->parity = EVENPARITY;
+            config->parity = CONFIG_PARITY_EVEN;
         else if (strcmp(parity, "MARK") == 0)
-            config->parity = MARKPARITY;
+            config->parity = CONFIG_PARITY_MARK;
         else if (strcmp(parity, "SPACE") == 0)
-            config->parity = SPACEPARITY;
+            config->parity = CONFIG_PARITY_SPACE;
     }
 
-    config->flow_control = FLOW_CONTROL_NONE;
+    config->flow_control = CONFIG_FLOW_CONTROL_NONE;
     if (flow_control != NULL)
     {
         if (strcmp(flow_control, "NONE") == 0)
-            config->flow_control = FLOW_CONTROL_NONE;
+            config->flow_control = CONFIG_FLOW_CONTROL_NONE;
         else if (strcmp(flow_control, "XON") == 0)
-            config->flow_control = FLOW_CONTROL_XONOFF;
+            config->flow_control = CONFIG_FLOW_CONTROL_XONOFF;
         else if (strcmp(flow_control, "RTS") == 0)
-            config->flow_control = FLOW_CONTROL_RTSCTS;
+            config->flow_control = CONFIG_FLOW_CONTROL_RTSCTS;
         else if (strcmp(flow_control, "DSR") == 0)
-            config->flow_control = FLOW_CONTROL_DSRDTR;
+            config->flow_control = CONFIG_FLOW_CONTROL_DSRDTR;
     }
 
     return result;
@@ -426,16 +426,25 @@ static int send_request_com(MODBUS_READ_CONFIG * config, unsigned char * request
     int write_size;
     int read_size;
 #ifdef WIN32
+	(void)ThreadAPI_Sleep(500);
     if (!WriteFile(config->files, request, request_len, &write_size, NULL))//Additional Address+PDU+Error
     {
         LogError("write failed");
         return -1;
     }
-    if (!ReadFile(config->files, response, 256, &read_size, NULL))
+    if (!ReadFile(config->files, response, 3, &read_size, NULL))
     {
         LogError("read failed");
         return -1;
     }
+	else
+	{
+		if (!ReadFile(config->files, response + 3, response[2] + 2, &read_size, NULL))
+		{
+			LogError("read failed");
+			return -1;
+		}
+	}
 #else
     write_size = write(config->files, request, request_len);
     if (write_size != request_len)
@@ -915,7 +924,7 @@ static void set_com_state(MODBUS_READ_CONFIG * config)
     dcb.fRtsControl = RTS_CONTROL_DISABLE;
     dcb.fDtrControl = DTR_CONTROL_DISABLE;
 
-    if (config->flow_control == FLOW_CONTROL_RTSCTS)
+    if (config->flow_control == CONFIG_FLOW_CONTROL_RTSCTS)
     {
         dcb.fOutX = false;
         dcb.fInX = false;
@@ -924,7 +933,7 @@ static void set_com_state(MODBUS_READ_CONFIG * config)
         dcb.fDtrControl = DTR_CONTROL_DISABLE;
         dcb.fRtsControl = RTS_CONTROL_HANDSHAKE;
     }
-    else if (config->flow_control == FLOW_CONTROL_DSRDTR)
+    else if (config->flow_control == CONFIG_FLOW_CONTROL_DSRDTR)
     {
         dcb.fOutX = false;
         dcb.fInX = false;
@@ -934,7 +943,7 @@ static void set_com_state(MODBUS_READ_CONFIG * config)
         dcb.fDtrControl = DTR_CONTROL_HANDSHAKE;
         dcb.fRtsControl = RTS_CONTROL_DISABLE;
     }
-    //else if (config->flow_control == FLOW_CONTROL_XONOFF)
+    //else if (config->flow_control == CONFIG_FLOW_CONTROL_XONOFF)
 
     set_res = SetCommState(config->files, &dcb);
 
@@ -945,38 +954,38 @@ static void set_com_state(MODBUS_READ_CONFIG * config)
     tcgetattr(config->files, &settings);
     cfsetospeed(&settings, config->baud_rate); /* baud rate */
 
-    if (config->parity == NOPARITY)
+    if (config->parity == CONFIG_PARITY_NO)
     {
         settings.c_cflag &= ~PARENB; /* no parity */
     }
-    else if (config->parity == ODDPARITY)
+    else if (config->parity == CONFIG_PARITY_ODD)
     {
         settings.c_cflag |= PARENB;
         settings.c_cflag |= PARODD;
     }
-    else if (config->parity == EVENPARITY)
+    else if (config->parity == CONFIG_PARITY_EVEN)
     {
         settings.c_cflag |= PARENB;
         settings.c_cflag &= ~PARODD;
     }
 
-    if (config->stop_bits == ONESTOPBIT)
+    if (config->stop_bits == CONFIG_STOP_ONE)
     {
         settings.c_cflag &= ~CSTOPB; /* 1 stop bit */
     }
-    else if (config->stop_bits == TWOSTOPBITS)
+    else if (config->stop_bits == CONFIG_STOP_TWO)
     {
         settings.c_cflag |= CSTOPB; /* 2 stop bit */
     }
-
-    if (config->flow_control == FLOW_CONTROL_RTSCTS)
+	/* not in POSIX
+    if (config->flow_control == CONFIG_FLOW_CONTROL_RTSCTS)
     {
-        settings.c_cflag |= CCTS_OFLOW;
-        settings.c_cflag |= CRTS_IFLOW;
+        settings.c_cflag |= CRTSCTS;
     }
+	*/
 
     tcsetattr(config->files, TCSANOW, &settings); /* apply the settings */
-    tcflush(fdconfig->files TCOFLUSH);
+    tcflush(config->files, TCOFLUSH);
 #endif
 
 }
