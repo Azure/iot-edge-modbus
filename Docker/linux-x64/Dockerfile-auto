@@ -1,0 +1,25 @@
+FROM microsoft/dotnet:sdk AS build-env
+WORKDIR /app
+
+# copy csproj and restore as distinct layers
+COPY . ./
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+RUN echo "deb http://download.mono-project.com/repo/ubuntu xenial main" | tee /etc/apt/sources.list.d/mono-official.list
+RUN apt-get update
+RUN apt-get --yes --force-yes install mono-devel
+RUN mono NuGet.exe sources Add -Name "Edge Private Preview" -source https://www.myget.org/F/aziot-device-sdk/api/v3/index.json
+RUN mono NuGet.exe list -source https://www.myget.org/F/aziot-device-sdk/api/v3/index.json
+RUN dotnet restore
+
+# copy everything else and build
+RUN dotnet publish -f netcoreapp2.0 -c Release -o out
+
+FROM microsoft/dotnet:2.0.0-runtime
+
+ARG EXE_DIR=.
+
+WORKDIR /app
+
+COPY --from=build-env /app/out ./
+
+CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]
