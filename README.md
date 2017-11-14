@@ -123,3 +123,6 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 }
 ```
 
+## Debug ##
+There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Note: running in console mode means none of the IoT Edge features is available.
+This mode is only to debug non edge-related functions.

@@ -1,4 +1,4 @@
-#define IOT_EDGE
+//#define IOT_EDGE
 
 namespace Modbus.Containers
 {
@@ -108,7 +108,7 @@ namespace Modbus.Containers
                 await UpdateStartFromTwin(moduleTwin.Properties.Desired, ioTHubModuleClient);
 
                 // Attach callback for Twin desired properties updates
-                await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(onDesiredPropertiesUpdate, ioTHubModuleClient);
+                await ioTHubModuleClient.SetDesiredPropertyUpdateCallbackAsync(OnDesiredPropertiesUpdate, ioTHubModuleClient);
 
             }
             catch (AggregateException ex)
@@ -177,7 +177,7 @@ namespace Modbus.Containers
         /// <summary> 
         /// Callback to handle Twin desired properties updates 
         /// </summary> 
-        static async Task onDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
+        static async Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
         {
             DeviceClient ioTHubModuleClient = userContext as DeviceClient;
 
@@ -284,22 +284,22 @@ namespace Modbus.Containers
                 ModbusSlaveConfig slaveConfig = config_pair.Value;
                 switch (slaveConfig.GetConnectionType())
                 {
-                    case ModbusSlaveConfig.ConnectionType.ModbusTCP:
+                    case ModbusConstants.ConnectionType.ModbusTCP:
                         {
                             ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig);
                             await slave.InitSession();
                             moduleHandle.ModbusSessionList.Add(slave);
                             break;
                         }
-                    case ModbusSlaveConfig.ConnectionType.ModbusRTU:
+                    case ModbusConstants.ConnectionType.ModbusRTU:
                         {
                             break;
                         }
-                    case ModbusSlaveConfig.ConnectionType.ModbusASCII:
+                    case ModbusConstants.ConnectionType.ModbusASCII:
                         {
                             break;
                         }
-                    case ModbusSlaveConfig.ConnectionType.Unknown:
+                    case ModbusConstants.ConnectionType.Unknown:
                         {
                             break;
                         }

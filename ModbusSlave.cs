@@ -57,21 +57,22 @@ namespace Modbus.Slaves
         }
         #endregion
         #region Private Properties
-        private const int bufsz = 512;
-        private Socket socket = null;
-        private IPAddress address = null;
-        private const int TCPOffset = 7;
-        private object socketLock = new object();
+        private const int m_reqsz = 12;
+        private const int m_bufsz = 512;
+        private const int m_TCPPort = 502;
+        private const int m_TCPOffset = 7;
+        private object m_socketLock = new object();
+        private Socket m_socket = null;
+        private IPAddress m_address = null;
         #endregion
         #region Public Methods
         public override async Task WriteCB(string uid, string address, string value)
         {
-            byte[] writeRequest = new byte[bufsz];
+            byte[] writeRequest = new byte[m_bufsz];
             byte[] writeResponse;
-            int reqLen = 12;
+            int reqLen = m_reqsz;
 
             EncodeWrite(writeRequest, uid, address, value);
-            
             writeResponse = await SendRequest(writeRequest, reqLen);
         }
         public override async Task ProcessOperations(List<ModbusOutMessage> result)
@@ -83,13 +84,13 @@ namespace Modbus.Slaves
 
                 if (x.Response != null)
                 {
-                    if (x.Request[TCPOffset] == x.Response[TCPOffset])
+                    if (x.Request[m_TCPOffset] == x.Response[m_TCPOffset])
                     {
                         ProcessResponse(config, x, result);
                     }
-                    else if (x.Request[TCPOffset] + 0x80 == x.Response[TCPOffset])
+                    else if (x.Request[m_TCPOffset] + 0x80 == x.Response[m_TCPOffset])
                     {
-                        Console.WriteLine($"Modbus exception code: {x.Response[TCPOffset + 1]}");
+                        Console.WriteLine($"Modbus exception code: {x.Response[m_TCPOffset + 1]}");
                     }
                 }
                 x.Response = null;
@@ -113,8 +114,8 @@ namespace Modbus.Slaves
                 else if (x.StartAddress.Length == 6)
                     x.OutFormat = "{0}{1:00000}";
 
-                x.RequestLen = 12;
-                x.Request = new byte[bufsz];
+                x.RequestLen = m_reqsz;
+                x.Request = new byte[m_bufsz];
 
                 EncodeRead(x);
             }
@@ -123,18 +124,18 @@ namespace Modbus.Slaves
         #region Private Methods
         private async Task ConnectSlave()
         {
-            if (IPAddress.TryParse(config.SlaveConnection, out address))
+            if (IPAddress.TryParse(config.SlaveConnection, out m_address))
             {
                 try
                 {
-                    socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    await socket.ConnectAsync(address, 502);
+                    m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    await m_socket.ConnectAsync(m_address, m_TCPPort);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine("Connect Slave failed");
                     Console.WriteLine(e.Message);
-                    socket = null;
+                    m_socket = null;
                 }
             }
         }
@@ -150,30 +151,30 @@ namespace Modbus.Slaves
             //function code
             switch ((char)entityType)
             {
-                case '0':
+                case (char)ModbusConstants.EntityType.CoilStatus:
                     {
-                        functionCode = (byte)(isRead ? 1 : 5);
+                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadCoils : ModbusConstants.FunctionCodeType.WriteCoil);
                         break;
                     }
-                case '1':
+                case (char)ModbusConstants.EntityType.InputStatus:
                     {
                         if (isRead)
-                            functionCode = 2;
+                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputs;
                         else
                             return false;
                         break;
                     }
-                case '3':
+                case (char)ModbusConstants.EntityType.InputRegister:
                     {
                         if (isRead)
-                            functionCode = 4;
+                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputRegisters;
                         else
                             return false;
                         break;
                     }
-                case '4':
+                case (char)ModbusConstants.EntityType.HoldingRegister:
                     {
-                        functionCode = (byte)(isRead ? 3 : 6);
+                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadHoldingRegisters : ModbusConstants.FunctionCodeType.WriteHoldingRegister);
                         break;
                     }
                 default:
@@ -203,7 +204,7 @@ namespace Modbus.Slaves
 
             //Body
             //function code
-            operation.Request[TCPOffset] = operation.FunctionCode;
+            operation.Request[m_TCPOffset] = operation.FunctionCode;
             //address
             byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(operation.Address)));
             operation.Request[8] = address_byte[0];
@@ -231,7 +232,7 @@ namespace Modbus.Slaves
 
             //Body
             //function code
-            ParseEntity(address, false, out ushort address_int16, out request[TCPOffset], out byte entity_type);
+            ParseEntity(address, false, out ushort address_int16, out request[m_TCPOffset], out byte entity_type);
 
             //address
             byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(address_int16)));
@@ -256,23 +257,23 @@ namespace Modbus.Slaves
             int count = 0;
             int step_size = 0;
             int start_digit = 0;
-            switch (x.Response[TCPOffset])//function code
+            switch (x.Response[m_TCPOffset])//function code
             {
                 case 1:
                 case 2:
                     {
-                        count = x.Response[TCPOffset + 1] * 8;
+                        count = x.Response[m_TCPOffset + 1] * 8;
                         count = (count > x.Count) ? x.Count : count;
                         step_size = 1;
-                        start_digit = x.Response[TCPOffset] - 1;
+                        start_digit = x.Response[m_TCPOffset] - 1;
                         break;
                     }
                 case 3:
                 case 4:
                     {
-                        count = x.Response[TCPOffset + 1];
+                        count = x.Response[m_TCPOffset + 1];
                         step_size = 2;
-                        start_digit = (x.Response[TCPOffset] == 3) ? 4 : 3;
+                        start_digit = (x.Response[m_TCPOffset] == 3) ? 4 : 3;
                         break;
                     }
             }
@@ -284,12 +285,12 @@ namespace Modbus.Slaves
                 if (step_size == 1)
                 {
                     cell = string.Format(x.OutFormat, (char)x.EntityType, x.Address + i + 1);
-                    val = string.Format("{0}", (x.Response[TCPOffset + 2 + (i / 8)] >> (i % 8)) & 0b1);
+                    val = string.Format("{0}", (x.Response[m_TCPOffset + 2 + (i / 8)] >> (i % 8)) & 0b1);
                 }
                 else if (step_size == 2)
                 {
                     cell = string.Format(x.OutFormat, (char)x.EntityType, x.Address + (i / 2) + 1);
-                    val = string.Format("{0,00000}", ((x.Response[TCPOffset + 2 + i]) * 0x100 + x.Response[TCPOffset + 3 + i]));
+                    val = string.Format("{0,00000}", ((x.Response[m_TCPOffset + 2 + i]) * 0x100 + x.Response[m_TCPOffset + 3 + i]));
                 }
                 res = cell + ": " + val + "\n";
                 Console.WriteLine(res);
@@ -301,25 +302,25 @@ namespace Modbus.Slaves
         }
         private async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
-            byte[] response = new byte[bufsz];
-            if (socket != null && socket.Connected)
+            byte[] response = new byte[m_bufsz];
+            if (m_socket != null && m_socket.Connected)
             {
-                lock (socketLock)
+                lock (m_socketLock)
                 {
                     try
                     {
-                        socket.Send(request, reqLen, SocketFlags.None);
-                        socket.Receive(response, 0, TCPOffset, SocketFlags.None);
+                        m_socket.Send(request, reqLen, SocketFlags.None);
+                        m_socket.Receive(response, 0, m_TCPOffset, SocketFlags.None);
                         int remain = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4));
-                        socket.Receive(response, TCPOffset, remain - 1, SocketFlags.None);
+                        m_socket.Receive(response, m_TCPOffset, remain - 1, SocketFlags.None);
                     }
                     catch (Exception e)
                     {
                         Console.WriteLine("Something wrong with the socket, disposing...");
                         Console.WriteLine(e.Message);
-                        socket.Disconnect(false);
-                        socket.Dispose();
-                        socket = null;
+                        m_socket.Disconnect(false);
+                        m_socket.Dispose();
+                        m_socket = null;
                     }
                 }
                 return response;
@@ -343,13 +344,6 @@ namespace Modbus.Slaves
     /// </summary>
     class ModbusSlaveConfig
     {
-        public enum ConnectionType
-        {
-            Unknown = 0,
-            ModbusTCP = 1,
-            ModbusRTU = 2,
-            ModbusASCII = 3
-        };
         public string SlaveConnection { get; set; }
         public string HwId { get; set; }
         public int Interval { get; set; }
@@ -361,12 +355,12 @@ namespace Modbus.Slaves
         public byte FlowControl { get; set; }
         */
         public Dictionary<string, ReadOperation> Operations = null;
-        public ConnectionType GetConnectionType()
+        public ModbusConstants.ConnectionType GetConnectionType()
         {
             if (IPAddress.TryParse(SlaveConnection, out IPAddress address))
-                return ConnectionType.ModbusTCP;
+                return ModbusConstants.ConnectionType.ModbusTCP;
             //TODO: ModbusRTU ModbusASCII
-            return ConnectionType.Unknown;
+            return ModbusConstants.ConnectionType.Unknown;
         }
 
     }
@@ -387,7 +381,32 @@ namespace Modbus.Slaves
         public UInt16 Count { get; set; }
         public string DisplayName { get; set; }
     }
-
+    static class ModbusConstants
+    {
+        public enum EntityType
+        {
+            CoilStatus = '0',
+            InputStatus = '1',
+            InputRegister = '3',
+            HoldingRegister = '4'
+        }
+        public enum ConnectionType
+        {
+            Unknown = 0,
+            ModbusTCP = 1,
+            ModbusRTU = 2,
+            ModbusASCII = 3
+        };
+        public enum FunctionCodeType
+        {
+            ReadCoils = 1,
+            ReadInputs = 2,
+            ReadHoldingRegisters = 3,
+            ReadInputRegisters = 4,
+            WriteCoil = 5,
+            WriteHoldingRegister = 6
+        };
+    }
     class ModbusOutMessage
     {
         public string DisplayName { get; set; }

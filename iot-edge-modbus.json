@@ -1,15 +1,40 @@
 ﻿{
   "SlaveConfigs": {
     "Slave01": {
-      "SlaveConnection": "ipv4 address to Modbus device",
-      "Interval": "read interval",
-      "HwId": "unique HW Id defined by user",
+      "SlaveConnection": "127.0.0.1",
+      "Interval": "1500",
+      "HwId": "PowerMeter-0a:01:01:01:01:01",
       "Operations": {
         "Op01": {
-          "UnitId": "unit id of Modbus device",
-          "StartAddress": "starting address of read request",
-          "Count": "unit count of read request",
-          "DisplayName": "alternative name defined by user"
+          "UnitId": "1",
+          "StartAddress": "400001",
+          "Count": "2",
+          "DisplayName": "Voltage"
+        },
+        "Op02": {
+          "UnitId": "1",
+          "StartAddress": "400002",
+          "Count": "2",
+          "DisplayName": "Current"
+        }
+      }
+    },
+    "Slave02": {
+      "SlaveConnection": "127.0.0.1",
+      "Interval": "1500",
+      "HwId": "PowerMeter-0a:01:01:01:01:02",
+      "Operations": {
+        "Op01": {
+          "UnitId": "1",
+          "StartAddress": "40001",
+          "Count": "2",
+          "DisplayName": "Voltage"
+        },
+        "Op02": {
+          "UnitId": "1",
+          "StartAddress": "40002",
+          "Count": "2",
+          "DisplayName": "Current"
         }
       }
     }
