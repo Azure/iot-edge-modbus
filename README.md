@@ -2,7 +2,7 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 # Azure IoT Edge Modbus Module Preview #
 Using this module, developers can build Azure IoT Edge solutions with Modbus TCP connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.
-![](./diagram.png)
+![](./doc/diagram.png)
 If you are using V1 version of IoT Edge (previously known as Azure IoT Gateway), please use V1 version of this module, all materials can be found in [V1](https://github.com/Azure/iot-gateway-modbus/tree/master/V1) folder.
 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
@@ -20,7 +20,7 @@ Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge#hardware-compa
 This section will help you download the module from docker hub, and run it with IoT Edge directly.
   1. Setup [Azure IoT Edge](https://github.com/Azure/azure-iot-edge#setup) with compatible version on your machine.
   2. Follow [this](https://review.docs.microsoft.com/en-us/azure/iot-edge/tutorial-install-iot-edge?branch=release-iot-edge-v2#start-the-iot-edge-runtime) to deploy a custom IoT Edge module.
-  3. In the Image field, enter microsoft/azureiotedge-modbus-tcp:1.0-preview.
+  3. In the Image field, enter **microsoft/azureiotedge-modbus-tcp:1.0-preview**.
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-gateway-modbus#configuration).
 
 ## HowTo Build ##
@@ -29,7 +29,7 @@ If you prefer to build your own module, use the following script. Dockerfiles ar
   2. dotnet restore
   3. dotnet build
   4. dotnet publish -f netcoreapp2.0
-  5. docker build --build-arg EXE_DIR=./bin/Debug/netcoreapp2.0/publish -t "name of the docker image" -f "path to the docker file".
+  5. docker build --build-arg EXE_DIR=./bin/Debug/netcoreapp2.0/publish -t "**name of the docker image**" -f "**path to the docker file**".
 
 ## Configuration ##
 The Modbus module uses module twin as its configuration.
