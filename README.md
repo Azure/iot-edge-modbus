@@ -19,7 +19,7 @@ Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
 ## HowTo Run ##
 This section will help you download the prebuilt module image from docker hub, and run it with IoT Edge directly.
   1. Setup [Azure IoT Edge](https://github.com/Azure/azure-iot-edge) with compatible version on your machine.
-  2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart?branch=release-iot-edge-v2) to deploy a custom IoT Edge module.
+  2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart) to deploy a custom IoT Edge module.
   3. In the Image field, enter **microsoft/azureiotedge-modbus-tcp:1.0-preview**.
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
 
@@ -39,7 +39,7 @@ The application requires the [.NET Core SDK 2.0](https://www.microsoft.com/net/d
 >dotnet restore
 >dotnet build
 >dotnet publish -f netcoreapp2.0
->cd ../iot-edge-modbus/
+>cd ../
 >docker build --build-arg EXE_DIR=./src/bin/Debug/netcoreapp2.0/publish -t modbusModule -f Docker/<PlatForm>/Dockerfile .
 ```
 
@@ -90,8 +90,8 @@ The Modbus module uses module twin as its configuration. Here is a sample config
 ```
 Meaning of each field:
 
-* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
 * "Interval" – Interval between each push to IoT Hub in millisecond
+* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
 	* "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates
 	* "SlaveConnection" – IPV4 address of the Modbus slave
 	* "HwId" – Unique Id for each Modbus slave (user defined)
