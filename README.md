@@ -1,7 +1,7 @@
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments
 
 # Azure IoT Edge Modbus Module Preview #
-Using this module, developers can build Azure IoT Edge solutions with Modbus TCP connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.
+Using this module, developers can build Azure IoT Edge solutions with Modbus TCP connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.  
 ![](./doc/diagram.png)  
 If you are using V1 version of IoT Edge (previously known as Azure IoT Gateway), please use V1 version of this module, all materials can be found in [V1](https://github.com/Azure/iot-gateway-modbus/tree/master/V1) folder.
 
@@ -17,24 +17,31 @@ Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
 Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
 
 ## HowTo Run ##
-This section will help you download the module from docker hub, and run it with IoT Edge directly.
+This section will help you download the prebuilt module image from docker hub, and run it with IoT Edge directly.
   1. Setup [Azure IoT Edge](https://github.com/Azure/azure-iot-edge) with compatible version on your machine.
   2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart?branch=release-iot-edge-v2) to deploy a custom IoT Edge module.
   3. In the Image field, enter **microsoft/azureiotedge-modbus-tcp:1.0-preview**.
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
 
 ## HowTo Build ##
-If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Docker files in each platform, the one ended with **-auto** will automatically build source code and Docker image. The other one requires you to build source code first and then copy binary to the image. Note: Arm32 auto build doesn't work at this moment, please build it manually.
-### -auto ###
-  1. cd iot-edge-modbus/
-  2. docker build -t "**name of the docker image**" -f "**path to the auto docker file**" .
-### non-auto ###
-  1. cd iot-edge-modbus/src/
-  2. dotnet restore
-  3. dotnet build
-  4. dotnet publish -f netcoreapp2.0
-  5. cd ../iot-edge-modbus/
-  6. docker build --build-arg EXE_DIR=./src/bin/Debug/netcoreapp2.0/publish -t "**name of the docker image**" -f "**path to the docker file**" .
+If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Dockerfiles in each platform, the multi-stage Dockerfile-auto will automatically build source code and Docker image. The other Dockerfile requires you to build source code first and then copy binary to the image.  
+**Note**: Arm32 multi-stage build doesn't work at this moment, please build it manually.  
+**Note**: Please replace **PlatForm** in below scripts with the actual platform path you are trying to build.
+### Multi-stage build ###
+```cmd
+>cd iot-edge-modbus/
+>docker build -t modbusModule -f Docker/<PlatForm>/Dockerfile-auto .
+```
+### Manually build ###
+The application requires the [.NET Core SDK 2.0](https://www.microsoft.com/net/download/windows).
+  ```cmd
+>cd iot-edge-modbus/src/
+>dotnet restore
+>dotnet build
+>dotnet publish -f netcoreapp2.0
+>cd ../iot-edge-modbus/
+>docker build --build-arg EXE_DIR=./src/bin/Debug/netcoreapp2.0/publish -t modbusModule -f Docker/<PlatForm>/Dockerfile .
+```
 
 ## Configuration ##
 The Modbus module uses module twin as its configuration. Here is a sample configuration for your reference.
@@ -83,15 +90,17 @@ The Modbus module uses module twin as its configuration. Here is a sample config
 ```
 Meaning of each field:
 
-* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have Slave01 and Slave02 two devices:
+* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
 * "Interval" – Interval between each push to IoT Hub in millisecond
+	* "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates
 	* "SlaveConnection" – IPV4 address of the Modbus slave
 	* "HwId" – Unique Id for each Modbus slave (user defined)
-	* "Operations" – Contains one or more Modbus read requests. In this sample, we have Op01 and Op02 two read requests in both Slave01 and Slave02:
+	* "Operations" – Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
 		* "UnitId" – The unit id to be read
 		* "StartAddress" – The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
 		* "Count" – Number of registers/bits to be read
-		* "DisplayName" – Alternative name for the #StartAddress register(s)(user defined)
+		* "DisplayName" – Alternative name for the "StartAddress" register(s)(user defined)
+	    * "Op01", "Op02" - User defined names for each read request, cannot have duplicates under the same "SlaveConfig"  
 
 For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/Modbus) link.
 
@@ -127,4 +136,5 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 ```
 
 ## Debug ##
-There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Note: running in console mode means none of the IoT Edge features is available. This mode is only to debug non edge-related functions. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file **iot-edge-modbus.json** since module twin is not available.
+There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file **iot-edge-modbus.json** since module twin is not available.  
+**Note**: running in console mode means none of the IoT Edge features is available. This mode is only to debug non edge-related functions. 
