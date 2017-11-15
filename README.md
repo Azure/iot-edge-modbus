@@ -24,7 +24,7 @@ This section will help you download the prebuilt module image from docker hub, a
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
 
 ## HowTo Build ##
-If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Dockerfiles in each platform, the multi-stage Dockerfile-auto will automatically build source code and Docker image. The other Dockerfile requires you to build source code first and then copy binary to the image.  
+If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Dockerfiles in each platform, the multi-stage "Dockerfile-auto" will automatically build source code and Docker image. The other "Dockerfile" requires you to build source code first and then copy binary to the image.  
 **Note**: Arm32 multi-stage build doesn't work at this moment, please build it manually.  
 **Note**: Please replace **PlatForm** in below scripts with the actual platform path you are trying to build.
 ### Multi-stage build ###
@@ -136,5 +136,5 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 ```
 
 ## Debug ##
-There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file **iot-edge-modbus.json** since module twin is not available.  
+There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file "iot-edge-modbus.json" since module twin is not available.  
 **Note**: running in console mode means none of the IoT Edge features is available. This mode is only to debug non edge-related functions. 
