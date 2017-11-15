@@ -14,7 +14,7 @@
           "edgeAgent": {
             "type": "docker",
             "settings": {
-              "image": "edgepreview.azurecr.io/azureiotedge/edge-agent:1.0-preview",
+              "image": "microsoft/azureiotedge-agent:1.0-preview",
               "createOptions": ""
             }
           },
@@ -23,7 +23,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "edgepreview.azurecr.io/azureiotedge/edge-hub:1.0-preview",
+              "image": "microsoft/azureiotedge-hub:1.0-preview",
               "createOptions": ""
             }
           }
@@ -35,7 +35,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "<dockeruser>/<image>:<tag>",
+              "image": "microsoft/azureiotedge-modbus-tcp:1.0-preview",
               "createOptions": "{}"
             }
           }
@@ -49,7 +49,7 @@
           "route": "FROM /* INTO $upstream"
         },
         "storeAndForwardConfiguration": {
-          "timeToLiveSecs": 10
+          "timeToLiveSecs": 7200
         }
       }
     }

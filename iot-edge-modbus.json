@@ -1,8 +1,8 @@
 ﻿{
+  "Interval": "1500",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "127.0.0.1",
-      "Interval": "1500",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
       "Operations": {
         "Op01": {
@@ -21,7 +21,6 @@
     },
     "Slave02": {
       "SlaveConnection": "127.0.0.1",
-      "Interval": "1500",
       "HwId": "PowerMeter-0a:01:01:01:01:02",
       "Operations": {
         "Op01": {

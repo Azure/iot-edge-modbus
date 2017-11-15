@@ -9,7 +9,7 @@ RUN dotnet restore
 RUN dotnet build
 RUN dotnet publish -f netcoreapp2.0 -c Release -o out
 
-FROM microsoft/dotnet:2.0.0-runtime
+FROM microsoft/dotnet:2.0.0-runtime-stretch-arm32v7
 
 ARG EXE_DIR=.
 

@@ -20,9 +20,11 @@ namespace Modbus.Containers
     class Program
     {
         const string ModbusSlaves = "SlaveConfigs";
-        static int counter = 0;
-        static List<Task> task_list = new List<Task>();
-        static bool run = true;
+        const int DefaultPushInterval = 5000;
+        static int m_counter = 0;
+        static List<Task> m_task_list = new List<Task>();
+        static bool m_run = true;
+        static ModbusSendInterval m_interval = null;
 
         static void Main(string[] args)
         {
@@ -66,7 +68,8 @@ namespace Modbus.Containers
                 // We cannot proceed further without a proper cert file
                 Console.WriteLine("Missing path to certificate collection file.");
                 throw new InvalidOperationException("Missing path to certificate file.");
-            } else if (!File.Exists(certPath))
+            }
+            else if (!File.Exists(certPath))
             {
                 // We cannot proceed further without a proper cert file
                 Console.WriteLine("Missing certificate collection file.");
@@ -93,12 +96,12 @@ namespace Modbus.Containers
 
                 MqttTransportSettings mqttSettings = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
                 // Suppress cert validation on Windows for now
-                if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     mqttSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 }
                 ITransportSettings[] settings = { mqttSettings };
-                
+
                 DeviceClient ioTHubModuleClient = DeviceClient.CreateFromConnectionString(connectionString, settings);
                 await ioTHubModuleClient.OpenAsync();
                 Console.WriteLine("IoT Hub module client initialized.");
@@ -119,11 +122,6 @@ namespace Modbus.Containers
                     Console.WriteLine("Error when initializing module: {0}", exception);
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Error when initializing module: {0}", ex.Message);
-            }
 
         }
 
@@ -135,16 +133,16 @@ namespace Modbus.Containers
         static async Task<MessageResponse> PipeMessage(Message message, object userContext)
         {
             Console.WriteLine("Modbus Writer - Received command");
-            int counterValue = Interlocked.Increment(ref counter);
+            int counterValue = Interlocked.Increment(ref m_counter);
 
-            var userContextValues = userContext as Tuple<DeviceClient, Modbus.Slaves.ModuleHandle>;
+            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
             if (userContextValues == null)
             {
                 throw new InvalidOperationException("UserContext doesn't contain " +
                     "expected values");
             }
             DeviceClient ioTHubModuleClient = userContextValues.Item1;
-            Modbus.Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
+            Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
             byte[] messageBytes = message.GetBytes();
             string messageString = Encoding.UTF8.GetString(messageBytes);
@@ -191,10 +189,10 @@ namespace Modbus.Containers
                 null);
 #endif
 
-                run = false;
-                await Task.WhenAll(task_list);
-                task_list.Clear();
-                run = true;
+                m_run = false;
+                await Task.WhenAll(m_task_list);
+                m_task_list.Clear();
+                m_run = true;
 
                 await UpdateStartFromTwin(desiredProperties, ioTHubModuleClient);
             }
@@ -230,7 +228,7 @@ namespace Modbus.Containers
         static async Task UpdateStartFromTwin(TwinCollection desiredProperties, DeviceClient ioTHubModuleClient)
         {
             ModuleConfig config;
-            Modbus.Slaves.ModuleHandle moduleHandle;
+            Slaves.ModuleHandle moduleHandle;
             string jsonStr;
             string serializedStr;
 
@@ -246,18 +244,24 @@ namespace Modbus.Containers
             else
             {
                 // get config from local file
-                jsonStr = File.ReadAllText(@"iot-edge-modbus.json");
+                jsonStr = File.ReadAllText(@"..\iot-edge-modbus.json");
             }
 
-            config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
-
-            moduleHandle = new Modbus.Slaves.ModuleHandle();
-
-            await CompleteHandleFromConfiguration(moduleHandle, config);
-
-            if (moduleHandle != null)
+            if (!string.IsNullOrEmpty(jsonStr))
             {
-                var userContext = new Tuple<DeviceClient, Modbus.Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
+                config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
+                m_interval = JsonConvert.DeserializeObject<ModbusSendInterval>(jsonStr);
+
+                if (m_interval == null)
+                {
+                    m_interval = new ModbusSendInterval(DefaultPushInterval);
+                }
+
+                moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config);
+
+                if (moduleHandle != null)
+                {
+                    var userContext = new Tuple<DeviceClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
 #if IOT_EDGE
                 // Register callback to be called when a message is received by the module
                 await ioTHubModuleClient.SetInputMessageHandlerAsync(
@@ -265,47 +269,13 @@ namespace Modbus.Containers
                 PipeMessage,
                 userContext);
 #else
-                task_list.Add(Receive(userContext));
+                    m_task_list.Add(Receive(userContext));
 #endif
-                task_list.Add(Start(userContext));
-            }
-        }
-
-        /// <summary>
-        /// Complete module handle from configuration
-        /// </summary>
-        /// <param name="moduleHandle"></param>
-        /// <param name="config"></param>
-        /// <returns></returns>
-        static async Task CompleteHandleFromConfiguration(Modbus.Slaves.ModuleHandle moduleHandle, ModuleConfig config)
-        {
-            foreach (var config_pair in config.SlaveConfigs)
-            {
-                ModbusSlaveConfig slaveConfig = config_pair.Value;
-                switch (slaveConfig.GetConnectionType())
-                {
-                    case ModbusConstants.ConnectionType.ModbusTCP:
-                        {
-                            ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig);
-                            await slave.InitSession();
-                            moduleHandle.ModbusSessionList.Add(slave);
-                            break;
-                        }
-                    case ModbusConstants.ConnectionType.ModbusRTU:
-                        {
-                            break;
-                        }
-                    case ModbusConstants.ConnectionType.ModbusASCII:
-                        {
-                            break;
-                        }
-                    case ModbusConstants.ConnectionType.Unknown:
-                        {
-                            break;
-                        }
+                    m_task_list.Add(Start(userContext));
                 }
             }
         }
+
         /// <summary>
         /// Iterate through each Modbus session to poll data 
         /// </summary>
@@ -313,7 +283,7 @@ namespace Modbus.Containers
         /// <returns></returns>
         static async Task Start(object userContext)
         {
-            var userContextValues = userContext as Tuple<DeviceClient, Modbus.Slaves.ModuleHandle>;
+            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
             if (userContextValues == null)
             {
                 throw new InvalidOperationException("UserContext doesn't contain " +
@@ -321,16 +291,21 @@ namespace Modbus.Containers
             }
 
             DeviceClient ioTHubModuleClient = userContextValues.Item1;
-            Modbus.Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
+            Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
-            while (run)
+            while (m_run)
             {
                 List<ModbusOutMessage> result = new List<ModbusOutMessage>();
                 foreach (ModbusSlaveSession s in moduleHandle.ModbusSessionList)
                 {
-                    await s.ProcessOperations(result);
+                    var msgs = await s.ProcessOperations();
+                    result.AddRange(msgs);
                 }
-                await Task.Delay(1500);
+                if (!m_run)
+                {
+                    break;
+                }
+                await Task.Delay(m_interval.Interval);
                 if (result.Count > 0)
                 {
                     Message message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(result)));
@@ -351,20 +326,29 @@ namespace Modbus.Containers
         /// <returns></returns>
         static async Task Receive(object userContext)
         {
-            var userContextValues = userContext as Tuple<DeviceClient, Modbus.Slaves.ModuleHandle>;
+            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
             if (userContextValues == null)
             {
                 throw new InvalidOperationException("UserContext doesn't contain " +
                     "expected values");
             }
             DeviceClient ioTHubModuleClient = userContextValues.Item1;
-            while (run)
+            var timeout = TimeSpan.FromSeconds(3);
+            while (m_run)
             {
-                Message message = await ioTHubModuleClient.ReceiveAsync();
-                if (message != null)
+                try
                 {
-                    await PipeMessage(message, userContext);
-                    await ioTHubModuleClient.CompleteAsync(message);
+                    Message message = await ioTHubModuleClient.ReceiveAsync(timeout);
+                    if (message != null)
+                    {
+                        await PipeMessage(message, userContext);
+                        await ioTHubModuleClient.CompleteAsync(message);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine();
+                    Console.WriteLine("Error when receiving: {0}", ex.Message);
                 }
             }
         }

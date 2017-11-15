@@ -1,8 +1,8 @@
 ﻿{
+  "Interval": "push interval in millisecond",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "ipv4 address to Modbus device",
-      "Interval": "read interval",
       "HwId": "unique HW Id defined by user",
       "Operations": {
         "Op01": {
