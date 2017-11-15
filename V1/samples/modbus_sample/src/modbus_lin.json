@@ -1,0 +1,99 @@
+{
+  "modules": [
+    {
+      "name": "IoTHub",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/iothub/libiothub.so"
+        }
+      },
+      "args": {
+        "IoTHubName": "YOUR IOT HUB NAME",
+        "IoTHubSuffix": "YOUR IOT HUB SUFFIX",
+        "Transport": "TRANSPORT PROTOCOL"
+      }
+    },
+    {
+      "name": "mapping",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/identitymap/libidentity_map.so"
+        }
+      },
+      "args": [
+        {
+          "macAddress": "01:01:01:01:01:01",
+          "deviceId": "YOUR DEVICE ID",
+          "deviceKey": "YOUR DEVICE KEY"
+        }
+      ]
+    },
+    {
+      "name": "logger",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/logger/liblogger.so"
+        }
+      },
+      "args": {
+        "filename": "log.txt"
+      }
+    },
+    {
+      "name": "modbus_read",
+      "loader": {
+        "name": "native",
+        "entrypoint": {
+          "module.path": "../../modules/modbus_read/libmodbus_read.so"
+        }
+      },
+      "args": [
+        {
+          "serverConnectionString": "COM1",
+          "interval": "2000",
+          "macAddress": "01:01:01:01:01:01",
+          "baudRate": "9600",
+          "stopBits": "1",
+          "dataBits": "8",
+          "parity": "EVEN",
+          "flowControl": "NONE",
+          "deviceType": "powerMeter",
+          "sqliteEnabled": "0",
+          "operations": [
+            {
+              "unitId": "1",
+              "functionCode": "3",
+              "startingAddress": "1",
+              "length": "5"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "source": "mapping",
+      "sink": "IoTHub"
+    },
+    {
+      "source": "IoTHub",
+      "sink": "mapping"
+    },
+    {
+      "source": "mapping",
+      "sink": "modbus_read"
+    },
+    {
+      "source": "modbus_read",
+      "sink": "mapping"
+    },
+    {
+      "source": "modbus_read",
+      "sink": "logger"
+    }
+  ]
+}

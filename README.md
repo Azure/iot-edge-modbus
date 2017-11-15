@@ -1,39 +1,140 @@
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments
 
-# Beta Azure IoT Gateway Modbus Module
-Using this module, developers can build Azure IoT Gateway solutions with Modbus connectivity. The Modbus module is a [Azure IoT Gateway SDK](https://github.com/Azure/azure-iot-gateway-sdk) module, capable of reading data from Modbus devices and publish the data to the Azure IoT Hub via a message broker. Developers can modify the module tailoring to any scenario.
+# Azure IoT Edge Modbus Module Preview #
+Using this module, developers can build Azure IoT Edge solutions with Modbus TCP connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.  
+![](./doc/diagram.png)  
+If you are using V1 version of IoT Edge (previously known as Azure IoT Gateway), please use V1 version of this module, all materials can be found in [V1](https://github.com/Azure/iot-gateway-modbus/tree/master/V1) folder.
 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
-## Azure IoT Gateway SDK compatibility
-Current version of the module is targeted for the Azure IoT Gateway SDK 2017-01-13 version.
-Use the following script to download the compatible version Azure IoT Gateway SDK.
+## Azure IoT Edge Compatibility ##
+Current version of the module is targeted for the Azure IoT Edge 1.0 preview version.
+
+## Operating System Compatibility ##
+Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
+
+## Hardware Compatibility ##
+Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
+
+## HowTo Run ##
+This section will help you download the prebuilt module image from docker hub, and run it with IoT Edge directly.
+  1. Setup [Azure IoT Edge](https://github.com/Azure/azure-iot-edge) with compatible version on your machine.
+  2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart?branch=release-iot-edge-v2) to deploy a custom IoT Edge module.
+  3. In the Image field, enter **microsoft/azureiotedge-modbus-tcp:1.0-preview**.
+  4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
+
+## HowTo Build ##
+If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Dockerfiles in each platform, the multi-stage Dockerfile-auto will automatically build source code and Docker image. The other Dockerfile requires you to build source code first and then copy binary to the image.  
+**Note**: Arm32 multi-stage build doesn't work at this moment, please build it manually.  
+**Note**: Please replace **PlatForm** in below scripts with the actual platform path you are trying to build.
+### Multi-stage build ###
+```cmd
+>cd iot-edge-modbus/
+>docker build -t modbusModule -f Docker/<PlatForm>/Dockerfile-auto .
 ```
-git clone -b "2017-01-13" --recursive https://github.com/Azure/azure-iot-gateway-sdk.git
+### Manually build ###
+The application requires the [.NET Core SDK 2.0](https://www.microsoft.com/net/download/windows).
+  ```cmd
+>cd iot-edge-modbus/src/
+>dotnet restore
+>dotnet build
+>dotnet publish -f netcoreapp2.0
+>cd ../iot-edge-modbus/
+>docker build --build-arg EXE_DIR=./src/bin/Debug/netcoreapp2.0/publish -t modbusModule -f Docker/<PlatForm>/Dockerfile .
 ```
 
-## Operating system compatibility
-Refer to [Azure IoT Gateway SDK](https://github.com/Azure/azure-iot-gateway-sdk#operating-system-compatibility)
+## Configuration ##
+The Modbus module uses module twin as its configuration. Here is a sample configuration for your reference.
+```json
+{
+  "Interval": "1500",
+  "SlaveConfigs": {
+    "Slave01": {
+      "SlaveConnection": "192.168.0.1",
+      "HwId": "PowerMeter-0a:01:01:01:01:01",
+      "Operations": {
+        "Op01": {
+          "UnitId": "1",
+          "StartAddress": "400001",
+          "Count": "2",
+          "DisplayName": "Voltage"
+        },
+        "Op02": {
+          "UnitId": "1",
+          "StartAddress": "400002",
+          "Count": "2",
+          "DisplayName": "Current"
+        }
+      }
+    },
+    "Slave02": {
+      "SlaveConnection": "192.168.0.2",
+      "HwId": "PowerMeter-0a:01:01:01:01:02",
+      "Operations": {
+        "Op01": {
+          "UnitId": "1",
+          "StartAddress": "40001",
+          "Count": "2",
+          "DisplayName": "Voltage"
+        },
+        "Op02": {
+          "UnitId": "1",
+          "StartAddress": "40002",
+          "Count": "2",
+          "DisplayName": "Current"
+        }
+      }
+    }
+  }
+}
+```
+Meaning of each field:
 
-## Hardware compatibility
-Refer to [Azure IoT Gateway SDK](https://github.com/Azure/azure-iot-gateway-sdk#hardware-compatibility)
+* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
+* "Interval" – Interval between each push to IoT Hub in millisecond
+	* "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates
+	* "SlaveConnection" – IPV4 address of the Modbus slave
+	* "HwId" – Unique Id for each Modbus slave (user defined)
+	* "Operations" – Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
+		* "UnitId" – The unit id to be read
+		* "StartAddress" – The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
+		* "Count" – Number of registers/bits to be read
+		* "DisplayName" – Alternative name for the "StartAddress" register(s)(user defined)
+	    * "Op01", "Op02" - User defined names for each read request, cannot have duplicates under the same "SlaveConfig"  
 
-## Directory structure
+For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/Modbus) link.
 
-### /doc
-This folder contains step by step instructions for building and running the sample:
+## Module Endpoints and Routing ##
+All telemetry are sent out from modbusOutput endpoint by default. Routing is enabled by specifying rules like below.
+### Route to IoT Hub ###
+```json
+{
+  "modbusToIoTHub":"FROM /messages/modules/modbus/outputs/modbusOutput INTO $upstream"
+}
+```
+### Route to other (filter) modules ###
+```json
+{
+  "modbusToFilter":"FROM /messages/modules/modbus/outputs/modbusOutput INTO BrokeredEndpoint(\"/modules/filtermodule/inputs/input1\")"
+}
+```
+### Write to Modbus ###
+Modbus module also has an input enpoint to receive message/commands. Currently it supports writing back to a single register/cell in a Modbus slave. The content of command must be the following format.
+```json
+{
+	"HwId":"PowerMeter-0a:01:01:01:01:01",
+	"UId":"1",
+	"Address":"40001",
+	"Value":"15"
+}
+```
+The command should have a property "command-type" with value "ModbusWrite". Also, routing must be enabled by specifying rule like below.
+```json
+{
+  "filterToModbus":"FROM /messages/modules/filtermodule/outputs/output1 INTO BrokeredEndpoint(\"/modules/modbus/inputs/input1\")"
+}
+```
 
-General documentation
-
-- [Dev box setup](./doc/devbox_setup.md) contains instructions for configure your machine to build the Azure IoT Gateway Modbus module.
-
-Samples
-
-- [modbus sample](./doc/sample_modbus.md) contains step by step instructions for building and running the modbus sample.
-
-
-### /samples
-This folder contains a sample for the Azure IoT Gateway Modbus module. Step by step instructions for building and running the sample can be found at [sample_modbus.md](./doc/sample_modbus.md).
-
-### /modules
-This folder contains the Modbus module that could be included with the Azure IoT Gateway SDK. Details on the implementation of the module can be found in the [devdoc](./modules/modbus_read/devdoc) folder. 
+## Debug ##
+There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file **iot-edge-modbus.json** since module twin is not available.  
+**Note**: running in console mode means none of the IoT Edge features is available. This mode is only to debug non edge-related functions. 
