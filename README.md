@@ -24,15 +24,17 @@ This section will help you download the module from docker hub, and run it with 
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
 
 ## HowTo Build ##
-If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Docker files in each platform, the one ended with **-auto** will automatically build source code and Docker image. The other one requires you to build source code first and then copy binary to the image.
+If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Docker files in each platform, the one ended with **-auto** will automatically build source code and Docker image. The other one requires you to build source code first and then copy binary to the image. Note: Arm32 auto build doesn't work at this moment, please build it manually.
 ### -auto ###
-docker build -t "**name of the docker image**" -f "**path to the auto docker file**".
+  1. cd iot-edge-modbus/
+  2. docker build -t "**name of the docker image**" -f "**path to the auto docker file**" .
 ### non-auto ###
-  1. cd src/
+  1. cd iot-edge-modbus/src/
   2. dotnet restore
   3. dotnet build
   4. dotnet publish -f netcoreapp2.0
-  5. docker build --build-arg EXE_DIR=./bin/Debug/netcoreapp2.0/publish -t "**name of the docker image**" -f "**path to the docker file**".
+  5. cd ../iot-edge-modbus/
+  6. docker build --build-arg EXE_DIR=./src/bin/Debug/netcoreapp2.0/publish -t "**name of the docker image**" -f "**path to the docker file**" .
 
 ## Configuration ##
 The Modbus module uses module twin as its configuration. Here is a sample configuration for your reference.

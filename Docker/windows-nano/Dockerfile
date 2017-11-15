@@ -6,4 +6,4 @@ WORKDIR /app
 
 COPY $EXE_DIR/ ./
 
-CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]
+CMD ["dotnet", "iot-edge-modbus.dll"]

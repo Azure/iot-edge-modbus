@@ -1,4 +1,4 @@
-//#define IOT_EDGE
+#define IOT_EDGE
 
 namespace Modbus.Containers
 {
