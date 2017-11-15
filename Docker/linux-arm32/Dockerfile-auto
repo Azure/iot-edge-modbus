@@ -1,0 +1,20 @@
+FROM microsoft/dotnet:2.0-sdk AS build-env
+WORKDIR /app
+
+# copy csproj and restore as distinct layers
+COPY src/*.cs* ./
+RUN dotnet restore
+
+# copy everything else and build
+RUN dotnet build
+RUN dotnet publish -f netcoreapp2.0 -c Release -o out
+
+FROM microsoft/dotnet:2.0.0-runtime-stretch-arm32v7
+
+ARG EXE_DIR=.
+
+WORKDIR /app
+
+COPY --from=build-env /app/out ./
+
+CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]

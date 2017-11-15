@@ -1,4 +1,4 @@
-Microsoft Azure IoT Edge Modbus
+Microsoft Azure IoT Gateway Modbus
 Copyright (c) Microsoft Corporation
 
 MIT license
