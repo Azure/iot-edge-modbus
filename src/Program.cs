@@ -181,8 +181,8 @@ namespace Modbus.Containers
 
             try
             {
-                // stop all activities while updating configuration
 #if IOT_EDGE
+                // stop all activities while updating configuration
                 await ioTHubModuleClient.SetInputMessageHandlerAsync(
                 "input1",
                 DummyCallBack,
@@ -229,7 +229,7 @@ namespace Modbus.Containers
         {
             ModuleConfig config;
             Slaves.ModuleHandle moduleHandle;
-            string jsonStr;
+            string jsonStr = null;
             string serializedStr;
 
             serializedStr = JsonConvert.SerializeObject(desiredProperties);
@@ -243,8 +243,19 @@ namespace Modbus.Containers
             }
             else
             {
-                // get config from local file
-                jsonStr = File.ReadAllText(@"..\iot-edge-modbus.json");
+                Console.WriteLine("No configuration found in desired properties.");
+                if (File.Exists(@"iot-edge-modbus.json"))
+                {
+                    try
+                    {
+                        // get config from local file
+                        jsonStr = File.ReadAllText(@"iot-edge-modbus.json");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Unable to read configuration from file. Error: " + ex.Message);
+                    }
+                }
             }
 
             if (!string.IsNullOrEmpty(jsonStr))
@@ -263,11 +274,11 @@ namespace Modbus.Containers
                 {
                     var userContext = new Tuple<DeviceClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
 #if IOT_EDGE
-                // Register callback to be called when a message is received by the module
-                await ioTHubModuleClient.SetInputMessageHandlerAsync(
-                "input1",
-                PipeMessage,
-                userContext);
+                    // Register callback to be called when a message is received by the module
+                    await ioTHubModuleClient.SetInputMessageHandlerAsync(
+                    "input1",
+                    PipeMessage,
+                    userContext);
 #else
                     m_task_list.Add(Receive(userContext));
 #endif
@@ -301,11 +312,6 @@ namespace Modbus.Containers
                     var msgs = await s.ProcessOperations();
                     result.AddRange(msgs);
                 }
-                if (!m_run)
-                {
-                    break;
-                }
-                await Task.Delay(m_interval.Interval);
                 if (result.Count > 0)
                 {
                     Message message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(result)));
@@ -316,7 +322,13 @@ namespace Modbus.Containers
                     await ioTHubModuleClient.SendEventAsync(message);
 #endif
                 }
+                if (!m_run)
+                {
+                    break;
+                }
+                await Task.Delay(m_interval.Interval);
             }
+            moduleHandle.Release();
         }
 
         /// <summary>

@@ -55,6 +55,14 @@ namespace Modbus.Slaves
         {
             return ModbusSessionList.Find(x => x.config.HwId.ToUpper() == hwid.ToUpper());
         }
+        public void Release()
+        {
+            foreach (var session in ModbusSessionList)
+            {
+                session.ReleaseSession();
+            }
+            ModbusSessionList.Clear();
+        }
     }
     /// <summary>
     /// Base class of Modbus session.
@@ -65,6 +73,7 @@ namespace Modbus.Slaves
         public abstract Task<List<ModbusOutMessage>> ProcessOperations();
         public abstract Task WriteCB(string uid, string address, string value);
         public abstract Task InitSession();
+        public abstract void ReleaseSession();
     }
     /*
      ----------------------- --------
@@ -92,12 +101,7 @@ namespace Modbus.Slaves
             config = conf;
         }
         #endregion
-        #region Destructors
-        ~ModbusTCPSlaveSession()
-        {
-            m_socket.Dispose();
-        }
-        #endregion
+
         #region Private Properties
         private const int m_reqSize = 12;
         private const int m_bufSize = 512;
@@ -163,6 +167,16 @@ namespace Modbus.Slaves
                 x.Request = new byte[m_bufSize];
 
                 EncodeRead(x);
+            }
+        }
+
+        public override void ReleaseSession()
+        {
+            if (m_socket != null)
+            {
+                m_socket.Disconnect(false);
+                m_socket.Dispose();
+                m_socket = null;
             }
         }
         #endregion

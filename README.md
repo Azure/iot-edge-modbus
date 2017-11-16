@@ -18,8 +18,8 @@ Refer to [Azure IoT Edge](https://github.com/Azure/azure-iot-edge)
 
 ## HowTo Run ##
 This section will help you download the prebuilt module image from docker hub, and run it with IoT Edge directly.
-  1. Setup [Azure IoT Edge](https://github.com/Azure/azure-iot-edge) with compatible version on your machine.
-  2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart) to deploy a custom IoT Edge module.
+  1. Setup Azure IoT Edge [Windows](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart) or [Linux](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart-linux) with compatible version on your machine.
+  2. Follow [this](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-deploy-modbus-tcp) to deploy a custom IoT Edge module.
   3. In the Image field, enter **microsoft/azureiotedge-modbus-tcp:1.0-preview**.
   4. You may also want to provide configuration to the module when it starts, paste the configuration in the desired property field. For more about configuration, see [here](https://github.com/Azure/iot-edge-modbus#configuration).
 
@@ -27,11 +27,13 @@ This section will help you download the prebuilt module image from docker hub, a
 If you prefer to build your own module, use the following script. Dockerfiles are located under [Docker](https://github.com/Azure/iot-edge-modbus/tree/master/Docker) folder, you should be able to find one for your platform. There are two Dockerfiles in each platform, the multi-stage "Dockerfile-auto" will automatically build source code and Docker image. The other "Dockerfile" requires you to build source code first and then copy binary to the image.  
 **Note**: Arm32 multi-stage build doesn't work at this moment, please build it manually.  
 **Note**: Please replace **PlatForm** in below scripts with the actual platform path you are trying to build.
+
 ### Multi-stage build ###
 ```cmd
 >cd iot-edge-modbus/
 >docker build -t modbusModule -f Docker/<PlatForm>/Dockerfile-auto .
 ```
+
 ### Manually build ###
 The application requires the [.NET Core SDK 2.0](https://www.microsoft.com/net/download/windows).
   ```cmd
@@ -106,18 +108,21 @@ For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/
 
 ## Module Endpoints and Routing ##
 All telemetry are sent out from modbusOutput endpoint by default. Routing is enabled by specifying rules like below.
+
 ### Route to IoT Hub ###
 ```json
 {
   "modbusToIoTHub":"FROM /messages/modules/modbus/outputs/modbusOutput INTO $upstream"
 }
 ```
+
 ### Route to other (filter) modules ###
 ```json
 {
   "modbusToFilter":"FROM /messages/modules/modbus/outputs/modbusOutput INTO BrokeredEndpoint(\"/modules/filtermodule/inputs/input1\")"
 }
 ```
+
 ### Write to Modbus ###
 Modbus module also has an input enpoint to receive message/commands. Currently it supports writing back to a single register/cell in a Modbus slave. The content of command must be the following format.
 ```json
@@ -136,5 +141,5 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 ```
 
 ## Debug ##
-There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file "iot-edge-modbus.json" since module twin is not available.  
+There is a flag **IOT_EDGE** at the first line in Program.cs, which can be turn off to debug the Modbus module in console mode. Running console mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file "iot-edge-modbus.json" since module twin is not available. You can copy "iot-edge-modbus.json" template from project root directory.  
 **Note**: running in console mode means none of the IoT Edge features is available. This mode is only to debug non edge-related functions. 
