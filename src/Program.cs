@@ -24,7 +24,9 @@ namespace Modbus.Containers
         static int m_counter = 0;
         static List<Task> m_task_list = new List<Task>();
         static bool m_run = true;
-        static ModbusSendInterval m_interval = null;
+        static ModbusPushInterval m_interval = null;
+        static object message_lock = new object();
+        static List<ModbusOutMessage> result = new List<ModbusOutMessage>();
 
         static void Main(string[] args)
         {
@@ -81,7 +83,6 @@ namespace Modbus.Containers
             Console.WriteLine("Added Cert: " + certPath);
             store.Close();
         }
-
 
         /// <summary>
         /// Initializes the Azure IoT Client for the Edge Module
@@ -172,6 +173,7 @@ namespace Modbus.Containers
             }
             return MessageResponse.Completed;
         }
+
         /// <summary> 
         /// Callback to handle Twin desired properties updates 
         /// </summary> 
@@ -222,6 +224,7 @@ namespace Modbus.Containers
             await Task.Delay(TimeSpan.FromSeconds(0));
             return MessageResponse.Abandoned;
         }
+
         /// <summary>
         /// Update Start from module Twin. 
         /// </summary>
@@ -261,14 +264,14 @@ namespace Modbus.Containers
             if (!string.IsNullOrEmpty(jsonStr))
             {
                 config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
-                m_interval = JsonConvert.DeserializeObject<ModbusSendInterval>(jsonStr);
+                m_interval = JsonConvert.DeserializeObject<ModbusPushInterval>(jsonStr);
 
                 if (m_interval == null)
                 {
-                    m_interval = new ModbusSendInterval(DefaultPushInterval);
+                    m_interval = new ModbusPushInterval(DefaultPushInterval);
                 }
 
-                moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config);
+                moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config, UpdateMessage);
 
                 if (moduleHandle != null)
                 {
@@ -304,18 +307,25 @@ namespace Modbus.Containers
             DeviceClient ioTHubModuleClient = userContextValues.Item1;
             Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
+            foreach (ModbusSlaveSession s in moduleHandle.ModbusSessionList)
+            {
+                s.ProcessOperations();
+            }
+
             while (m_run)
             {
-                List<ModbusOutMessage> result = new List<ModbusOutMessage>();
-                foreach (ModbusSlaveSession s in moduleHandle.ModbusSessionList)
+                Message message = null;
+                lock (message_lock)
                 {
-                    var msgs = await s.ProcessOperations();
-                    result.AddRange(msgs);
+                    if (result.Count > 0)
+                    {
+                        message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(result)));
+                        message.Properties.Add("content-type", "application/edge-modbus-json");
+                    }
+                    result.Clear();
                 }
-                if (result.Count > 0)
+                if (message != null)
                 {
-                    Message message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(result)));
-                    message.Properties.Add("content-type", "application/edge-modbus-json");
 #if IOT_EDGE
                     await ioTHubModuleClient.SendEventAsync("modbusOutput", message);
 #else
@@ -326,7 +336,7 @@ namespace Modbus.Containers
                 {
                     break;
                 }
-                await Task.Delay(m_interval.Interval);
+                await Task.Delay(m_interval.PublishInterval);
             }
             moduleHandle.Release();
         }
@@ -362,6 +372,14 @@ namespace Modbus.Containers
                     Console.WriteLine();
                     Console.WriteLine("Error when receiving: {0}", ex.Message);
                 }
+            }
+        }
+
+        static void UpdateMessage(ModbusOutMessage message)
+        {
+            lock(message_lock)
+            {
+                result.Add(message);
             }
         }
     }
