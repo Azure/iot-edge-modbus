@@ -20,8 +20,13 @@
       }
     },
     "Slave02": {
-      "SlaveConnection": "127.0.0.1",
+      "SlaveConnection": "ttyS1",
       "HwId": "PowerMeter-0a:01:01:01:01:02",
+      "BaudRate": "9600",
+      "DataBits": "8",
+      "StopBits": "1",
+      "Parity": "ODD",
+      "FlowControl": "NONE",
       "Operations": {
         "Op01": {
           "UnitId": "1",

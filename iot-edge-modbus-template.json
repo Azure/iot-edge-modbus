@@ -1,11 +1,17 @@
 ﻿{
-  "Interval": "push interval in millisecond",
+  "PublishInterval": "push interval in millisecond",
   "SlaveConfigs": {
     "Slave01": {
-      "SlaveConnection": "ipv4 address to Modbus device",
+      "SlaveConnection": "ipv4 address or the serial port name to Modbus device",
       "HwId": "unique HW Id defined by user",
+      "BaudRate": "baud rate of serial communication (Modbus RTU only)",
+      "DataBits": "data bits of serial communication (Modbus RTU only)",
+      "StopBits": "stop bits of serial communication (Modbus RTU only)",
+      "Parity": "parity of serial communication (Modbus RTU only)",
+      "FlowControl": "flow control of serial communication (Modbus RTU only)",
       "Operations": {
         "Op01": {
+          "PollingInterval": "polling interval in millisecond",
           "UnitId": "unit id of Modbus device",
           "StartAddress": "starting address of read request",
           "Count": "unit count of read request",
