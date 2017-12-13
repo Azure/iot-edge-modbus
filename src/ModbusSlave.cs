@@ -6,7 +6,9 @@
     using System.Net;
     using System.Net.Sockets;
     using System.Threading.Tasks;
+    using tempSerialPort;
     using System.IO.Ports;
+    using System.Runtime.InteropServices;
 
     /* Modbus Frame Details
      ----------------------- --------
@@ -100,6 +102,7 @@
         protected List<Task> m_taskList = new List<Task>();
         protected virtual int m_reqSize { get; }
         protected virtual int m_dataBodyOffset { get; }
+        protected virtual int m_silent { get; }
 
         #region Constructors
         public ModbusSlaveSession(ModbusSlaveConfig conf, HandleResultDelegate resultHandler)
@@ -180,7 +183,7 @@
                         Console.WriteLine($"Modbus exception code: {x.Response[m_dataBodyOffset + 1]}");
                     }
                 }
-                await Task.Delay(x.PollingInterval);
+                await Task.Delay(x.PollingInterval - m_silent);
             }
         }
         protected void ProcessResponse(ModbusSlaveConfig config, ReadOperation x)
@@ -303,6 +306,7 @@
         #region Protected Properties
         protected override int m_reqSize { get { return 12; } }
         protected override int m_dataBodyOffset { get { return 7; } }
+        protected override int m_silent { get { return 0; } }
         #endregion
 
         #region Private Fields
@@ -444,22 +448,23 @@
             byte[] response = new byte[m_bufSize];
             int header_len = 0;
             int data_len = 0;
-
-            int h_l = m_socket.Receive(response, 0, m_dataBodyOffset, SocketFlags.None);
-            header_len += h_l;
+            int h_l = 0;
+            int d_l = 0;
+            
             while (header_len < m_dataBodyOffset)
             {
                 h_l = m_socket.Receive(response, header_len, m_dataBodyOffset - header_len, SocketFlags.None);
-                header_len += h_l;
+                if (h_l >= 0)
+                    header_len += h_l;
             }
 
             int byte_counts = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
-            int d_l = m_socket.Receive(response, m_dataBodyOffset, byte_counts, SocketFlags.None);
-            data_len += d_l;
+            
             while (data_len < byte_counts)
             {
                 d_l = m_socket.Receive(response, m_dataBodyOffset + data_len, byte_counts - data_len, SocketFlags.None);
-                data_len += d_l;
+                if (d_l >= 0)
+                    data_len += d_l;
             }
 
             return response;
@@ -482,12 +487,13 @@
         #region Protected Properties
         protected override int m_reqSize { get { return 8; } }
         protected override int m_dataBodyOffset { get { return 1; } }
+        protected override int m_silent { get { return 100; } }
         #endregion
 
         #region Private Fields
         private const int m_numOfBits = 8;
         private object m_serialPortLock = new object();
-        private SerialPort m_serialPort = null;
+        private ISerialDevice m_serialPort = null;
         #endregion
 
         #region Public Methods
@@ -506,13 +512,20 @@
         #region Private Methods
         protected override async Task ConnectSlave()
         {
-            if (config.SlaveConnection.Substring(0, 3) == "COM" || config.SlaveConnection.Substring(0, 4) == "ttyS")
+            if (config.SlaveConnection.Substring(0, 3) == "COM" || config.SlaveConnection.Substring(0, 8) == "/dev/tty")
             {
                 try
                 {
-                    m_serialPort = new SerialPort(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
+                    Console.WriteLine($"Opening...{config.SlaveConnection}");
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    {
+                        m_serialPort = WinSerialDevice.CreateDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
+                    }
+                    else
+                    {
+                        m_serialPort = UnixSerialDevice.CreateDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
+                    }
                     m_serialPort.Open();
-                    m_serialPort.Handshake = Handshake.None;
                     //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
                     await Task.Delay(0);
                 }
@@ -584,9 +597,8 @@
         protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
             //double slient_interval = 1000 * 5 * ((double)1 / (double)config.BaudRate);
-            int silent = 100;
             byte[] response = null;
-            if (m_serialPort != null && m_serialPort.IsOpen)
+            if (m_serialPort != null && m_serialPort.IsOpen())
             {
                 lock (m_serialPortLock)
                 {
@@ -594,7 +606,7 @@
                     {
                         m_serialPort.DiscardInBuffer();
                         m_serialPort.DiscardOutBuffer();
-                        Task.Delay(silent).Wait();
+                        Task.Delay(m_silent).Wait();
                         m_serialPort.Write(request, 0, reqLen);
                         response = ReadResponse();
                     }
@@ -621,30 +633,30 @@
             byte[] response = new byte[m_bufSize];
             int header_len = 0;
             int data_len = 0;
-
-            int h_l = m_serialPort.Read(response, 0, 3);
-            header_len += h_l;
+            int h_l = 0;
+            int d_l = 0;
+            
             while (header_len < 3)
             {
                 h_l = m_serialPort.Read(response, header_len, 3 - header_len);
-                header_len += h_l;
+                if (h_l >= 0)
+                    header_len += h_l;
             }
-
+            
             int byte_counts = response[2] + 2;
-            int d_l = m_serialPort.Read(response, 3, byte_counts);
-            data_len += d_l;
             while (data_len < byte_counts)
             {
                 d_l = m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
-                data_len += d_l;
+                if (d_l >= 0)
+                    data_len += d_l;
             }
 
             return response;
         }
-        private void sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            string data = m_serialPort.ReadExisting();
-        }
+        //private void sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
+        //{
+        //    string data = m_serialPort.ReadExisting();
+        //}
         private bool GetCRC(byte[] message, int length, out UInt16 res)
         {
             UInt16 crcFull = 0xFFFF;
@@ -691,7 +703,7 @@
         {
             if (IPAddress.TryParse(SlaveConnection, out IPAddress address))
                 return ModbusConstants.ConnectionType.ModbusTCP;
-            else if (SlaveConnection.Substring(0, 3) == "COM" || SlaveConnection.Substring(0, 4) == "ttyS")
+            else if (SlaveConnection.Substring(0, 3) == "COM" || SlaveConnection.Substring(0, 8) == "/dev/tty")
                 return ModbusConstants.ConnectionType.ModbusRTU;
             //TODO: ModbusRTU ModbusASCII
             return ModbusConstants.ConnectionType.Unknown;

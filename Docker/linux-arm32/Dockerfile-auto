@@ -1,13 +1,12 @@
-FROM microsoft/dotnet:2.0-sdk AS build-env
+FROM gcc:7 AS build-env
 WORKDIR /app
 
-# copy csproj and restore as distinct layers
-COPY src/*.cs* ./
-RUN dotnet restore
+# copy .c and .h file
+COPY src/*.c ./
+COPY src/*.h ./
 
-# copy everything else and build
-RUN dotnet build
-RUN dotnet publish -f netcoreapp2.0 -c Release -o out
+# build
+RUN gcc -shared -o libcomWrapper.so -fPIC comWrapper.c
 
 FROM microsoft/dotnet:2.0.0-runtime-stretch-arm32v7
 
@@ -15,6 +14,7 @@ ARG EXE_DIR=.
 
 WORKDIR /app
 
-COPY --from=build-env /app/out ./
+COPY $EXE_DIR/ ./
+COPY --from=build-env /app/libcomWrapper.so /lib/arm-linux-gnueabihf/
 
 CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]

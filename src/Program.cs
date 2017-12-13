@@ -30,8 +30,10 @@ namespace Modbus.Containers
 
         static void Main(string[] args)
         {
+#if IOT_EDGE
             // Install CA certificate
             InstallCert();
+#endif
 
             // Initialize Edge Module
             InitEdgeModule().Wait();
@@ -263,6 +265,7 @@ namespace Modbus.Containers
 
             if (!string.IsNullOrEmpty(jsonStr))
             {
+                Console.WriteLine("Attempt to load configuration: " + jsonStr);
                 config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
                 m_interval = JsonConvert.DeserializeObject<ModbusPushInterval>(jsonStr);
 
@@ -270,7 +273,7 @@ namespace Modbus.Containers
                 {
                     m_interval = new ModbusPushInterval(DefaultPushInterval);
                 }
-
+                
                 moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config, UpdateMessage);
 
                 if (moduleHandle != null)

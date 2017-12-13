@@ -5,7 +5,7 @@ WORKDIR /app
 COPY src/*.cs* ./
 RUN dotnet restore
 
-# copy everything else and build
+# build
 RUN dotnet build
 RUN dotnet publish -f netcoreapp2.0 -c Release -o out
 

@@ -1,7 +1,7 @@
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments
 
 # Azure IoT Edge Modbus Module Preview #
-Using this module, developers can build Azure IoT Edge solutions with Modbus TCP/RTU connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario. Alternatively, the module can also be run in standalone mode for debug purpose, which doesn't require IoT Edge framework.
+Using this module, developers can build Azure IoT Edge solutions with Modbus TCP/RTU(RTU is currently not available in Windows container) connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario. Alternatively, the module can also be run in standalone mode for debug purpose, which doesn't require IoT Edge framework.
 
 ![](./doc/diagram.png)
 
@@ -11,7 +11,7 @@ Visit http://azure.com/iotdev to learn more about developing applications for Az
 
 ## Azure IoT Edge Compatibility ##
 Current version of the module is targeted for the [Azure IoT Edge (second version in public preview)](https://github.com/Azure/azure-iot-edge).  
-If you are using [v1 version of IoT Edge](https://github.com/Azure/iot-edge/tree/master/v1) (previously known as Azure IoT Gateway), please use v1 version of this module, all materials can be found in [v1](https://github.com/Azure/iot-gateway-modbus/tree/master/v1) folder.
+If you are using [v1 version of IoT Edge](https://github.com/Azure/iot-edge/tree/master/v1) (previously known as Azure IoT Gateway), please use v1 version of this module, all materials can be found in [v1](https://github.com/Azure/iot-edge-modbus/tree/master/v1) folder.
 
 Find more information about Azure IoT Edge at [here](https://docs.microsoft.com/en-us/azure/iot-edge/how-iot-edge-works).
 
@@ -237,6 +237,24 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 
 ### Run as an IoT Edge module ###
 Please follow the [link](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-csharp-module) to deploy the module as an IoT Edge module.
+
+#### Configure Modbus RTU ####
+This is for Modbus RTU only, Modbus TCP could skip this section.
+
+In the **Container Create Option section**, enter the following for device mapping.
+```json
+{
+  "HostConfig": {
+    "Devices": [
+      {
+        "PathOnHost": "<device name on host machine>",
+        "PathInContainer": "<device name in container>",
+        "CgroupPermissions": "rwm"
+      }
+    ]
+  }
+}
+```
 
 ## Debug from Visual Studio 2017 ##
 Running debug mode requires IoT device connection string being inserted as a environment variable named **EdgeHubConnectionString**, and a local configuration file "iot-edge-modbus.json" since module twin is not available under debug mode. You can copy "iot-edge-modbus.json" template from project root directory to working directory and modify the content to fit your test case.  
