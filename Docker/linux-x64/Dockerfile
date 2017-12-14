@@ -15,6 +15,6 @@ ARG EXE_DIR=.
 WORKDIR /app
 
 COPY $EXE_DIR/ ./
-COPY --from=build-env /app/libcomWrapper.so /lib/x86_64-linux-gnu/
+COPY --from=build-env /app/libcomWrapper.so /usr/lib/
 
 CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]

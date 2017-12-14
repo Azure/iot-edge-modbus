@@ -71,7 +71,7 @@ $dotnet restore
 $dotnet build
 $dotnet publish -f netcoreapp2.0 -c Release
 $cd ../
-$docker build --build-arg EXE_DIR=./src/bin/Release/netcoreapp2.0/publish -t "modbus:latest" -f Docker/<PlatForm>/Dockerfile .
+$docker build --build-arg EXE_DIR=./src/bin/release/netcoreapp2.0/publish -t "modbus:latest" -f Docker/<PlatForm>/Dockerfile .
 ```
 
 ## Configuration ##

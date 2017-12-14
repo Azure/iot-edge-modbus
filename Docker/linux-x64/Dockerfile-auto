@@ -24,6 +24,6 @@ FROM microsoft/dotnet:2.0.0-runtime
 WORKDIR /app
 
 COPY --from=build-env /app/out ./
-COPY --from=build-env-2 /app/libcomWrapper.so /lib/x86_64-linux-gnu/
+COPY --from=build-env-2 /app/libcomWrapper.so /usr/lib/
 
 CMD ["/usr/bin/dotnet", "iot-edge-modbus.dll"]

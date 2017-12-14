@@ -43,25 +43,25 @@ namespace tempSerialPort
             }
         }
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_open(string pathname);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_close(int fd);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_read(int fd, IntPtr buf, int count);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_write(int fd, IntPtr buf, int count);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_tciflush(int fd);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_tcoflush(int fd);
 
-        [DllImport("comWrapper")]
+        [DllImport("libcomWrapper.so")]
         public static extern int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, int stop_bit);
     }
 }
