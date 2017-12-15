@@ -5,7 +5,7 @@ Using this module, developers can build Azure IoT Edge solutions with Modbus TCP
 
 ![](./doc/diagram.png)
 
-There are prebuilt Modbus TCP module container images ready at [microsoft/azureiotedge-modbus-tcp:1.0-preview](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
+There are prebuilt Modbus TCP module container images ready at [microsoft/azureiotedge-modbus-tcp:1.0-rtu-preview](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
