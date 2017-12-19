@@ -98,6 +98,7 @@
         public ModbusSlaveConfig config;
         protected HandleResultDelegate messageDelegate;
         protected const int m_bufSize = 512;
+        protected const int m_retryMax = 10;
         protected bool m_run = false;
         protected List<Task> m_taskList = new List<Task>();
         protected virtual int m_reqSize { get; }
@@ -114,7 +115,7 @@
 
         #region Public Methods
         public abstract void ReleaseSession();
-        public delegate void HandleResultDelegate(ModbusOutMessage message);
+        public delegate void HandleResultDelegate(List<ModbusOutMessage> message);
         public async Task InitSession()
         {
             await ConnectSlave();
@@ -191,6 +192,7 @@
             int count = 0;
             int step_size = 0;
             int start_digit = 0;
+            List<ModbusOutMessage> message_list = new List<ModbusOutMessage>();
             switch (x.Response[m_dataBodyOffset])//function code
             {
                 case (byte)ModbusConstants.FunctionCodeType.ReadCoils:
@@ -231,8 +233,10 @@
 
                 ModbusOutMessage message = new ModbusOutMessage()
                 { HwId = config.HwId, DisplayName = x.DisplayName, Address = cell, Value = val, SourceTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") };
-                messageDelegate(message);
+                message_list.Add(message);
             }
+            if (message_list.Count > 0)
+                messageDelegate(message_list);
         }
         protected bool ParseEntity(string startAddress, bool isRead, out ushort outAddress, out byte functionCode, out byte entityType)
         {
@@ -450,21 +454,39 @@
             int data_len = 0;
             int h_l = 0;
             int d_l = 0;
+            int retry = 0;
             
-            while (header_len < m_dataBodyOffset)
+            while (header_len < m_dataBodyOffset && retry < m_retryMax)
             {
                 h_l = m_socket.Receive(response, header_len, m_dataBodyOffset - header_len, SocketFlags.None);
                 if (h_l >= 0)
+                {
                     header_len += h_l;
+                }
+                else
+                {
+                    retry++;
+                }
             }
 
             int byte_counts = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
             
-            while (data_len < byte_counts)
+            while (data_len < byte_counts && retry < m_retryMax)
             {
                 d_l = m_socket.Receive(response, m_dataBodyOffset + data_len, byte_counts - data_len, SocketFlags.None);
                 if (d_l >= 0)
+                {
                     data_len += d_l;
+                }
+                else
+                {
+                    retry++;
+                }
+            }
+
+            if (retry >= m_retryMax)
+            {
+                return null;
             }
 
             return response;
@@ -635,20 +657,38 @@
             int data_len = 0;
             int h_l = 0;
             int d_l = 0;
+            int retry = 0;
             
-            while (header_len < 3)
+            while (header_len < 3 && retry < m_retryMax)
             {
                 h_l = m_serialPort.Read(response, header_len, 3 - header_len);
                 if (h_l >= 0)
+                {
                     header_len += h_l;
+                }
+                else
+                {
+                    retry++;
+                }
             }
             
             int byte_counts = response[2] + 2;
-            while (data_len < byte_counts)
+            while (data_len < byte_counts && retry < m_retryMax)
             {
                 d_l = m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
                 if (d_l >= 0)
+                {
                     data_len += d_l;
+                }
+                else
+                {
+                    retry++;
+                }
+            }
+
+            if (retry >= m_retryMax)
+            {
+                return null;
             }
 
             return response;

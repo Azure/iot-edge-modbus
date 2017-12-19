@@ -248,7 +248,7 @@ namespace Modbus.Containers
             }
             else
             {
-                Console.WriteLine("No configuration found in desired properties.");
+                Console.WriteLine("No configuration found in desired properties, look in local...");
                 if (File.Exists(@"iot-edge-modbus.json"))
                 {
                     try
@@ -258,7 +258,7 @@ namespace Modbus.Containers
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Unable to read configuration from file. Error: " + ex.Message);
+                        Console.WriteLine("No configuration found in local file. Error: " + ex.Message);
                     }
                 }
             }
@@ -378,11 +378,11 @@ namespace Modbus.Containers
             }
         }
 
-        static void UpdateMessage(ModbusOutMessage message)
+        static void UpdateMessage(List<ModbusOutMessage> messages)
         {
             lock(message_lock)
             {
-                result.Add(message);
+                result.AddRange(messages);
             }
         }
     }

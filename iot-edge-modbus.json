@@ -1,17 +1,19 @@
 ﻿{
-  "Interval": "1500",
+  "PublishInterval": "5000",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "127.0.0.1",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
       "Operations": {
         "Op01": {
+          "PollingInterval": "2000",
           "UnitId": "1",
           "StartAddress": "400001",
           "Count": "2",
           "DisplayName": "Voltage"
         },
         "Op02": {
+          "PollingInterval": "2000",
           "UnitId": "1",
           "StartAddress": "400002",
           "Count": "2",
@@ -29,12 +31,14 @@
       "FlowControl": "NONE",
       "Operations": {
         "Op01": {
+          "PollingInterval": "2000",
           "UnitId": "1",
           "StartAddress": "40001",
           "Count": "2",
           "DisplayName": "Voltage"
         },
         "Op02": {
+          "PollingInterval": "2000",
           "UnitId": "1",
           "StartAddress": "40002",
           "Count": "2",
