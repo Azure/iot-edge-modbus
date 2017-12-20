@@ -5,7 +5,7 @@ Using this module, developers can build Azure IoT Edge solutions with Modbus TCP
 
 ![](./doc/diagram.png)
 
-There are prebuilt Modbus TCP module container images ready at [microsoft/azureiotedge-modbus-tcp:1.0-rtu-preview](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
+There are prebuilt Modbus TCP module container images ready at [microsoft/azureiotedge-modbus-tcp:1.0-preview](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
@@ -130,23 +130,23 @@ Before running the module, proper configuration is required. Here is a sample co
 ```
 Meaning of each field:
 
-* "PublishInterval" – Interval between each push to IoT Hub in millisecond
-* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
+* "PublishInterval" â€“ Interval between each push to IoT Hub in millisecond
+* "SlaveConfigs" â€“ Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
-    * "SlaveConnection" – Ipv4 address or the serial port name of the Modbus slave
-    * "HwId" – Unique Id for each Modbus slave (user defined)
-    * "BaudRate" – Serial port communication parameter. (valid values: ...9600, 14400,19200...)
-    * "DataBits" – Serial port communication parameter. (valid values: 7, 8)
-    * "StopBits" – Serial port communication parameter. (valid values: 1, 1.5, 2)
-    * "Parity" – Serial port communication parameter. (valid values: ODD, EVEN, NONE)
-    * "FlowControl" – Serial port communication parameter. (valid values: only support NONE now)
-    * "Operations" – Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
+    * "SlaveConnection" â€“ Ipv4 address or the serial port name of the Modbus slave
+    * "HwId" â€“ Unique Id for each Modbus slave (user defined)
+    * "BaudRate" â€“ Serial port communication parameter. (valid values: ...9600, 14400,19200...)
+    * "DataBits" â€“ Serial port communication parameter. (valid values: 7, 8)
+    * "StopBits" â€“ Serial port communication parameter. (valid values: 1, 1.5, 2)
+    * "Parity" â€“ Serial port communication parameter. (valid values: ODD, EVEN, NONE)
+    * "FlowControl" â€“ Serial port communication parameter. (valid values: only support NONE now)
+    * "Operations" â€“ Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
         * "Op01", "Op02" - User defined names for each read request, cannot have duplicates under the same "Operations" section.
         * "PollingInterval": Interval between each read request in millisecond
-        * "UnitId" – The unit id to be read
-        * "StartAddress" – The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
-        * "Count" – Number of registers/bits to be read
-        * "DisplayName" – Alternative name for the "StartAddress" register(s)(user defined)
+        * "UnitId" â€“ The unit id to be read
+        * "StartAddress" â€“ The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
+        * "Count" â€“ Number of registers/bits to be read
+        * "DisplayName" â€“ Alternative name for the "StartAddress" register(s)(user defined)
 
 For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/Modbus) link.
 
