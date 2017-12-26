@@ -227,7 +227,7 @@ Message Payload:
 The command should have a property "command-type" with value "ModbusWrite". Also, routing must be enabled by specifying rule like below.
 ```json
 {
-  "rotues": {
+  "routes": {
     "filterToModbus":"FROM /messages/modules/filtermodule/outputs/output1 INTO BrokeredEndpoint(\"/modules/modbus/inputs/input1\")"
   }
 }
