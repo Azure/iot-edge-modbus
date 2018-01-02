@@ -187,7 +187,7 @@ Message Payload:
 #### Route to IoT Hub ####
 ```json
 {
-  "rotues": {
+  "routes": {
     "modbusToIoTHub":"FROM /messages/modules/modbus/outputs/modbusOutput INTO $upstream"
   }
 }
@@ -196,7 +196,7 @@ Message Payload:
 #### Route to other (filter) modules ####
 ```json
 {
-  "rotues": {
+  "routes": {
     "modbusToFilter":"FROM /messages/modules/modbus/outputs/modbusOutput INTO BrokeredEndpoint(\"/modules/filtermodule/inputs/input1\")"
   }
 }
