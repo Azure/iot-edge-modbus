@@ -3,6 +3,7 @@
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "ipv4 address or the serial port name to Modbus device",
+      "TcpPort": "tcp port of Modbus connection, default is 502",
       "HwId": "unique HW Id defined by user",
       "BaudRate": "baud rate of serial communication (Modbus RTU only)",
       "DataBits": "data bits of serial communication (Modbus RTU only)",

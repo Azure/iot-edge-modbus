@@ -45,6 +45,10 @@
                             {
                                 moduleHandle = new Modbus.Slaves.ModuleHandle();
                             }
+                            if (slaveConfig.TcpPort <= 0)
+                            {
+                                slaveConfig.TcpPort = ModbusConstants.DefaultTcpPort;
+                            }
 
                             ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig, resultHandler);
                             await slave.InitSession();
@@ -314,7 +318,6 @@
         #endregion
 
         #region Private Fields
-        private const int m_tcpPort = 502;
         private object m_socketLock = new object();
         private Socket m_socket = null;
         private IPAddress m_address = null;
@@ -341,7 +344,8 @@
                 try
                 {
                     m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    await m_socket.ConnectAsync(m_address, m_tcpPort);
+                    m_socket.ReceiveTimeout = 100;
+                    await m_socket.ConnectAsync(m_address, config.TcpPort);
                 }
                 catch (Exception e)
                 {
@@ -420,13 +424,24 @@
         protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
             byte[] response = new byte[m_bufSize];
+            byte[] garbage = new byte[m_bufSize];
             if (m_socket != null && m_socket.Connected)
             {
                 lock (m_socketLock)
                 {
                     try
                     {
+                        // clear receive buffer
+                        while (m_socket.Available > 0)
+                        {
+                            m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
+                            Console.WriteLine("Clearing socket receive buffer...");
+                        }
+
+                        // send request
                         m_socket.Send(request, reqLen, SocketFlags.None);
+
+                        // read response
                         response = ReadResponse();
                     }
                     catch (Exception e)
@@ -732,6 +747,7 @@
     class ModbusSlaveConfig
     {
         public string SlaveConnection { get; set; }
+        public int TcpPort { get; set; }
         public string HwId { get; set; }
         public uint BaudRate { get; set; }
         public StopBits StopBits { get; set; }
@@ -795,6 +811,7 @@
             WriteCoil = 5,
             WriteHoldingRegister = 6
         };
+        public static int DefaultTcpPort = 502;
     }
 
     class ModbusOutMessage

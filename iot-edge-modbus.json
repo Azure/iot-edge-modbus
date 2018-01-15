@@ -3,6 +3,7 @@
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "127.0.0.1",
+      "TcpPort": "502",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
       "Operations": {
         "Op01": {
