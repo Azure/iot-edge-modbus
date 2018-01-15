@@ -187,7 +187,7 @@ Message Payload:
 #### Route to IoT Hub ####
 ```json
 {
-  "rotues": {
+  "routes": {
     "modbusToIoTHub":"FROM /messages/modules/modbus/outputs/modbusOutput INTO $upstream"
   }
 }
@@ -196,7 +196,7 @@ Message Payload:
 #### Route to other (filter) modules ####
 ```json
 {
-  "rotues": {
+  "routes": {
     "modbusToFilter":"FROM /messages/modules/modbus/outputs/modbusOutput INTO BrokeredEndpoint(\"/modules/filtermodule/inputs/input1\")"
   }
 }
@@ -227,7 +227,7 @@ Message Payload:
 The command should have a property "command-type" with value "ModbusWrite". Also, routing must be enabled by specifying rule like below.
 ```json
 {
-  "rotues": {
+  "routes": {
     "filterToModbus":"FROM /messages/modules/filtermodule/outputs/output1 INTO BrokeredEndpoint(\"/modules/modbus/inputs/input1\")"
   }
 }
