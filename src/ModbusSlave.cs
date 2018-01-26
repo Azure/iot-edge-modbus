@@ -5,6 +5,7 @@
     using System.Text;
     using System.Net;
     using System.Net.Sockets;
+    using System.Threading;
     using System.Threading.Tasks;
     using tempSerialPort;
     using System.IO.Ports;
@@ -103,6 +104,7 @@
         protected HandleResultDelegate messageDelegate;
         protected const int m_bufSize = 512;
         protected const int m_retryMax = 10;
+        protected SemaphoreSlim m_semaphore = new SemaphoreSlim(1, 1);
         protected bool m_run = false;
         protected List<Task> m_taskList = new List<Task>();
         protected virtual int m_reqSize { get; }
@@ -318,7 +320,6 @@
         #endregion
 
         #region Private Fields
-        private object m_socketLock = new object();
         private Socket m_socket = null;
         private IPAddress m_address = null;
         #endregion
@@ -423,44 +424,48 @@
         }
         protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
-            byte[] response = new byte[m_bufSize];
+            byte[] response = null;
             byte[] garbage = new byte[m_bufSize];
+
+            m_semaphore.Wait();
+            
             if (m_socket != null && m_socket.Connected)
             {
-                lock (m_socketLock)
+                try
                 {
-                    try
+                    // clear receive buffer
+                    while (m_socket.Available > 0)
                     {
-                        // clear receive buffer
-                        while (m_socket.Available > 0)
-                        {
-                            m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
-                            Console.WriteLine("Clearing socket receive buffer...");
-                        }
-
-                        // send request
-                        m_socket.Send(request, reqLen, SocketFlags.None);
-
-                        // read response
-                        response = ReadResponse();
+                        m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
+                        Console.WriteLine("Clearing socket receive buffer...");
                     }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Something wrong with the socket, disposing...");
-                        Console.WriteLine(e.Message);
-                        m_socket.Disconnect(false);
-                        m_socket.Dispose();
-                        m_socket = null;
-                    }
+
+                    // send request
+                    m_socket.Send(request, reqLen, SocketFlags.None);
+
+                    // read response
+                    response = ReadResponse();
                 }
-                return response;
+                catch (Exception e)
+                {
+                    Console.WriteLine("Something wrong with the socket, disposing...");
+                    Console.WriteLine(e.Message);
+                    m_socket.Disconnect(false);
+                    m_socket.Dispose();
+                    m_socket = null;
+                    Console.WriteLine("Connection lost, reconnecting...");
+                    await ConnectSlave();
+                }
             }
             else
             {
                 Console.WriteLine("Connection lost, reconnecting...");
                 await ConnectSlave();
-                return null;
             }
+
+            m_semaphore.Release();
+
+            return response;
         }
         private byte[] ReadResponse()
         {
@@ -529,7 +534,6 @@
 
         #region Private Fields
         private const int m_numOfBits = 8;
-        private object m_serialPortLock = new object();
         private ISerialDevice m_serialPort = null;
         #endregion
 
@@ -635,35 +639,39 @@
         {
             //double slient_interval = 1000 * 5 * ((double)1 / (double)config.BaudRate);
             byte[] response = null;
+
+            m_semaphore.Wait();
+
             if (m_serialPort != null && m_serialPort.IsOpen())
             {
-                lock (m_serialPortLock)
+                try
                 {
-                    try
-                    {
-                        m_serialPort.DiscardInBuffer();
-                        m_serialPort.DiscardOutBuffer();
-                        Task.Delay(m_silent).Wait();
-                        m_serialPort.Write(request, 0, reqLen);
-                        response = ReadResponse();
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Something wrong with the connection, disposing...");
-                        Console.WriteLine(e.Message);
-                        m_serialPort.Close();
-                        m_serialPort.Dispose();
-                        m_serialPort = null;
-                    }
+                    m_serialPort.DiscardInBuffer();
+                    m_serialPort.DiscardOutBuffer();
+                    Task.Delay(m_silent).Wait();
+                    m_serialPort.Write(request, 0, reqLen);
+                    response = ReadResponse();
                 }
-                return response;
+                catch (Exception e)
+                {
+                    Console.WriteLine("Something wrong with the connection, disposing...");
+                    Console.WriteLine(e.Message);
+                    m_serialPort.Close();
+                    m_serialPort.Dispose();
+                    m_serialPort = null;
+                    Console.WriteLine("Connection lost, reconnecting...");
+                    await ConnectSlave();
+                }
             }
             else
             {
                 Console.WriteLine("Connection lost, reconnecting...");
                 await ConnectSlave();
-                return null;
             }
+
+            m_semaphore.Release();
+
+            return response;
         }
         private byte[] ReadResponse()
         {
