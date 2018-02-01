@@ -475,38 +475,53 @@
             int h_l = 0;
             int d_l = 0;
             int retry = 0;
+            bool error = false;
+
+            while(m_socket.Available <= 0 && retry < m_retryMax)
+            {
+                retry++;
+                Task.Delay(50).Wait();
+            }
             
             while (header_len < m_dataBodyOffset && retry < m_retryMax)
             {
-                h_l = m_socket.Receive(response, header_len, m_dataBodyOffset - header_len, SocketFlags.None);
-                if (h_l >= 0)
+                if (m_socket.Available > 0)
                 {
-                    header_len += h_l;
+                    h_l = m_socket.Receive(response, header_len, m_dataBodyOffset - header_len, SocketFlags.None);
+                    if (h_l > 0)
+                    {
+                        header_len += h_l;
+                    }
                 }
                 else
                 {
-                    retry++;
+                    error = true;
+                    break;
                 }
             }
 
             int byte_counts = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
-            
+
             while (data_len < byte_counts && retry < m_retryMax)
             {
-                d_l = m_socket.Receive(response, m_dataBodyOffset + data_len, byte_counts - data_len, SocketFlags.None);
-                if (d_l >= 0)
+                if (m_socket.Available > 0)
                 {
-                    data_len += d_l;
+                    d_l = m_socket.Receive(response, m_dataBodyOffset + data_len, byte_counts - data_len, SocketFlags.None);
+                    if (d_l > 0)
+                    {
+                        data_len += d_l;
+                    }
                 }
                 else
                 {
-                    retry++;
+                    error = true;
+                    break;
                 }
             }
 
-            if (retry >= m_retryMax)
+            if (retry >= m_retryMax || error)
             {
-                return null;
+                response = null;
             }
 
             return response;
@@ -685,7 +700,7 @@
             while (header_len < 3 && retry < m_retryMax)
             {
                 h_l = m_serialPort.Read(response, header_len, 3 - header_len);
-                if (h_l >= 0)
+                if (h_l > 0)
                 {
                     header_len += h_l;
                 }
@@ -699,7 +714,7 @@
             while (data_len < byte_counts && retry < m_retryMax)
             {
                 d_l = m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
-                if (d_l >= 0)
+                if (d_l > 0)
                 {
                     data_len += d_l;
                 }
@@ -711,7 +726,7 @@
 
             if (retry >= m_retryMax)
             {
-                return null;
+                response = null;
             }
 
             return response;
