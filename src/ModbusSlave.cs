@@ -50,6 +50,14 @@
                             {
                                 slaveConfig.TcpPort = ModbusConstants.DefaultTcpPort;
                             }
+                            if (slaveConfig.RetryCount <= 0)
+                            {
+                                slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
+                            }
+                            if (slaveConfig.RetryInterval <= 0)
+                            {
+                                slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
+                            }
 
                             ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig, resultHandler);
                             await slave.InitSession();
@@ -436,8 +444,16 @@
                     // clear receive buffer
                     while (m_socket.Available > 0)
                     {
-                        m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
-                        Console.WriteLine("Clearing socket receive buffer...");
+                        int rec = m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
+                        Console.WriteLine("Dumping socket receive buffer...");
+                        string data = "";
+                        int cnt = 0;
+                        while(cnt < rec)
+                        {
+                            data += garbage[cnt].ToString();
+                            cnt++;
+                        }
+                        Console.WriteLine(data);
                     }
 
                     // send request
@@ -477,13 +493,13 @@
             int retry = 0;
             bool error = false;
 
-            while(m_socket.Available <= 0 && retry < m_retryMax)
+            while(m_socket.Available <= 0 && retry < config.RetryCount)
             {
                 retry++;
-                Task.Delay(50).Wait();
+                Task.Delay(config.RetryInterval).Wait();
             }
             
-            while (header_len < m_dataBodyOffset && retry < m_retryMax)
+            while (header_len < m_dataBodyOffset && retry < config.RetryCount)
             {
                 if (m_socket.Available > 0)
                 {
@@ -502,7 +518,7 @@
 
             int byte_counts = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
 
-            while (data_len < byte_counts && retry < m_retryMax)
+            while (data_len < byte_counts && retry < config.RetryCount)
             {
                 if (m_socket.Available > 0)
                 {
@@ -519,7 +535,7 @@
                 }
             }
 
-            if (retry >= m_retryMax || error)
+            if (retry >= config.RetryCount || error)
             {
                 response = null;
             }
@@ -697,7 +713,7 @@
             int d_l = 0;
             int retry = 0;
             
-            while (header_len < 3 && retry < m_retryMax)
+            while (header_len < 3 && retry < config.RetryCount)
             {
                 h_l = m_serialPort.Read(response, header_len, 3 - header_len);
                 if (h_l > 0)
@@ -711,7 +727,7 @@
             }
             
             int byte_counts = response[2] + 2;
-            while (data_len < byte_counts && retry < m_retryMax)
+            while (data_len < byte_counts && retry < config.RetryCount)
             {
                 d_l = m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
                 if (d_l > 0)
@@ -724,7 +740,7 @@
                 }
             }
 
-            if (retry >= m_retryMax)
+            if (retry >= config.RetryCount)
             {
                 response = null;
             }
@@ -770,6 +786,8 @@
     class ModbusSlaveConfig
     {
         public string SlaveConnection { get; set; }
+        public int RetryCount { get; set; }
+        public int RetryInterval { get; set; }
         public int TcpPort { get; set; }
         public string HwId { get; set; }
         public uint BaudRate { get; set; }
@@ -835,6 +853,8 @@
             WriteHoldingRegister = 6
         };
         public static int DefaultTcpPort = 502;
+        public static int DefaultRetryCount = 10;
+        public static int DefaultRetryInterval = 50;
     }
 
     class ModbusOutMessage
