@@ -5,7 +5,7 @@
       "SlaveConnection": "ipv4 address or the serial port name to Modbus device",
       "TcpPort": "tcp port of Modbus connection, default is 502",
       "RetryCount": "the max retry attempt when socket receive buffer is empty, default is 10",
-      "RetryInterval": "the wait interval in millisecond between each retry, default is 100",
+      "RetryInterval": "the wait interval in millisecond between each retry, default is 50",
       "HwId": "unique HW Id defined by user",
       "BaudRate": "baud rate of serial communication (Modbus RTU only)",
       "DataBits": "data bits of serial communication (Modbus RTU only)",

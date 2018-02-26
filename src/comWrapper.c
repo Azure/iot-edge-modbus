@@ -22,6 +22,26 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 
 	switch (speed)
 	{
+	case 110: {
+		cfsetspeed(&tty, (speed_t)B110);
+		break;
+	}
+	case 300: {
+		cfsetspeed(&tty, (speed_t)B300);
+		break;
+	}
+	case 600: {
+		cfsetspeed(&tty, (speed_t)B600);
+		break;
+	}
+	case 1200: {
+		cfsetspeed(&tty, (speed_t)B1200);
+		break;
+	}
+	case 2400: {
+		cfsetspeed(&tty, (speed_t)B2400);
+		break;
+	}
 	case 4800: {
 		cfsetspeed(&tty, (speed_t)B4800);
 		break;
@@ -32,6 +52,10 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 	}
 	case 19200: {
 		cfsetspeed(&tty, (speed_t)B19200);
+		break;
+	}
+	case 38400:	{
+		cfsetspeed(&tty, (speed_t)B38400);
 		break;
 	}
 	default:
@@ -104,6 +128,9 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 
 	tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
 	tty.c_iflag &= ~(IXON | IXOFF | IXANY);    /* disable software flow control */
+	tty.c_oflag &= ~OPOST;
+	tty.c_cc[VTIME] = 0;
+	tty.c_cc[VMIN] = 0;
 
 #if 0
 								/* setup for non-canonical mode */
@@ -125,7 +152,7 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 
 int com_open(const char* pathname)
 {
-	return open(pathname, O_RDWR | O_NOCTTY);
+	return open(pathname, O_RDWR | O_NOCTTY | O_NDELAY | O_EXCL);
 }
 
 int com_close(int fd)

@@ -26,6 +26,8 @@
     },
     "Slave02": {
       "SlaveConnection": "ttyS1",
+      "RetryCount": "10",
+      "RetryInterval": "50",
       "HwId": "PowerMeter-0a:01:01:01:01:02",
       "BaudRate": "9600",
       "DataBits": "8",

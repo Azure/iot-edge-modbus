@@ -127,12 +127,12 @@ namespace tempSerialPort
         {
             // open serial port
             int fd = ComWrapper.com_open(portName);
-
+            
             if (fd == -1)
             {
                 throw new Exception($"failed to open port ({portName})");
             }
-
+            
             ComWrapper.com_set_interface_attribs(fd, baudRate, dataBits, (int)parity, (int)stopBits);
             
             // start reading
@@ -217,7 +217,7 @@ namespace tempSerialPort
             {
                 throw new Exception();
             }
-
+            
             return res;
         }
 

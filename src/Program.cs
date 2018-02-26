@@ -258,8 +258,12 @@ namespace Modbus.Containers
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("No configuration found in local file. Error: " + ex.Message);
+                        Console.WriteLine("Load configuration error: " + ex.Message);
                     }
+                }
+                else
+                {
+                    Console.WriteLine("No configuration found in local file.");
                 }
             }
 

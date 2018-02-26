@@ -70,6 +70,14 @@
                             {
                                 moduleHandle = new Modbus.Slaves.ModuleHandle();
                             }
+                            if (slaveConfig.RetryCount <= 0)
+                            {
+                                slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
+                            }
+                            if (slaveConfig.RetryInterval <= 0)
+                            {
+                                slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
+                            }
 
                             ModbusSlaveSession slave = new ModbusRTUSlaveSession(slaveConfig, resultHandler);
                             await slave.InitSession();
@@ -111,7 +119,6 @@
         public ModbusSlaveConfig config;
         protected HandleResultDelegate messageDelegate;
         protected const int m_bufSize = 512;
-        protected const int m_retryMax = 10;
         protected SemaphoreSlim m_semaphore = new SemaphoreSlim(1, 1);
         protected bool m_run = false;
         protected List<Task> m_taskList = new List<Task>();
@@ -193,7 +200,7 @@
                     {
                         ProcessResponse(config, x);
                     }
-                    else if (x.Request[m_dataBodyOffset] + 0x80 == x.Response[m_dataBodyOffset])
+                    else if (x.Request[m_dataBodyOffset] + ModbusConstants.ModbusExceptionCode == x.Response[m_dataBodyOffset])
                     {
                         Console.WriteLine($"Modbus exception code: {x.Response[m_dataBodyOffset + 1]}");
                     }
@@ -723,10 +730,11 @@
                 else
                 {
                     retry++;
+                    Task.Delay(config.RetryInterval).Wait();
                 }
             }
-            
-            int byte_counts = response[2] + 2;
+
+            int byte_counts = response[1] >= ModbusConstants.ModbusExceptionCode ? 2 : response[2] + 2;
             while (data_len < byte_counts && retry < config.RetryCount)
             {
                 d_l = m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
@@ -737,6 +745,7 @@
                 else
                 {
                     retry++;
+                    Task.Delay(config.RetryInterval).Wait();
                 }
             }
 
@@ -855,6 +864,7 @@
         public static int DefaultTcpPort = 502;
         public static int DefaultRetryCount = 10;
         public static int DefaultRetryInterval = 50;
+        public static int ModbusExceptionCode = 0x80;
     }
 
     class ModbusOutMessage

@@ -130,23 +130,25 @@ Before running the module, proper configuration is required. Here is a sample co
 ```
 Meaning of each field:
 
-* "PublishInterval" – Interval between each push to IoT Hub in millisecond
-* "SlaveConfigs" – Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
+* "PublishInterval" - Interval between each push to IoT Hub in millisecond
+* "SlaveConfigs" - Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
-    * "SlaveConnection" – Ipv4 address or the serial port name of the Modbus slave
-    * "HwId" – Unique Id for each Modbus slave (user defined)
-    * "BaudRate" – Serial port communication parameter. (valid values: ...9600, 14400,19200...)
-    * "DataBits" – Serial port communication parameter. (valid values: 7, 8)
-    * "StopBits" – Serial port communication parameter. (valid values: 1, 1.5, 2)
-    * "Parity" – Serial port communication parameter. (valid values: ODD, EVEN, NONE)
-    * "FlowControl" – Serial port communication parameter. (valid values: only support NONE now)
-    * "Operations" – Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
+    * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave
+    * "RetryCount" - Max retry attempt for reading data, default to 10
+    * "RetryInterval" - Retry interval between each retry attempt, default to 50 milliseconds
+    * "HwId" - Unique Id for each Modbus slave (user defined)
+    * "BaudRate" - Serial port communication parameter. (valid values: ...9600, 14400,19200...)
+    * "DataBits" - Serial port communication parameter. (valid values: 7, 8)
+    * "StopBits" - Serial port communication parameter. (valid values: 1, 1.5, 2)
+    * "Parity" - Serial port communication parameter. (valid values: ODD, EVEN, NONE)
+    * "FlowControl" - Serial port communication parameter. (valid values: ONLY support NONE now)
+    * "Operations" - Contains one or more Modbus read requests. In this sample, we have "Op01" and "Op02" two read requests in both Slave01 and Slave02:
         * "Op01", "Op02" - User defined names for each read request, cannot have duplicates under the same "Operations" section.
         * "PollingInterval": Interval between each read request in millisecond
-        * "UnitId" – The unit id to be read
-        * "StartAddress" – The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
-        * "Count" – Number of registers/bits to be read
-        * "DisplayName" – Alternative name for the "StartAddress" register(s)(user defined)
+        * "UnitId" - The unit id to be read
+        * "StartAddress" - The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
+        * "Count" - Number of registers/bits to be read
+        * "DisplayName" - Alternative name for the "StartAddress" register(s)(user defined)
 
 For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/Modbus) link.
 
