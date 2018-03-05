@@ -606,7 +606,7 @@
                     }
                     m_serialPort.Open();
                     //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
-                    await Task.Delay(0);
+                    await Task.Delay(2000); //Wait target to be ready to write the modbus package
                 }
                 catch (Exception e)
                 {
