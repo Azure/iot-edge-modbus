@@ -128,20 +128,15 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 
 	tty.c_cflag &= ~CRTSCTS;    /* no hardware flowcontrol */
 	tty.c_iflag &= ~(IXON | IXOFF | IXANY);    /* disable software flow control */
-	//tty.c_oflag &= ~OPOST;
-	//tty.c_cc[VTIME] = 0;
-	//tty.c_cc[VMIN] = 0;
+	
+	//Set an overall timeout of 2 sec/byte
+	tty.c_cc[VTIME] = 20;
+	tty.c_cc[VMIN] = 0;
 
-//#if 0
-								/* setup for non-canonical mode */
+	/* setup for non-canonical mode, based on function cfmakeraw() */
 	tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
 	tty.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
 	tty.c_oflag &= ~OPOST;
-
-	/* fetch bytes as they become available */
-//	tty.c_cc[VMIN] = 1;
-//	tty.c_cc[VTIME] = 1;
-//#endif
 
 	if (tcsetattr(fd, TCSANOW, &tty) != 0) {
 		printf("Error from tcsetattr: %s\n", strerror(errno));
@@ -152,7 +147,7 @@ int com_set_interface_attribs(int fd, int speed, int data_bits, int parity_bit, 
 
 int com_open(const char* pathname)
 {
-	return open(pathname, O_RDWR | O_NOCTTY); //| O_NDELAY | O_EXCL);
+	return open(pathname, O_RDWR | O_NOCTTY);
 }
 
 int com_close(int fd)
