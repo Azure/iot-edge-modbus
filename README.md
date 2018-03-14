@@ -83,6 +83,8 @@ Before running the module, proper configuration is required. Here is a sample co
     "Slave01": {
       "SlaveConnection": "192.168.0.1",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
+      "RetryCount": "10",
+      "RetryInterval": "50",
       "Operations": {
         "Op01": {
           "PollingInterval": "1000",
