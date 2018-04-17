@@ -32,7 +32,7 @@
     /// </summary>
     class ModuleHandle
     {
-        public static async Task<ModuleHandle> CreateHandleFromConfiguration(ModuleConfig config, ModbusSlaveSession.HandleResultDelegate resultHandler)
+        public static async Task<ModuleHandle> CreateHandleFromConfiguration(ModuleConfig config)
         {
             Modbus.Slaves.ModuleHandle moduleHandle = null;
             foreach (var config_pair in config.SlaveConfigs)
@@ -46,20 +46,8 @@
                             {
                                 moduleHandle = new Modbus.Slaves.ModuleHandle();
                             }
-                            if (slaveConfig.TcpPort <= 0)
-                            {
-                                slaveConfig.TcpPort = ModbusConstants.DefaultTcpPort;
-                            }
-                            if (slaveConfig.RetryCount <= 0)
-                            {
-                                slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
-                            }
-                            if (slaveConfig.RetryInterval <= 0)
-                            {
-                                slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
-                            }
 
-                            ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig, resultHandler);
+                            ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig);
                             await slave.InitSession();
                             moduleHandle.ModbusSessionList.Add(slave);
                             break;
@@ -70,16 +58,8 @@
                             {
                                 moduleHandle = new Modbus.Slaves.ModuleHandle();
                             }
-                            if (slaveConfig.RetryCount <= 0)
-                            {
-                                slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
-                            }
-                            if (slaveConfig.RetryInterval <= 0)
-                            {
-                                slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
-                            }
 
-                            ModbusSlaveSession slave = new ModbusRTUSlaveSession(slaveConfig, resultHandler);
+                            ModbusSlaveSession slave = new ModbusRTUSlaveSession(slaveConfig);
                             await slave.InitSession();
                             moduleHandle.ModbusSessionList.Add(slave);
                             break;
@@ -109,6 +89,21 @@
             }
             ModbusSessionList.Clear();
         }
+        public List<object> CollectAndResetOutMessageFromSessions()
+        {
+            List<object> obj_list = new List<object>();
+
+            foreach (ModbusSlaveSession session in ModbusSessionList)
+            {
+                var obj = session.GetOutMessage();
+                if (obj != null)
+                {
+                    obj_list.Add(obj);
+                    session.ClearOutMessage();
+                }
+            }
+            return obj_list;
+        }
     }
 
     /// <summary>
@@ -117,9 +112,10 @@
     abstract class ModbusSlaveSession
     {
         public ModbusSlaveConfig config;
-        protected HandleResultDelegate messageDelegate;
+        protected object OutMessage = null;
         protected const int m_bufSize = 512;
-        protected SemaphoreSlim m_semaphore = new SemaphoreSlim(1, 1);
+        protected SemaphoreSlim m_semaphore_collection = new SemaphoreSlim(1, 1);
+        protected SemaphoreSlim m_semaphore_connection = new SemaphoreSlim(1, 1);
         protected bool m_run = false;
         protected List<Task> m_taskList = new List<Task>();
         protected virtual int m_reqSize { get; }
@@ -127,16 +123,14 @@
         protected virtual int m_silent { get; }
 
         #region Constructors
-        public ModbusSlaveSession(ModbusSlaveConfig conf, HandleResultDelegate resultHandler)
+        public ModbusSlaveSession(ModbusSlaveConfig conf)
         {
             config = conf;
-            messageDelegate = resultHandler;
         }
         #endregion
 
         #region Public Methods
         public abstract void ReleaseSession();
-        public delegate void HandleResultDelegate(List<ModbusOutMessage> message);
         public async Task InitSession()
         {
             await ConnectSlave();
@@ -144,17 +138,7 @@
             foreach (var op_pair in config.Operations)
             {
                 ReadOperation x = op_pair.Value;
-                //parse StartAddress to get address, function code and entity type
-                ParseEntity(x.StartAddress, true, out ushort address_int16, out byte function_code, out byte entity_type);
-                x.EntityType = entity_type;
-                x.Address = address_int16;
-                x.FunctionCode = function_code;
-                //output format
-                if (x.StartAddress.Length == 5)
-                    x.OutFormat = "{0}{1:0000}";
-                else if (x.StartAddress.Length == 6)
-                    x.OutFormat = "{0}{1:00000}";
-
+                
                 x.RequestLen = m_reqSize;
                 x.Request = new byte[m_bufSize];
 
@@ -179,6 +163,18 @@
                 Task t = Task.Run(async () => await SingleOperation(x));
                 m_taskList.Add(t);
             }
+        }
+        public object GetOutMessage()
+        {
+            return OutMessage;
+        }
+        public void ClearOutMessage()
+        {
+            m_semaphore_collection.Wait();
+
+            OutMessage = null;
+
+            m_semaphore_collection.Release();
         }
         #endregion
 
@@ -213,7 +209,7 @@
             int count = 0;
             int step_size = 0;
             int start_digit = 0;
-            List<ModbusOutMessage> message_list = new List<ModbusOutMessage>();
+            List<ModbusOutValue> value_list = new List<ModbusOutValue>();
             switch (x.Response[m_dataBodyOffset])//function code
             {
                 case (byte)ModbusConstants.FunctionCodeType.ReadCoils:
@@ -252,60 +248,57 @@
                 res = cell + ": " + val + "\n";
                 Console.WriteLine(res);
 
-                ModbusOutMessage message = new ModbusOutMessage()
-                { HwId = config.HwId, DisplayName = x.DisplayName, Address = cell, Value = val, SourceTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") };
-                message_list.Add(message);
+                ModbusOutValue value = new ModbusOutValue()
+                { DisplayName = x.DisplayName, Address = cell, Value = val };
+                value_list.Add(value);
             }
-            if (message_list.Count > 0)
-                messageDelegate(message_list);
+
+            if (value_list.Count > 0)
+                PrepareOutMessage(config.HwId, x.CorrelationId, value_list);
         }
-        protected bool ParseEntity(string startAddress, bool isRead, out ushort outAddress, out byte functionCode, out byte entityType)
+        protected void PrepareOutMessage(string HwId, string CorrelationId, List<ModbusOutValue> ValueList)
         {
-            outAddress = 0;
-            functionCode = 0;
-
-            byte[] entity_type = Encoding.ASCII.GetBytes(startAddress, 0, 1);
-            entityType = entity_type[0];
-            string address_str = startAddress.Substring(1);
-            int address_int = Convert.ToInt32(address_str);
-
-            //function code
-            switch ((char)entityType)
+            m_semaphore_collection.Wait();
+            ModbusOutContent content = null;
+            if (OutMessage == null)
             {
-                case (char)ModbusConstants.EntityType.CoilStatus:
-                    {
-                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadCoils : ModbusConstants.FunctionCodeType.WriteCoil);
-                        break;
-                    }
-                case (char)ModbusConstants.EntityType.InputStatus:
-                    {
-                        if (isRead)
-                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputs;
-                        else
-                            return false;
-                        break;
-                    }
-                case (char)ModbusConstants.EntityType.InputRegister:
-                    {
-                        if (isRead)
-                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputRegisters;
-                        else
-                            return false;
-                        break;
-                    }
-                case (char)ModbusConstants.EntityType.HoldingRegister:
-                    {
-                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadHoldingRegisters : ModbusConstants.FunctionCodeType.WriteHoldingRegister);
-                        break;
-                    }
-                default:
-                    {
-                        return false;
-                    }
+                content = new ModbusOutContent
+                {
+                    HwId = HwId,
+                    Data = new List<ModbusOutData>()
+                };
+                OutMessage = content;
             }
-            //address
-            outAddress = (UInt16)(address_int - 1);
-            return true;
+            else
+            {
+                content = (ModbusOutContent)OutMessage;
+            }
+
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            ModbusOutData data = null;
+            foreach(var d in content.Data)
+            {
+                if (d.CorrelationId == CorrelationId && d.SourceTimestamp == timestamp)
+                {
+                    data = d;
+                    break;
+                }
+            }
+            if(data == null)
+            {
+                data = new ModbusOutData
+                {
+                    CorrelationId = CorrelationId,
+                    SourceTimestamp = timestamp,
+                    Values = new List<ModbusOutValue>()
+                };
+                content.Data.Add(data);
+            }
+
+            data.Values.AddRange(ValueList);
+
+            m_semaphore_collection.Release();
+
         }
         protected void ReleaseOperations()
         {
@@ -322,8 +315,8 @@
     class ModbusTCPSlaveSession : ModbusSlaveSession
     {
         #region Constructors
-        public ModbusTCPSlaveSession(ModbusSlaveConfig conf, HandleResultDelegate resultHandler)
-            : base(conf, resultHandler)
+        public ModbusTCPSlaveSession(ModbusSlaveConfig conf)
+            : base(conf)
         {
         }
         #endregion
@@ -359,8 +352,10 @@
             {
                 try
                 {
-                    m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    m_socket.ReceiveTimeout = 100;
+                    m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
+                    {
+                        ReceiveTimeout = 100
+                    };
                     await m_socket.ConnectAsync(m_address, config.TcpPort);
                 }
                 catch (Exception e)
@@ -417,7 +412,7 @@
 
             //Body
             //function code
-            ParseEntity(address, false, out ushort address_int16, out request[m_dataBodyOffset], out byte entity_type);
+            ModuleConfig.ParseEntity(address, false, out ushort address_int16, out request[m_dataBodyOffset], out byte entity_type);
 
             //address
             byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(address_int16)));
@@ -442,7 +437,7 @@
             byte[] response = null;
             byte[] garbage = new byte[m_bufSize];
 
-            m_semaphore.Wait();
+            m_semaphore_connection.Wait();
             
             if (m_socket != null && m_socket.Connected)
             {
@@ -486,7 +481,7 @@
                 await ConnectSlave();
             }
 
-            m_semaphore.Release();
+            m_semaphore_connection.Release();
 
             return response;
         }
@@ -558,8 +553,8 @@
     class ModbusRTUSlaveSession : ModbusSlaveSession
     {
         #region Constructors
-        public ModbusRTUSlaveSession(ModbusSlaveConfig conf, HandleResultDelegate resultHandler)
-            : base(conf, resultHandler)
+        public ModbusRTUSlaveSession(ModbusSlaveConfig conf)
+            : base(conf)
         {
         }
         #endregion
@@ -596,14 +591,9 @@
                 try
                 {
                     Console.WriteLine($"Opening...{config.SlaveConnection}");
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        m_serialPort = WinSerialDevice.CreateDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
-                    }
-                    else
-                    {
-                        m_serialPort = UnixSerialDevice.CreateDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
-                    }
+
+                    m_serialPort = SerialDeviceFactory.CreateSerialDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
+                    
                     m_serialPort.Open();
                     //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
                     await Task.Delay(2000); //Wait target to be ready to write the modbus package
@@ -647,7 +637,7 @@
 
             //Body
             //function code
-            ParseEntity(address, false, out ushort address_int16, out request[m_dataBodyOffset], out byte entity_type);
+            ModuleConfig.ParseEntity(address, false, out ushort address_int16, out request[m_dataBodyOffset], out byte entity_type);
 
             //address
             byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(address_int16)));
@@ -678,7 +668,7 @@
             //double slient_interval = 1000 * 5 * ((double)1 / (double)config.BaudRate);
             byte[] response = null;
 
-            m_semaphore.Wait();
+            m_semaphore_connection.Wait();
 
             if (m_serialPort != null && m_serialPort.IsOpen())
             {
@@ -707,7 +697,7 @@
                 await ConnectSlave();
             }
 
-            m_semaphore.Release();
+            m_semaphore_connection.Release();
 
             return response;
         }
@@ -834,6 +824,7 @@
         public UInt16 Address { get; set; }
         public UInt16 Count { get; set; }
         public string DisplayName { get; set; }
+        public string CorrelationId { get; set; }
     }
 
     static class ModbusConstants
@@ -864,16 +855,28 @@
         public static int DefaultTcpPort = 502;
         public static int DefaultRetryCount = 10;
         public static int DefaultRetryInterval = 50;
+        public static string DefaultCorrelationId = "DefaultCorrelationId";
         public static int ModbusExceptionCode = 0x80;
     }
+    
+    class ModbusOutContent
+    {
+        public string HwId { get; set; }
+        public List<ModbusOutData> Data { get; set; }
+    }
 
-    class ModbusOutMessage
+    class ModbusOutData
+    {
+        public string CorrelationId { get; set; }
+        public string SourceTimestamp { get; set; }
+        public List<ModbusOutValue> Values { get; set; }
+    }
+    class ModbusOutValue
     {
         public string DisplayName { get; set; }
-        public string HwId { get; set; }
+        //public string OpName { get; set; }
         public string Address { get; set; }
         public string Value { get; set; }
-        public string SourceTimestamp { get; set; }
     }
 
     class ModbusInMessage
@@ -891,6 +894,112 @@
         {
             SlaveConfigs = slaves;
         }
+        public bool IsValidate()
+        {
+            bool ret = true;
+
+            foreach (var config_pair in SlaveConfigs)
+            {
+                ModbusSlaveConfig slaveConfig = config_pair.Value;
+                if (slaveConfig.TcpPort <= 0)
+                {
+                    Console.WriteLine($"Invalid TcpPort: {slaveConfig.TcpPort}, set to DefaultTcpPort: {ModbusConstants.DefaultTcpPort}");
+                    slaveConfig.TcpPort = ModbusConstants.DefaultTcpPort;
+                }
+                if (slaveConfig.RetryCount <= 0)
+                {
+                    Console.WriteLine($"Invalid RetryCount: {slaveConfig.RetryCount}, set to DefaultRetryCount: {ModbusConstants.DefaultRetryCount}");
+                    slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
+                }
+                if (slaveConfig.RetryInterval <= 0)
+                {
+                    Console.WriteLine($"Invalid RetryInterval: {slaveConfig.RetryInterval}, set to DefaultRetryInterval: {ModbusConstants.DefaultRetryInterval}");
+                    slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
+                }
+                foreach (var operation_pair in slaveConfig.Operations)
+                {
+                    ReadOperation operation = operation_pair.Value;
+                    ParseEntity(operation.StartAddress, true, out ushort address_int16, out byte function_code, out byte entity_type);
+
+                    if (operation.Count <= 0)
+                    {
+                        Console.WriteLine($"Invalid Count: {operation.Count}");
+                        ret = false;
+                    }
+                    if (operation.Count > 127 && ((char)entity_type == (char)ModbusConstants.EntityType.HoldingRegister || (char)entity_type == (char)ModbusConstants.EntityType.InputRegister))
+                    {
+                        Console.WriteLine($"Invalid Count: {operation.Count}, must be 1~127");
+                        ret = false;
+                    }
+                    if(operation.CorrelationId == "" || operation.CorrelationId == null)
+                    {
+                        Console.WriteLine($"Empty CorrelationId: {operation.CorrelationId}, set to DefaultCorrelationId: {ModbusConstants.DefaultCorrelationId}");
+                        operation.CorrelationId = ModbusConstants.DefaultCorrelationId;
+                    }
+                    if (ret)
+                    {
+                        operation.EntityType = entity_type;
+                        operation.Address = address_int16;
+                        operation.FunctionCode = function_code;
+                        //output format
+                        if (operation.StartAddress.Length == 5)
+                            operation.OutFormat = "{0}{1:0000}";
+                        else if (operation.StartAddress.Length == 6)
+                            operation.OutFormat = "{0}{1:00000}";
+                    }
+                }
+            }
+
+            return ret;
+        }
+        public static bool ParseEntity(string startAddress, bool isRead, out ushort outAddress, out byte functionCode, out byte entityType)
+        {
+            outAddress = 0;
+            functionCode = 0;
+
+            byte[] entity_type = Encoding.ASCII.GetBytes(startAddress, 0, 1);
+            entityType = entity_type[0];
+            string address_str = startAddress.Substring(1);
+            int address_int = Convert.ToInt32(address_str);
+
+            //function code
+            switch ((char)entityType)
+            {
+                case (char)ModbusConstants.EntityType.CoilStatus:
+                    {
+                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadCoils : ModbusConstants.FunctionCodeType.WriteCoil);
+                        break;
+                    }
+                case (char)ModbusConstants.EntityType.InputStatus:
+                    {
+                        if (isRead)
+                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputs;
+                        else
+                            return false;
+                        break;
+                    }
+                case (char)ModbusConstants.EntityType.InputRegister:
+                    {
+                        if (isRead)
+                            functionCode = (byte)ModbusConstants.FunctionCodeType.ReadInputRegisters;
+                        else
+                            return false;
+                        break;
+                    }
+                case (char)ModbusConstants.EntityType.HoldingRegister:
+                    {
+                        functionCode = (byte)(isRead ? ModbusConstants.FunctionCodeType.ReadHoldingRegisters : ModbusConstants.FunctionCodeType.WriteHoldingRegister);
+                        break;
+                    }
+                default:
+                    {
+                        return false;
+                    }
+            }
+            //address
+            outAddress = (UInt16)(address_int - 1);
+            return true;
+        }
     }
 
     class ModbusPushInterval
@@ -900,5 +1009,10 @@
             PublishInterval = interval;
         }
         public int PublishInterval { get; set; }
+    }
+    class ModbusOutMessage
+    {
+        public string PublishTimestamp { get; set; }
+        public List<object> Content { get; set; }
     }
 }

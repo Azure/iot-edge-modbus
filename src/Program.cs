@@ -277,12 +277,14 @@ namespace Modbus.Containers
                 {
                     m_interval = new ModbusPushInterval(DefaultPushInterval);
                 }
-                
-                moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config, UpdateMessage);
 
-                if (moduleHandle != null)
+                if (config.IsValidate())
                 {
-                    var userContext = new Tuple<DeviceClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
+                    moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config);
+
+                    if (moduleHandle != null)
+                    {
+                        var userContext = new Tuple<DeviceClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
 #if IOT_EDGE
                     // Register callback to be called when a message is received by the module
                     await ioTHubModuleClient.SetInputMessageHandlerAsync(
@@ -290,9 +292,10 @@ namespace Modbus.Containers
                     PipeMessage,
                     userContext);
 #else
-                    m_task_list.Add(Receive(userContext));
+                        m_task_list.Add(Receive(userContext));
 #endif
-                    m_task_list.Add(Start(userContext));
+                        m_task_list.Add(Start(userContext));
+                    }
                 }
             }
         }
@@ -322,15 +325,21 @@ namespace Modbus.Containers
             while (m_run)
             {
                 Message message = null;
-                lock (message_lock)
+
+                List<object> result = moduleHandle.CollectAndResetOutMessageFromSessions();
+
+                if (result.Count > 0)
                 {
-                    if (result.Count > 0)
+                    ModbusOutMessage out_message = new ModbusOutMessage
                     {
-                        message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(result)));
-                        message.Properties.Add("content-type", "application/edge-modbus-json");
-                    }
-                    result.Clear();
+                        PublishTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                        Content = result
+                    };
+
+                    message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
+                    message.Properties.Add("content-type", "application/edge-modbus-json");
                 }
+
                 if (message != null)
                 {
 #if IOT_EDGE
@@ -381,13 +390,6 @@ namespace Modbus.Containers
                 }
             }
         }
-
-        static void UpdateMessage(List<ModbusOutMessage> messages)
-        {
-            lock(message_lock)
-            {
-                result.AddRange(messages);
-            }
-        }
+        
     }
 }

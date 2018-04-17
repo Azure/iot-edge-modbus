@@ -90,15 +90,17 @@ Before running the module, proper configuration is required. Here is a sample co
           "PollingInterval": "1000",
           "UnitId": "1",
           "StartAddress": "400001",
-          "Count": "1",
-          "DisplayName": "Voltage"
+          "Count": "2",
+          "DisplayName": "Voltage",
+          "CorrelationId": "MessageType1"
         },
         "Op02": {
           "PollingInterval": "1000",
           "UnitId": "1",
           "StartAddress": "400002",
-          "Count": "1",
-          "DisplayName": "Current"
+          "Count": "2",
+          "DisplayName": "Current",
+          "CorrelationId": "MessageType1"
         }
       }
     },
@@ -114,14 +116,14 @@ Before running the module, proper configuration is required. Here is a sample co
         "Op01": {
           "PollingInterval": "2000",
           "UnitId": "1",
-          "StartAddress": "40003",
+          "StartAddress": "40001",
           "Count": "1",
           "DisplayName": "Power"
         },
         "Op02": {
           "PollingInterval": "2000",
           "UnitId": "1",
-          "StartAddress": "40004",
+          "StartAddress": "40003",
           "Count": "1",
           "DisplayName": "Status"
         }
@@ -151,6 +153,7 @@ Meaning of each field:
         * "StartAddress" - The starting address of Modbus read request, currently supports both 5-digit and 6-digit [format](https://en.wikipedia.org/wiki/Modbus#Coil.2C_discrete_input.2C_input_register.2C_holding_register_numbers_and_addresses)
         * "Count" - Number of registers/bits to be read
         * "DisplayName" - Alternative name for the "StartAddress" register(s)(user defined)
+        * "CorrelationId" - The Operations with same id with be grouped together in their output message
 
 For more about Modbus, please refer to the [Wiki](https://en.wikipedia.org/wiki/Modbus) link.
 
@@ -171,21 +174,69 @@ Message Properties:
 Message Payload:
 ```json
 [
-  {
-    "DisplayName":"Voltage",
-    "HwId":"PowerMeter-0a:01:01:01:01:01",
-    "Address":"400001",
-    "Value":"19775",
-    "SourceTimestamp":"2017-11-17 08:43:50"
-  },
-  {
-    "DisplayName":"Current",
-    "HwId":"PowerMeter-0a:01:01:01:01:01",
-    "Address":"400002",
-    "Value":"15650",
-    "SourceTimestamp":"2017-11-17 08:43:50"
-  }
-]
+    {
+      "PublishTimestamp": "2018-04-17 12:28:53",
+      "Content": [
+        {
+          "HwId": "PowerMeter-0a:01:01:01:01:02",
+          "Data": [
+            {
+              "CorrelationId": "MessageType1",
+              "SourceTimestamp": "2018-04-17 12:28:48",
+              "Values": [
+                {
+                  "DisplayName": "Op02",
+                  "Address": "40003",
+                  "Value": "2785"
+                },
+                {
+                  "DisplayName": "Op02",
+                  "Address": "40004",
+                  "Value": "18529"
+                },
+                {
+                  "DisplayName": "Op01",
+                  "Address": "40001",
+                  "Value": "1840"
+                },
+                {
+                  "DisplayName": "Op01",
+                  "Address": "40002",
+                  "Value": "31497"
+                }
+              ]
+            },
+            {
+              "CorrelationId": "MessageType1",
+              "SourceTimestamp": "2018-04-17 12:28:50",
+              "Values": [
+                {
+                  "DisplayName": "Op02",
+                  "Address": "40003",
+                  "Value": "21578"
+                },
+                {
+                  "DisplayName": "Op02",
+                  "Address": "40004",
+                  "Value": "26979"
+                },
+                {
+                  "DisplayName": "Op01",
+                  "Address": "40001",
+                  "Value": "13210"
+                },
+                {
+                  "DisplayName": "Op01",
+                  "Address": "40002",
+                  "Value": "13549"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
 ```
 
 #### Route to IoT Hub ####

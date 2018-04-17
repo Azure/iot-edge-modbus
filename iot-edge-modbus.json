@@ -13,6 +13,7 @@
           "UnitId": "1",
           "StartAddress": "400001",
           "Count": "2",
+          "CorrelationId": "MessageType1",
           "DisplayName": "Voltage"
         },
         "Op02": {
@@ -20,6 +21,7 @@
           "UnitId": "1",
           "StartAddress": "400002",
           "Count": "2",
+          "CorrelationId": "MessageType2",
           "DisplayName": "Current"
         }
       }

@@ -18,7 +18,8 @@
           "UnitId": "unit id of Modbus device",
           "StartAddress": "starting address of read request",
           "Count": "unit count of read request",
-          "DisplayName": "alternative name defined by user"
+          "DisplayName": "alternative name defined by user",
+          "CorrelationId": "id used to group output message"
         }
       }
     }
