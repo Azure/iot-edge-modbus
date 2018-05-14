@@ -1,4 +1,4 @@
-FROM gcc:7 AS build-env
+FROM arm32v7/gcc:7 AS build-env
 WORKDIR /app
 
 # copy .c and .h file
