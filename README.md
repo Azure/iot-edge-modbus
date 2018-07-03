@@ -10,7 +10,7 @@ There are prebuilt Modbus TCP module container images ready at [TBD-link](https:
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
 ## Azure IoT Edge Compatibility ##
-Current version of the module is targeted for the [Azure IoT Edge GA](https://github.com/Azure/azure-iot-edge).  
+Current version of the module is targeted for the [Azure IoT Edge GA](https://azure.microsoft.com/en-us/blog/azure-iot-edge-generally-available-for-enterprise-grade-scaled-deployments/).  
 If you are using [v1 version of IoT Edge](https://github.com/Azure/iot-edge/tree/master/v1) (previously known as Azure IoT Gateway), please use v1 version of this module, all materials can be found in [v1](https://github.com/Azure/iot-edge-modbus/tree/master/v1) folder.
 
 Find more information about Azure IoT Edge at [here](https://docs.microsoft.com/en-us/azure/iot-edge/how-iot-edge-works).
@@ -37,14 +37,14 @@ Please follow [this link](https://docs.microsoft.com/en-us/azure/iot-edge/tutori
 
 Basic requirement:
 - Docker CE
-- .NET Core 2.1 SDK (optional, if you prefer to manually build application on host machine)
+- .NET Core 2.1 SDK
 
 ## HowTo Build ##
-In this section, the Modbus TCP module we be built as an IoT Edge module.
+In this section, the Modbus module we be built as an IoT Edge module.
 
 Open the project in VS Code, and open VS Code command palette, type and run the command Edge: Build IoT Edge solution.
-Select the deployment.template.json file for your solution from the command palette. 
-**Note**: Be sure to check [configuration section](https://github.com/Azure/iot-edge-modbus#configuration) to properly set each fields before deploying the module. 
+Select the deployment.template.json file for your solution from the command palette.  
+**Note**: *Be sure to check [configuration section](https://github.com/Azure/iot-edge-modbus#configuration) to properly set each fields before deploying the module.* 
 
 In Azure IoT Hub Devices explorer, right-click an IoT Edge device ID, then select Create deployment for IoT Edge device. 
 Open the config folder of your solution, then select the deployment.json file. Click Select Edge Deployment Manifest. 
@@ -114,7 +114,7 @@ Meaning of each field:
 * "PublishInterval" - Interval between each push to IoT Hub in millisecond
 * "SlaveConfigs" - Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
-    * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave
+    * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave.
     * "RetryCount" - Max retry attempt for reading data, default to 10
     * "RetryInterval" - Retry interval between each retry attempt, default to 50 milliseconds
     * "HwId" - Unique Id for each Modbus slave (user defined)
@@ -236,7 +236,7 @@ Message Payload:
 
 ### Write to Modbus ###
 Modbus module use input endpoint "input1" to receive commands. Currently it supports writing back to a single register/cell in a Modbus slave.  
-**Note**: Currently IoT Edge only supports send messages into one module from another module, direct C2D messages doesn't work. 
+**Note**: *Currently IoT Edge only supports send messages into one module from another module, direct C2D messages doesn't work.* 
 
 #### Command Message ####
 The content of command must be the following message format.  
