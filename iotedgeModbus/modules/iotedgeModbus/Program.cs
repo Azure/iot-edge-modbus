@@ -1,5 +1,3 @@
-#define IOT_EDGE
-
 namespace Modbus.Containers
 {
     using System;
@@ -30,11 +28,6 @@ namespace Modbus.Containers
 
         static void Main(string[] args)
         {
-#if IOT_EDGE
-            // Install CA certificate
-            InstallCert();
-#endif
-
             // Initialize Edge Module
             InitEdgeModule().Wait();
 
@@ -56,37 +49,6 @@ namespace Modbus.Containers
         }
 
         /// <summary>
-        /// Add certificate in local cert store for use by client for secure connection to IoT Edge runtime
-        /// </summary>
-        static void InstallCert()
-        {
-            // Suppress cert validation on Windows for now
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
-            string certPath = Environment.GetEnvironmentVariable("EdgeModuleCACertificateFile");
-            if (string.IsNullOrWhiteSpace(certPath))
-            {
-                // We cannot proceed further without a proper cert file
-                Console.WriteLine("Missing path to certificate collection file.");
-                throw new InvalidOperationException("Missing path to certificate file.");
-            }
-            else if (!File.Exists(certPath))
-            {
-                // We cannot proceed further without a proper cert file
-                Console.WriteLine("Missing certificate collection file.");
-                throw new InvalidOperationException("Missing certificate file.");
-            }
-            X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
-            store.Open(OpenFlags.ReadWrite);
-            store.Add(new X509Certificate2(X509Certificate2.CreateFromCertFile(certPath)));
-            Console.WriteLine("Added Cert: " + certPath);
-            store.Close();
-        }
-
-        /// <summary>
         /// Initializes the Azure IoT Client for the Edge Module
         /// </summary>
         static async Task InitEdgeModule()
@@ -104,8 +66,7 @@ namespace Modbus.Containers
                     mqttSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 }
                 ITransportSettings[] settings = { mqttSettings };
-
-                DeviceClient ioTHubModuleClient = DeviceClient.CreateFromConnectionString(connectionString, settings);
+                ModuleClient ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
                 await ioTHubModuleClient.OpenAsync();
                 Console.WriteLine("IoT Hub module client initialized.");
 
@@ -176,22 +137,20 @@ namespace Modbus.Containers
             return MessageResponse.Completed;
         }
 
-        /// <summary> 
-        /// Callback to handle Twin desired properties updates 
-        /// </summary> 
+        /// <summary>
+        /// Callback to handle Twin desired properties updatesï¿½
+        /// </summary>
         static async Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
         {
-            DeviceClient ioTHubModuleClient = userContext as DeviceClient;
+            ModuleClient ioTHubModuleClient = userContext as ModuleClient;
 
             try
             {
-#if IOT_EDGE
                 // stop all activities while updating configuration
                 await ioTHubModuleClient.SetInputMessageHandlerAsync(
                 "input1",
                 DummyCallBack,
                 null);
-#endif
 
                 m_run = false;
                 await Task.WhenAll(m_task_list);
@@ -230,7 +189,7 @@ namespace Modbus.Containers
         /// <summary>
         /// Update Start from module Twin. 
         /// </summary>
-        static async Task UpdateStartFromTwin(TwinCollection desiredProperties, DeviceClient ioTHubModuleClient)
+        static async Task UpdateStartFromTwin(TwinCollection desiredProperties, ModuleClient ioTHubModuleClient)
         {
             ModuleConfig config;
             Slaves.ModuleHandle moduleHandle;
@@ -284,16 +243,12 @@ namespace Modbus.Containers
 
                     if (moduleHandle != null)
                     {
-                        var userContext = new Tuple<DeviceClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
-#if IOT_EDGE
-                    // Register callback to be called when a message is received by the module
-                    await ioTHubModuleClient.SetInputMessageHandlerAsync(
-                    "input1",
-                    PipeMessage,
-                    userContext);
-#else
-                        m_task_list.Add(Receive(userContext));
-#endif
+                        var userContext = new Tuple<ModuleClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
+                        // Register callback to be called when a message is received by the module
+                        await ioTHubModuleClient.SetInputMessageHandlerAsync(
+                        "input1",
+                        PipeMessage,
+                        userContext);
                         m_task_list.Add(Start(userContext));
                     }
                 }
@@ -307,14 +262,13 @@ namespace Modbus.Containers
         /// <returns></returns>
         static async Task Start(object userContext)
         {
-            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
+            var userContextValues = userContext as Tuple<ModuleClient, Slaves.ModuleHandle>;
             if (userContextValues == null)
             {
                 throw new InvalidOperationException("UserContext doesn't contain " +
                     "expected values");
             }
-
-            DeviceClient ioTHubModuleClient = userContextValues.Item1;
+            ModuleClient ioTHubModuleClient = userContextValues.Item1;
             Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
             foreach (ModbusSlaveSession s in moduleHandle.ModbusSessionList)
@@ -342,11 +296,7 @@ namespace Modbus.Containers
 
                 if (message != null)
                 {
-#if IOT_EDGE
                     await ioTHubModuleClient.SendEventAsync("modbusOutput", message);
-#else
-                    await ioTHubModuleClient.SendEventAsync(message);
-#endif
                 }
                 if (!m_run)
                 {
@@ -356,40 +306,5 @@ namespace Modbus.Containers
             }
             moduleHandle.Release();
         }
-
-        /// <summary>
-        /// Receive C2D message(running without iot edge)
-        /// </summary>
-        /// <param name="userContext"></param>
-        /// <returns></returns>
-        static async Task Receive(object userContext)
-        {
-            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
-            if (userContextValues == null)
-            {
-                throw new InvalidOperationException("UserContext doesn't contain " +
-                    "expected values");
-            }
-            DeviceClient ioTHubModuleClient = userContextValues.Item1;
-            var timeout = TimeSpan.FromSeconds(3);
-            while (m_run)
-            {
-                try
-                {
-                    Message message = await ioTHubModuleClient.ReceiveAsync(timeout);
-                    if (message != null)
-                    {
-                        await PipeMessage(message, userContext);
-                        await ioTHubModuleClient.CompleteAsync(message);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine();
-                    Console.WriteLine("Error when receiving: {0}", ex.Message);
-                }
-            }
-        }
-        
     }
 }

@@ -57,6 +57,7 @@ namespace tempSerialPort
         {
             this.serialPort.Open();
             this.serialPort.Handshake = Handshake.None;
+            this.serialPort.ReadTimeout = 5000;
         }
 
         private WinSerialDevice(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
