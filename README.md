@@ -44,7 +44,7 @@ In this section, the Modbus module we be built as an IoT Edge module.
 
 Open the project in VS Code, and open VS Code command palette, type and run the command Edge: Build IoT Edge solution.
 Select the deployment.template.json file for your solution from the command palette.  
-**Note**: *Be sure to check [configuration section](https://github.com/Azure/iot-edge-modbus#configuration) to properly set each fields before deploying the module.* 
+***Note: Be sure to check [configuration section](https://github.com/Azure/iot-edge-modbus#configuration) to properly set each fields before deploying the module.*** 
 
 In Azure IoT Hub Devices explorer, right-click an IoT Edge device ID, then select Create deployment for IoT Edge device. 
 Open the config folder of your solution, then select the deployment.json file. Click Select Edge Deployment Manifest. 
@@ -236,7 +236,7 @@ Message Payload:
 
 ### Write to Modbus ###
 Modbus module use input endpoint "input1" to receive commands. Currently it supports writing back to a single register/cell in a Modbus slave.  
-**Note**: *Currently IoT Edge only supports send messages into one module from another module, direct C2D messages doesn't work.* 
+***Note: Currently IoT Edge only supports send messages into one module from another module, direct C2D messages doesn't work.*** 
 
 #### Command Message ####
 The content of command must be the following message format.  
