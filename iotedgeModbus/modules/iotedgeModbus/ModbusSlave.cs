@@ -799,7 +799,7 @@
         {
             if (IPAddress.TryParse(SlaveConnection, out IPAddress address))
                 return ModbusConstants.ConnectionType.ModbusTCP;
-            else if (SlaveConnection.Substring(0, 3) == "COM" || SlaveConnection.Substring(0, 8) == "/dev/tty")
+            else if (SlaveConnection.Contains("COM") || SlaveConnection.Contains("/tty"))
                 return ModbusConstants.ConnectionType.ModbusRTU;
             //TODO: ModbusRTU ModbusASCII
             return ModbusConstants.ConnectionType.Unknown;

@@ -1,0 +1,117 @@
+{
+  "moduleContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {}
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
+              "createOptions": ""
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
+              "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
+            }
+          }
+        },
+        "modules": {
+          "modbus": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULES.iotedgeModbus.amd64}",
+              "createOptions": ""
+            }
+          }
+        }
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "routes": {
+          "iotedgeModbusToIoTHub": "FROM /messages/modules/modbus/outputs/modbusOutput INTO $upstream"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    },
+    "modbus": {  
+      "properties.desired":{
+        "PublishInterval": "5000",
+        "SlaveConfigs": {
+          "Slave01": {
+            "SlaveConnection": "<IPV4 address>",
+            "TcpPort": "502",
+            "RetryCount": "10",
+            "RetryInterval": "100",
+            "HwId": "PowerMeter-0a:01:01:01:01:01",
+            "Operations": {
+              "Op01": {
+                "PollingInterval": "2000",
+                "UnitId": "1",
+                "StartAddress": "400001",
+                "Count": "2",
+                "CorrelationId": "MessageType1",
+                "DisplayName": "Voltage"
+              },
+              "Op02": {
+                "PollingInterval": "2000",
+                "UnitId": "1",
+                "StartAddress": "400002",
+                "Count": "2",
+                "CorrelationId": "MessageType2",
+                "DisplayName": "Current"
+              }
+            }
+          },
+          "Slave02": {
+            "SlaveConnection": "<SerialPortName>",
+            "RetryCount": "10",
+            "RetryInterval": "50",
+            "HwId": "PowerMeter-0a:01:01:01:01:02",
+            "BaudRate": "9600",
+            "DataBits": "8",
+            "StopBits": "1",
+            "Parity": "ODD",
+            "FlowControl": "NONE",
+            "Operations": {
+              "Op01": {
+                "PollingInterval": "2000",
+                "UnitId": "1",
+                "StartAddress": "40001",
+                "Count": "2",
+                "DisplayName": "Voltage"
+              },
+              "Op02": {
+                "PollingInterval": "2000",
+                "UnitId": "1",
+                "StartAddress": "40002",
+                "Count": "2",
+                "DisplayName": "Current"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
