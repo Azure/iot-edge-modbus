@@ -58,9 +58,7 @@ namespace Modbus.Containers
                 // Open a connection to the Edge runtime using MQTT transport and
                 // the connection string provided as an environment variable
                 string connectionString = Environment.GetEnvironmentVariable("EdgeHubConnectionString");
-
-
-                
+               
                 AmqpTransportSettings amqpSettings = new AmqpTransportSettings(TransportType.Amqp_Tcp_Only);
                 // Suppress cert validation on Windows for now
                 /*
@@ -69,8 +67,9 @@ namespace Modbus.Containers
                     amqpSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 }
                 */
-
+              
                 ITransportSettings[] settings = { amqpSettings };
+
                 ModuleClient ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
                 await ioTHubModuleClient.OpenAsync();
                 Console.WriteLine("IoT Hub module client initialized.");
