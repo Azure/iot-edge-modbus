@@ -58,14 +58,18 @@ namespace Modbus.Containers
                 // Open a connection to the Edge runtime using MQTT transport and
                 // the connection string provided as an environment variable
                 string connectionString = Environment.GetEnvironmentVariable("EdgeHubConnectionString");
-
-                MqttTransportSettings mqttSettings = new MqttTransportSettings(TransportType.Mqtt_Tcp_Only);
+               
+                AmqpTransportSettings amqpSettings = new AmqpTransportSettings(TransportType.Amqp_Tcp_Only);
                 // Suppress cert validation on Windows for now
+                /*
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    mqttSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
+                    amqpSettings.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
                 }
-                ITransportSettings[] settings = { mqttSettings };
+                */
+              
+                ITransportSettings[] settings = { amqpSettings };
+
                 ModuleClient ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
                 await ioTHubModuleClient.OpenAsync();
                 Console.WriteLine("IoT Hub module client initialized.");
@@ -99,13 +103,13 @@ namespace Modbus.Containers
             Console.WriteLine("Modbus Writer - Received command");
             int counterValue = Interlocked.Increment(ref m_counter);
 
-            var userContextValues = userContext as Tuple<DeviceClient, Slaves.ModuleHandle>;
+            var userContextValues = userContext as Tuple<ModuleClient, Slaves.ModuleHandle>;
             if (userContextValues == null)
             {
                 throw new InvalidOperationException("UserContext doesn't contain " +
                     "expected values");
             }
-            DeviceClient ioTHubModuleClient = userContextValues.Item1;
+            ModuleClient ioTHubModuleClient = userContextValues.Item1;
             Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
             byte[] messageBytes = message.GetBytes();
