@@ -26,6 +26,9 @@ typedef struct MODBUSREAD_HANDLE_DATA_TAG
 
 }MODBUSREAD_HANDLE_DATA;
 
+#define CONNECTION_TCP 0
+#define CONNECTION_COM 1
+#define CONNECTION_UNKNOWN 2
 #define MODBUS_MESSAGE "modbus read"
 #define MODBUS_TCP_OFFSET 7
 #define MODBUS_COM_OFFSET 1
@@ -117,26 +120,28 @@ static bool isValidMac(char* mac)
     return ret;
 }
 
-static bool isValidServer(char* server)
+static int getServerType(char* server)
 {
     //ipv4 format XXX.XXX.XXX.XXX
     //serial port format COMX
-    bool ret = true;
+    int ret = CONNECTION_UNKNOWN;
 
     if (memcmp(server, "COM", 3) == 0)
     {
+        ret = CONNECTION_COM;
         if (0 > atoi(server + 3))
         {
             LogError("invalid COM port: %s", server);
-            ret = false;
+            ret = CONNECTION_UNKNOWN;
         }
     }
     else
     {
+        ret = CONNECTION_TCP;
         if (inet_addr(server) == INADDR_NONE)
         {
             LogError("invalid ipv4: %s", server);
-            ret = false;
+            ret = CONNECTION_UNKNOWN;
         }
     }
 
@@ -234,7 +239,7 @@ static bool addOneServer(MODBUS_READ_CONFIG * config, JSON_Object * arg_obj)
     const char* interval = json_object_get_string(arg_obj, "interval");
     const char* device_type = json_object_get_string(arg_obj, "deviceType");
     const char* sqlite_enabled = json_object_get_string(arg_obj, "sqliteEnabled");
-    if (server_str == NULL || !isValidServer((char *)server_str))
+    if (server_str == NULL || getServerType((char *)server_str) == CONNECTION_UNKNOWN)
     {
         /*Codes_SRS_MODBUS_READ_JSON_99_034: [ If the `args` object does not contain a value named "serverConnectionString" then ModbusRead_CreateFromJson shall fail and return NULL. ]*/
         LogError("Did not find expected %s configuration", "serverConnectionString");
@@ -1079,31 +1084,28 @@ static int modbusReadThread(void *param)
         server_config->socks = INVALID_SOCKET;
         //connect to server
 
-        if (connect_modbus_server(server_config) != 0)
+        int connection_type = getServerType(server_config->server_str);
+        
+        if (connection_type == CONNECTION_COM)
         {
-            LogError("unable to connect to modbus server %s", server_config->server_str);
-            return 1;
+            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_com;
+            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_com;
+            server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
+            server_config->send_request_cb = (send_request_cb_type)send_request_com;
+            server_config->close_server_cb = (close_server_cb_type)close_server_com;
+            set_com_state(server_config);
         }
-        else
+        else if(connection_type == CONNECTION_TCP)
         {
-            if (memcmp(server_config->server_str, "COM", 3) == 0)
-            {
-                server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_com;
-                server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_com;
-                server_config->decode_response_cb = (decode_response_cb_type)decode_response_com;
-                server_config->send_request_cb = (send_request_cb_type)send_request_com;
-                server_config->close_server_cb = (close_server_cb_type)close_server_com;
-                set_com_state(server_config);
-            }
-            else
-            {
-                server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_tcp;
-                server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_tcp;
-                server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
-                server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
-                server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
-            }
+            server_config->encode_read_cb = (encode_read_cb_type)encode_read_request_tcp;
+            server_config->encode_write_cb = (encode_write_cb_type)encode_write_request_tcp;
+            server_config->decode_response_cb = (decode_response_cb_type)decode_response_tcp;
+            server_config->send_request_cb = (send_request_cb_type)send_request_tcp;
+            server_config->close_server_cb = (close_server_cb_type)close_server_tcp;
         }
+
+        connect_modbus_server(server_config);
+        
         MODBUS_READ_OPERATION * request_operation = server_config->p_operation;
         while (request_operation)
         {
