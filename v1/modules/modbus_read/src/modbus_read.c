@@ -819,6 +819,7 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
 {
     unsigned char response[256];
     int request_len = 0;
+    int ret = 0;
 
     root_value = json_value_init_object();
     root_object = json_value_get_object(root_value);
@@ -831,7 +832,10 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
     char timetemp[TIMESTRLEN + 1] = { 0 };
 
     if (get_timestamp(timetemp) != 0)
-        return -1;
+    {
+        ret = -1;
+        return ret;
+    }
     memset(sqlite_upsert, 0, sizeof(sqlite_upsert));
     memcpy(glob_currentTime, timetemp, strlen(timetemp));
     memcpy(glob_currentMac, config->mac_address, strlen(config->mac_address));
@@ -852,12 +856,12 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
         if (send_ret == -1)
         {
             LogError("send request failed");
-            return 1;
+            ret = 1;
         }
         else if (send_ret > 0)
         {
             LogError("Exception occured, error code : %X\n", send_ret);
-            return 1;
+            ret = 1;
         }
         else
         {
@@ -875,7 +879,7 @@ static int process_operation(MODBUS_READ_CONFIG * config, MODBUS_READ_OPERATION 
         sqlite_serialized_string = json_serialize_to_string_pretty(sqlite_root_value);
     }
 
-    return 0;
+    return ret;
 }
 static MODBUS_READ_CONFIG * get_config_by_mac(const char * mac_address, MODBUS_READ_CONFIG * config)
 {
