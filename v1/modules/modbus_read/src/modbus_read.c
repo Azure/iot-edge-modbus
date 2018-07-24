@@ -1014,6 +1014,20 @@ static SOCKET_TYPE connect_modbus_server_tcp(const char * server_ip)
             LogError("connect error");
             s = INVALID_SOCKET;
         }
+        else
+        {
+            struct timeval timeout;      
+            timeout.tv_sec = 10;
+            timeout.tv_usec = 0;
+
+            if (setsockopt (s, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                        sizeof(timeout)) < 0)
+                LogError("setsockopt failed\n");
+
+            if (setsockopt (s, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                        sizeof(timeout)) < 0)
+                LogError("setsockopt failed\n");
+        }
     }
 
     return s;
