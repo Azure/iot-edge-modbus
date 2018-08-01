@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using System.Net;
     using System.Net.Sockets;
@@ -805,6 +806,29 @@
             return ModbusConstants.ConnectionType.Unknown;
         }
 
+        public ModuleTwinModbusSlaveConfig AsModuleTwinProperty()
+        {
+          ModuleTwinModbusSlaveConfig moduleTwinModbusSlaveConfig = new ModuleTwinModbusSlaveConfig
+          {
+            SlaveConnection = SlaveConnection,
+            RetryCount = RetryCount,
+            RetryInterval = RetryInterval,
+            TcpPort = TcpPort,
+            HwId = HwId,
+            BaudRate = BaudRate,
+            StopBits = StopBits,
+            DataBits = DataBits,
+            Parity = Parity,
+            Operations = new Dictionary<string, ModuleTwinReadOperation>()
+          };
+
+          foreach (var op in Operations)
+          {
+            moduleTwinModbusSlaveConfig.Operations.Add(op.Key, op.Value.AsModuleTwinProperty());
+          }
+
+          return moduleTwinModbusSlaveConfig;
+        }
     }
 
     /// <summary>
@@ -825,6 +849,19 @@
         public UInt16 Count { get; set; }
         public string DisplayName { get; set; }
         public string CorrelationId { get; set; }
+
+        public ModuleTwinReadOperation AsModuleTwinProperty()
+        {
+          return new ModuleTwinReadOperation
+          {
+            PollingInterval = PollingInterval,
+            UnitId = UnitId,
+            StartAddress = StartAddress,
+            Count = Count,
+            DisplayName = DisplayName,
+            CorrelationId = CorrelationId
+          };
+        }
     }
 
     static class ModbusConstants
@@ -1014,5 +1051,60 @@
     {
         public string PublishTimestamp { get; set; }
         public List<object> Content { get; set; }
+    }
+
+    /// <summary>
+    /// This class repeats the modbus slave config for reporting properties back to IoT Hub. The reason to create a second class was
+    /// to explitly leave out certain variables, especially in the read operations object.
+    /// </summary>
+    class ModuleTwinModbusSlaveConfig
+    {
+        public string SlaveConnection { get; set; }
+        public int RetryCount { get; set; }
+        public int RetryInterval { get; set; }
+        public int TcpPort { get; set; }
+        public string HwId { get; set; }
+        public uint BaudRate { get; set; }
+        public StopBits StopBits { get; set; }
+        public byte DataBits { get; set; }
+        public Parity Parity { get; set; }
+        //public byte FlowControl { get; set; }
+        public Dictionary<string, ModuleTwinReadOperation> Operations = null;
+
+    }
+
+    /// <summary>
+    /// This class contains only the attributes designated for reporting properties back to IoT Hub.
+    /// Simply ignoring fields in the first class via Newtonsoft's JsonIgnoreAttribute caused program hangs.
+    /// </summary>
+    class ModuleTwinReadOperation
+    {
+        public int PollingInterval { get; set; }
+        public byte UnitId { get; set; }
+        public string StartAddress { get; set; }
+        public UInt16 Count { get; set; }
+        public string DisplayName { get; set; }
+        public string CorrelationId { get; set; }
+    }
+
+    /// <summary>
+    /// This class creates a container to easily serialize the configuration so that the reported
+    /// properties can be updated.
+    /// </summary>
+    class ModuleTwinProperties
+    {
+        public ModuleTwinProperties(int? publishInterval, ModuleConfig moduleConfig)
+        {
+          PublishInterval = publishInterval;
+          SlaveConfigs = new Dictionary<string, ModuleTwinModbusSlaveConfig>();
+
+          foreach (KeyValuePair<string, ModbusSlaveConfig> slave in moduleConfig?.SlaveConfigs)
+          {
+            SlaveConfigs.Add(slave.Key, slave.Value.AsModuleTwinProperty());
+          }
+        }
+
+        public int? PublishInterval { get; set; }
+        public Dictionary<string, ModuleTwinModbusSlaveConfig> SlaveConfigs { get; set; }
     }
 }
