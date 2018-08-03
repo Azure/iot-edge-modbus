@@ -781,9 +781,9 @@
     }
 
     /// <summary>
-    /// This class contains the configuration for a Modbus session.
+    /// The base data for a Modbus session used so that reported properties can be echoed back to the IoT Hub.
     /// </summary>
-    class ModbusSlaveConfig
+    class BaseModbusSlaveConfig
     {
         public string SlaveConnection { get; set; }
         public int RetryCount { get; set; }
@@ -795,7 +795,16 @@
         public byte DataBits { get; set; }
         public Parity Parity { get; set; }
         //public byte FlowControl { get; set; }
-        public Dictionary<string, ReadOperation> Operations = null;
+        public Dictionary<string, BaseReadOperation> Operations = null;
+    }
+
+    /// <summary>
+    /// This class contains the configuration for a Modbus session.
+    /// </summary>
+    class ModbusSlaveConfig : BaseModbusSlaveConfig
+    {
+        public new Dictionary<string, ReadOperation> Operations = null;
+
         public ModbusConstants.ConnectionType GetConnectionType()
         {
             if (IPAddress.TryParse(SlaveConnection, out IPAddress address))
@@ -806,62 +815,64 @@
             return ModbusConstants.ConnectionType.Unknown;
         }
 
-        public ModuleTwinModbusSlaveConfig AsModuleTwinProperty()
+        public BaseModbusSlaveConfig AsBase()
         {
-          ModuleTwinModbusSlaveConfig moduleTwinModbusSlaveConfig = new ModuleTwinModbusSlaveConfig
+          // Unfortunately we need to create new objects since simple polymorphism will still keep the same fields of the child classes.
+          BaseModbusSlaveConfig baseConfig = new BaseModbusSlaveConfig
           {
-            SlaveConnection = SlaveConnection,
-            RetryCount = RetryCount,
-            RetryInterval = RetryInterval,
-            TcpPort = TcpPort,
-            HwId = HwId,
-            BaudRate = BaudRate,
-            StopBits = StopBits,
-            DataBits = DataBits,
-            Parity = Parity,
-            Operations = new Dictionary<string, ModuleTwinReadOperation>()
+              SlaveConnection = this.SlaveConnection,
+              RetryCount = this.RetryCount,
+              RetryInterval = this.RetryInterval,
+              TcpPort = this.TcpPort,
+              HwId = this.HwId,
+              BaudRate = this.BaudRate,
+              StopBits = this.StopBits,
+              DataBits = this.DataBits,
+              Parity = this.Parity
           };
 
-          foreach (var op in Operations)
-          {
-            moduleTwinModbusSlaveConfig.Operations.Add(op.Key, op.Value.AsModuleTwinProperty());
-          }
+          baseConfig.Operations = this.Operations.ToDictionary(
+              pair => pair.Key,
+              pair => new BaseReadOperation
+              {
+                  PollingInterval = pair.Value.PollingInterval,
+                  UnitId = pair.Value.UnitId,
+                  StartAddress = pair.Value.StartAddress,
+                  Count = pair.Value.Count,
+                  DisplayName = pair.Value.DisplayName,
+                  CorrelationId = pair.Value.CorrelationId,
+              });
 
-          return moduleTwinModbusSlaveConfig;
+
+          return baseConfig;
         }
+    }
+
+    /// <summary>
+    /// The base data for a read operation used so that reported properties can be echoed back to the IoT Hub.
+    /// </summary>
+    class BaseReadOperation
+    {
+        public int PollingInterval { get; set; }
+        public byte UnitId { get; set; }
+        public string StartAddress { get; set; }
+        public UInt16 Count { get; set; }
+        public string DisplayName { get; set; }
+        public string CorrelationId { get; set; }
     }
 
     /// <summary>
     /// This class contains the configuration for a single Modbus read request.
     /// </summary>
-    class ReadOperation
+    class ReadOperation : BaseReadOperation
     {
         public byte[] Request;
         public byte[] Response;
         public int RequestLen;
         public byte EntityType { get; set; }
         public string OutFormat { get; set; }
-        public int PollingInterval { get; set; }
-        public byte UnitId { get; set; }
         public byte FunctionCode { get; set; }
-        public string StartAddress { get; set; }
         public UInt16 Address { get; set; }
-        public UInt16 Count { get; set; }
-        public string DisplayName { get; set; }
-        public string CorrelationId { get; set; }
-
-        public ModuleTwinReadOperation AsModuleTwinProperty()
-        {
-          return new ModuleTwinReadOperation
-          {
-            PollingInterval = PollingInterval,
-            UnitId = UnitId,
-            StartAddress = StartAddress,
-            Count = Count,
-            DisplayName = DisplayName,
-            CorrelationId = CorrelationId
-          };
-        }
     }
 
     static class ModbusConstants
@@ -1054,40 +1065,6 @@
     }
 
     /// <summary>
-    /// This class repeats the modbus slave config for reporting properties back to IoT Hub. The reason to create a second class was
-    /// to explitly leave out certain variables, especially in the read operations object.
-    /// </summary>
-    class ModuleTwinModbusSlaveConfig
-    {
-        public string SlaveConnection { get; set; }
-        public int RetryCount { get; set; }
-        public int RetryInterval { get; set; }
-        public int TcpPort { get; set; }
-        public string HwId { get; set; }
-        public uint BaudRate { get; set; }
-        public StopBits StopBits { get; set; }
-        public byte DataBits { get; set; }
-        public Parity Parity { get; set; }
-        //public byte FlowControl { get; set; }
-        public Dictionary<string, ModuleTwinReadOperation> Operations = null;
-
-    }
-
-    /// <summary>
-    /// This class contains only the attributes designated for reporting properties back to IoT Hub.
-    /// Simply ignoring fields in the first class via Newtonsoft's JsonIgnoreAttribute caused program hangs.
-    /// </summary>
-    class ModuleTwinReadOperation
-    {
-        public int PollingInterval { get; set; }
-        public byte UnitId { get; set; }
-        public string StartAddress { get; set; }
-        public UInt16 Count { get; set; }
-        public string DisplayName { get; set; }
-        public string CorrelationId { get; set; }
-    }
-
-    /// <summary>
     /// This class creates a container to easily serialize the configuration so that the reported
     /// properties can be updated.
     /// </summary>
@@ -1096,15 +1073,10 @@
         public ModuleTwinProperties(int? publishInterval, ModuleConfig moduleConfig)
         {
           PublishInterval = publishInterval;
-          SlaveConfigs = new Dictionary<string, ModuleTwinModbusSlaveConfig>();
-
-          foreach (KeyValuePair<string, ModbusSlaveConfig> slave in moduleConfig?.SlaveConfigs)
-          {
-            SlaveConfigs.Add(slave.Key, slave.Value.AsModuleTwinProperty());
-          }
+          SlaveConfigs = moduleConfig?.SlaveConfigs.ToDictionary(pair => pair.Key, pair => pair.Value.AsBase());
         }
 
         public int? PublishInterval { get; set; }
-        public Dictionary<string, ModuleTwinModbusSlaveConfig> SlaveConfigs { get; set; }
+        public Dictionary<string, BaseModbusSlaveConfig> SlaveConfigs { get; set; }
     }
 }
