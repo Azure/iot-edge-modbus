@@ -23,6 +23,7 @@ namespace Modbus.Containers
         static List<Task> m_task_list = new List<Task>();
         static bool m_run = true;
         static ModbusPushInterval m_interval = null;
+        static ModuleConfig m_existingConfig = null;
         static object message_lock = new object();
         static List<ModbusOutMessage> result = new List<ModbusOutMessage>();
 
@@ -254,9 +255,20 @@ namespace Modbus.Containers
                         PipeMessage,
                         userContext);
                         m_task_list.Add(Start(userContext));
+
+                        // Save the new existing config for reporting.
+                        m_existingConfig = config;
                     }
                 }
             }
+
+            // Always report the change in properties. This keeps the reported properties in the module twin up to date even if none of the properties
+            // actually change. It will also report the property changes if only the publish interval or slave configs change.
+            ModuleTwinProperties moduleReportedProperties = new ModuleTwinProperties(m_interval?.PublishInterval, m_existingConfig);
+            string reportedPropertiesJson = JsonConvert.SerializeObject(moduleReportedProperties);
+            Console.WriteLine("Saving reported properties: " + reportedPropertiesJson);
+            TwinCollection reportedProperties = new TwinCollection(reportedPropertiesJson);
+            await ioTHubModuleClient.UpdateReportedPropertiesAsync(reportedProperties);
         }
 
         /// <summary>
