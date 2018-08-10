@@ -5,7 +5,7 @@ Using this module, developers can build Azure IoT Edge solutions with Modbus TCP
 
 ![](./doc/diagram.png)
 
-There are prebuilt Modbus TCP module container images ready at [TBD-link](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
+There are prebuilt Modbus TCP module container images ready at [here](https://hub.docker.com/r/microsoft/azureiotedge-modbus-tcp) for you to quickstart the experience of Azure IoT Edge on your target device or simulated device.
 
 Visit http://azure.com/iotdev to learn more about developing applications for Azure IoT.
 
@@ -269,7 +269,7 @@ The command should have a property "command-type" with value "ModbusWrite". Also
 ## HowTo Run ##
 
 ### Run as an IoT Edge module ###
-Please follow the [TBD-link](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-csharp-module) to deploy the module as an IoT Edge module.
+Please follow the [link](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-csharp-module) to deploy the module as an IoT Edge module.
 
 #### Configure Modbus RTU ####
 This is for Modbus RTU only, Modbus TCP could skip this section.
