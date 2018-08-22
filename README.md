@@ -1,7 +1,7 @@
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments
 
 # Azure IoT Edge Modbus Module GA #
-Using this module, developers can build Azure IoT Edge solutions with Modbus TCP/RTU(RTU is currently not available in Windows container) connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.
+Using this module, developers can build Azure IoT Edge solutions with Modbus TCP/RTU(RTU is currently not available in Windows environment, please use Linux host + Linux container to play with RTU mode) connectivity. The Modbus module is an [Azure IoT Edge](https://github.com/Azure/iot-edge) module, capable of reading data from Modbus devices and publishing data to the Azure IoT Hub via the Edge framework. Developers can modify the module tailoring to any scenario.
 
 ![](./doc/diagram.png)
 
