@@ -357,7 +357,7 @@
                     {
                         ReceiveTimeout = 100
                     };
-                    await m_socket.ConnectAsync(m_address, config.TcpPort);
+                    await m_socket.ConnectAsync(m_address, config.TcpPort.Value);
                 }
                 catch (Exception e)
                 {
@@ -499,7 +499,7 @@
             while(m_socket.Available <= 0 && retry < config.RetryCount)
             {
                 retry++;
-                Task.Delay(config.RetryInterval).Wait();
+                Task.Delay(config.RetryInterval.Value).Wait();
             }
             
             while (header_len < m_dataBodyOffset && retry < config.RetryCount)
@@ -577,7 +577,6 @@
             ReleaseOperations();
             if (m_serialPort != null)
             {
-                m_serialPort.Close();
                 m_serialPort.Dispose();
                 m_serialPort = null;
             }
@@ -593,7 +592,7 @@
                 {
                     Console.WriteLine($"Opening...{config.SlaveConnection}");
 
-                    m_serialPort = SerialDeviceFactory.CreateSerialDevice(config.SlaveConnection, (int)config.BaudRate, config.Parity, (int)config.DataBits, config.StopBits);
+                    m_serialPort = SerialDeviceFactory.CreateSerialDevice(config.SlaveConnection, (int)config.BaudRate.Value, config.Parity.Value, (int)config.DataBits.Value, config.StopBits.Value);
                     
                     m_serialPort.Open();
                     //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
@@ -685,7 +684,6 @@
                 {
                     Console.WriteLine("Something wrong with the connection, disposing...");
                     Console.WriteLine(e.Message);
-                    m_serialPort.Close();
                     m_serialPort.Dispose();
                     m_serialPort = null;
                     Console.WriteLine("Connection lost, reconnecting...");
@@ -721,7 +719,7 @@
                 else
                 {
                     retry++;
-                    Task.Delay(config.RetryInterval).Wait();
+                    Task.Delay(config.RetryInterval.Value).Wait();
                 }
             }
 
@@ -736,7 +734,7 @@
                 else
                 {
                     retry++;
-                    Task.Delay(config.RetryInterval).Wait();
+                    Task.Delay(config.RetryInterval.Value).Wait();
                 }
             }
 
@@ -786,14 +784,14 @@
     class BaseModbusSlaveConfig
     {
         public string SlaveConnection { get; set; }
-        public int RetryCount { get; set; }
-        public int RetryInterval { get; set; }
-        public int TcpPort { get; set; }
+        public int? RetryCount { get; set; }
+        public int? RetryInterval { get; set; }
+        public int? TcpPort { get; set; }
         public string HwId { get; set; }
-        public uint BaudRate { get; set; }
-        public StopBits StopBits { get; set; }
-        public byte DataBits { get; set; }
-        public Parity Parity { get; set; }
+        public uint? BaudRate { get; set; }
+        public StopBits? StopBits { get; set; }
+        public byte? DataBits { get; set; }
+        public Parity? Parity { get; set; }
         //public byte FlowControl { get; set; }
         public Dictionary<string, BaseReadOperation> Operations = null;
     }
@@ -942,63 +940,86 @@
         {
             SlaveConfigs = slaves;
         }
-        public bool IsValidate()
+        public void Validate()
         {
-            bool ret = true;
-
+            List<string> invalidConfigs = new List<string>();
             foreach (var config_pair in SlaveConfigs)
             {
                 ModbusSlaveConfig slaveConfig = config_pair.Value;
-                if (slaveConfig.TcpPort <= 0)
+                if(slaveConfig == null)
+                {
+                    Console.WriteLine($"{config_pair.Key} is null, remove from dictionary...");
+                    invalidConfigs.Add(config_pair.Key);
+                    continue;
+                }
+                if (slaveConfig.TcpPort == null || slaveConfig.TcpPort <= 0)
                 {
                     Console.WriteLine($"Invalid TcpPort: {slaveConfig.TcpPort}, set to DefaultTcpPort: {ModbusConstants.DefaultTcpPort}");
                     slaveConfig.TcpPort = ModbusConstants.DefaultTcpPort;
                 }
-                if (slaveConfig.RetryCount <= 0)
+                if (slaveConfig.RetryCount == null || slaveConfig.RetryCount <= 0)
                 {
                     Console.WriteLine($"Invalid RetryCount: {slaveConfig.RetryCount}, set to DefaultRetryCount: {ModbusConstants.DefaultRetryCount}");
                     slaveConfig.RetryCount = ModbusConstants.DefaultRetryCount;
                 }
-                if (slaveConfig.RetryInterval <= 0)
+                if (slaveConfig.RetryInterval == null || slaveConfig.RetryInterval <= 0)
                 {
                     Console.WriteLine($"Invalid RetryInterval: {slaveConfig.RetryInterval}, set to DefaultRetryInterval: {ModbusConstants.DefaultRetryInterval}");
                     slaveConfig.RetryInterval = ModbusConstants.DefaultRetryInterval;
                 }
+                List<string> invalidOperations = new List<string>();
                 foreach (var operation_pair in slaveConfig.Operations)
                 {
                     ReadOperation operation = operation_pair.Value;
+                    if(operation == null)
+                    {
+                        Console.WriteLine($"{operation_pair.Key} is null, remove from dictionary...");
+                        invalidOperations.Add(operation_pair.Key);
+                        continue;
+                    }
+                    if(operation.StartAddress.Length < 5)
+                    {
+                        Console.WriteLine($"{operation_pair.Key} has invalid StartAddress {operation.StartAddress}, remove from dictionary...");
+                        invalidOperations.Add(operation_pair.Key);
+                        continue;
+                    }
                     ParseEntity(operation.StartAddress, true, out ushort address_int16, out byte function_code, out byte entity_type);
 
                     if (operation.Count <= 0)
                     {
-                        Console.WriteLine($"Invalid Count: {operation.Count}");
-                        ret = false;
+                        Console.WriteLine($"{operation_pair.Key} has invalid Count {operation.Count}, remove from dictionary...");
+                        invalidOperations.Add(operation_pair.Key);
+                        continue;
                     }
                     if (operation.Count > 127 && ((char)entity_type == (char)ModbusConstants.EntityType.HoldingRegister || (char)entity_type == (char)ModbusConstants.EntityType.InputRegister))
                     {
-                        Console.WriteLine($"Invalid Count: {operation.Count}, must be 1~127");
-                        ret = false;
+                        Console.WriteLine($"{operation_pair.Key} has invalid Count, must be 1~127, {operation.Count}, remove from dictionary...");
+                        invalidOperations.Add(operation_pair.Key);
+                        continue;
                     }
                     if(operation.CorrelationId == "" || operation.CorrelationId == null)
                     {
                         Console.WriteLine($"Empty CorrelationId: {operation.CorrelationId}, set to DefaultCorrelationId: {ModbusConstants.DefaultCorrelationId}");
                         operation.CorrelationId = ModbusConstants.DefaultCorrelationId;
                     }
-                    if (ret)
-                    {
-                        operation.EntityType = entity_type;
-                        operation.Address = address_int16;
-                        operation.FunctionCode = function_code;
-                        //output format
-                        if (operation.StartAddress.Length == 5)
-                            operation.OutFormat = "{0}{1:0000}";
-                        else if (operation.StartAddress.Length == 6)
-                            operation.OutFormat = "{0}{1:00000}";
-                    }
+                    operation.EntityType = entity_type;
+                    operation.Address = address_int16;
+                    operation.FunctionCode = function_code;
+                    //output format
+                    if (operation.StartAddress.Length == 5)
+                        operation.OutFormat = "{0}{1:0000}";
+                    else if (operation.StartAddress.Length == 6)
+                        operation.OutFormat = "{0}{1:00000}";
+                }
+                foreach(var in_op in invalidOperations)
+                {
+                    slaveConfig.Operations.Remove(in_op);
                 }
             }
-
-            return ret;
+            foreach(var in_slave in invalidConfigs)
+            {
+                SlaveConfigs.Remove(in_slave);
+            }
         }
         public static bool ParseEntity(string startAddress, bool isRead, out ushort outAddress, out byte functionCode, out byte entityType)
         {

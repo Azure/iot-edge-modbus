@@ -8,7 +8,7 @@ RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 RUN curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l ~/vsdbg
 
-FROM microsoft/dotnet:2.0-sdk AS build-env
+FROM microsoft/dotnet:2.1-sdk AS build-env
 WORKDIR /app
 
 COPY *.csproj ./

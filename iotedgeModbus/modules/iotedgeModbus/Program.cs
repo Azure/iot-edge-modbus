@@ -242,23 +242,21 @@ namespace Modbus.Containers
                     m_interval = new ModbusPushInterval(DefaultPushInterval);
                 }
 
-                if (config.IsValidate())
+                config.Validate();
+                moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config);
+
+                if (moduleHandle != null)
                 {
-                    moduleHandle = await Slaves.ModuleHandle.CreateHandleFromConfiguration(config);
+                    var userContext = new Tuple<ModuleClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
+                    // Register callback to be called when a message is received by the module
+                    await ioTHubModuleClient.SetInputMessageHandlerAsync(
+                    "input1",
+                    PipeMessage,
+                    userContext);
+                    m_task_list.Add(Start(userContext));
 
-                    if (moduleHandle != null)
-                    {
-                        var userContext = new Tuple<ModuleClient, Slaves.ModuleHandle>(ioTHubModuleClient, moduleHandle);
-                        // Register callback to be called when a message is received by the module
-                        await ioTHubModuleClient.SetInputMessageHandlerAsync(
-                        "input1",
-                        PipeMessage,
-                        userContext);
-                        m_task_list.Add(Start(userContext));
-
-                        // Save the new existing config for reporting.
-                        m_existingConfig = config;
-                    }
+                    // Save the new existing config for reporting.
+                    m_existingConfig = config;
                 }
             }
 
@@ -287,14 +285,26 @@ namespace Modbus.Containers
             ModuleClient ioTHubModuleClient = userContextValues.Item1;
             Slaves.ModuleHandle moduleHandle = userContextValues.Item2;
 
+            if(moduleHandle.ModbusSessionList.Count == 0)
+            {
+                Console.WriteLine("No valid modbus session available!!");
+            }
             foreach (ModbusSlaveSession s in moduleHandle.ModbusSessionList)
             {
-                s.ProcessOperations();
+                if(s.config.Operations.Count == 0)
+                {
+                    Console.WriteLine("No valid operation in modbus session available!!");
+                }
+                else
+                {
+                    s.ProcessOperations();
+                }
             }
 
             while (m_run)
             {
                 Message message = null;
+                Message sqliteMessage = null;
 
                 List<object> result = moduleHandle.CollectAndResetOutMessageFromSessions();
 
@@ -305,14 +315,28 @@ namespace Modbus.Containers
                         PublishTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                         Content = result
                     };
+                    SQLiteCommandMessage sqlite_out_message = new SQLiteCommandMessage
+                    {
+                        RequestId = 0,
+                        RequestModule = "modbus";
+                        DbName = "/app/db/test.db",
+                        Command = "select * from test;"
+                    };
 
                     message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
                     message.Properties.Add("content-type", "application/edge-modbus-json");
+
+                    sqliteMessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(sqlite_out_message)));
+                    sqliteMessage.Properties.Add("command-type", "SQLiteCmd");
                 }
 
                 if (message != null)
                 {
                     await ioTHubModuleClient.SendEventAsync("modbusOutput", message);
+                }
+                if (sqliteMessage != null)
+                {
+                    await ioTHubModuleClient.SendEventAsync("modbusOutput", sqliteMessage);
                 }
                 if (!m_run)
                 {
@@ -322,5 +346,13 @@ namespace Modbus.Containers
             }
             moduleHandle.Release();
         }
+    }
+    
+    class SQLiteCommandMessage
+    {
+        public int RequestId;
+        public string RequestModule;
+        public string DbName;
+        public string Command;
     }
 }
