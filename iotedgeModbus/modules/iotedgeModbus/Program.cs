@@ -318,7 +318,7 @@ namespace Modbus.Containers
                     SQLiteCommandMessage sqlite_out_message = new SQLiteCommandMessage
                     {
                         RequestId = 0,
-                        RequestModule = "modbus";
+                        RequestModule = "modbus",
                         DbName = "/app/db/test.db",
                         Command = "select * from test;"
                     };
