@@ -313,15 +313,17 @@ namespace Modbus.Containers
             while (m_run)
             {
                 Message message = null;
-                Message sqliteMessage = null;
 
                 switch (m_version.Version)
                 {
                     case "1":
-                        List<object> out_messageList = moduleHandle.CollectAndResetOutMessageFromSessionsV1();
+                        List<object> resultV1 = moduleHandle.CollectAndResetOutMessageFromSessionsV1();
 
-                        message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_messageList)));
-                        message.Properties.Add("content-type", "application/edge-modbus-json");
+                        if (resultV1.Count > 0)
+                        {
+                            message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(resultV1)));
+                            message.Properties.Add("content-type", "application/edge-modbus-json");
+                        }
 
                         break;
 
@@ -335,19 +337,9 @@ namespace Modbus.Containers
                                 PublishTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                                 Content = result
                             };
-                            SQLiteCommandMessage sqlite_out_message = new SQLiteCommandMessage
-                            {
-                                RequestId = 0,
-                                RequestModule = "modbus",
-                                DbName = "/app/db/test.db",
-                                Command = "select * from test;"
-                            };
 
                             message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
                             message.Properties.Add("content-type", "application/edge-modbus-json");
-
-                            sqliteMessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(sqlite_out_message)));
-                            sqliteMessage.Properties.Add("command-type", "SQLiteCmd");
                         }
 
                         break;
@@ -357,10 +349,7 @@ namespace Modbus.Containers
                 {
                     await ioTHubModuleClient.SendEventAsync("modbusOutput", message);
                 }
-                if (sqliteMessage != null)
-                {
-                    await ioTHubModuleClient.SendEventAsync("modbusOutput", sqliteMessage);
-                }
+
                 if (!m_run)
                 {
                     break;

@@ -2,9 +2,9 @@
     "$schema-version": "0.0.1",
     "description": "",
     "image": {
-        "repository": "localhost:5000/iotedgemodbus",
+        "repository": "svelde/iotedgemodbus",
         "tag": {
-            "version": "0.0.1",
+            "version": "0.0.3",
             "platforms": {
                 "amd64": "./Dockerfile.amd64", 
                 "amd64.debug": "./Dockerfile.amd64.debug",
