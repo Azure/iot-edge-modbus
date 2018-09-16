@@ -19,10 +19,12 @@ namespace Modbus.Containers
     {
         const string ModbusSlaves = "SlaveConfigs";
         const int DefaultPushInterval = 5000;
+        const string DefaultVersion = "2";
         static int m_counter = 0;
         static List<Task> m_task_list = new List<Task>();
         static bool m_run = true;
         static ModbusPushInterval m_interval = null;
+        static ModbusVersion m_version = null;
         static ModuleConfig m_existingConfig = null;
         static object message_lock = new object();
         static List<ModbusOutMessage> result = new List<ModbusOutMessage>();
@@ -236,10 +238,17 @@ namespace Modbus.Containers
                 Console.WriteLine("Attempt to load configuration: " + jsonStr);
                 config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
                 m_interval = JsonConvert.DeserializeObject<ModbusPushInterval>(jsonStr);
-
+ 
                 if (m_interval == null)
                 {
                     m_interval = new ModbusPushInterval(DefaultPushInterval);
+                }
+
+                m_version = JsonConvert.DeserializeObject<ModbusVersion>(jsonStr);
+
+                if (m_version == null)
+                {
+                    m_version = new ModbusVersion(DefaultVersion);
                 }
 
                 config.Validate();
@@ -306,28 +315,42 @@ namespace Modbus.Containers
                 Message message = null;
                 Message sqliteMessage = null;
 
-                List<object> result = moduleHandle.CollectAndResetOutMessageFromSessions();
-
-                if (result.Count > 0)
+                switch (m_version.Version)
                 {
-                    ModbusOutMessage out_message = new ModbusOutMessage
-                    {
-                        PublishTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        Content = result
-                    };
-                    SQLiteCommandMessage sqlite_out_message = new SQLiteCommandMessage
-                    {
-                        RequestId = 0,
-                        RequestModule = "modbus";
-                        DbName = "/app/db/test.db",
-                        Command = "select * from test;"
-                    };
+                    case "1":
+                        List<object> out_messageList = moduleHandle.CollectAndResetOutMessageFromSessionsV1();
 
-                    message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
-                    message.Properties.Add("content-type", "application/edge-modbus-json");
+                        message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_messageList)));
+                        message.Properties.Add("content-type", "application/edge-modbus-json");
 
-                    sqliteMessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(sqlite_out_message)));
-                    sqliteMessage.Properties.Add("command-type", "SQLiteCmd");
+                        break;
+
+                    default:
+                        List<object> result = moduleHandle.CollectAndResetOutMessageFromSessions();
+
+                        if (result.Count > 0)
+                        {
+                            ModbusOutMessage out_message = new ModbusOutMessage
+                            {
+                                PublishTimestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                                Content = result
+                            };
+                            SQLiteCommandMessage sqlite_out_message = new SQLiteCommandMessage
+                            {
+                                RequestId = 0,
+                                RequestModule = "modbus",
+                                DbName = "/app/db/test.db",
+                                Command = "select * from test;"
+                            };
+
+                            message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
+                            message.Properties.Add("content-type", "application/edge-modbus-json");
+
+                            sqliteMessage = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(sqlite_out_message)));
+                            sqliteMessage.Properties.Add("command-type", "SQLiteCmd");
+                        }
+
+                        break;
                 }
 
                 if (message != null)
