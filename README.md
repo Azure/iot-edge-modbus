@@ -56,6 +56,7 @@ Before running the module, proper configuration is required. Here is a sample co
 ```json
 {
   "PublishInterval": "2000",
+  "Version":"2",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "192.168.0.1",
@@ -112,6 +113,7 @@ Before running the module, proper configuration is required. Here is a sample co
 Meaning of each field:
 
 * "PublishInterval" - Interval between each push to IoT Hub in millisecond
+* "Version" - switch between the GA (Generally Available) and the latest Message Payload format. (valid value for GA: "1", all other values will switch to latest format) 
 * "SlaveConfigs" - Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
     * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave.
@@ -148,7 +150,7 @@ Message Properties:
 ```json
 "content-type": "application/edge-modbus-json"
 ```
-Message Payload:
+Latest Message Payload:
 ```json
 [
     {
@@ -214,6 +216,10 @@ Message Payload:
       ]
     }
   ]
+```
+GA (generally available) Message Payload:
+```json
+
 ```
 
 #### Route to IoT Hub ####
