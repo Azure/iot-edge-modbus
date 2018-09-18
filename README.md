@@ -30,7 +30,6 @@ Azure IoT Edge is designed to be used with a broad range of operating system pla
 - [Windows 10 IoT Core](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-install-iot-core)
 - [Linux](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart-linux)
 
-
 ## Build Environment Setup ##
 Modbus module is a .NET Core 2.1 application, which is developed and built based on the guidelines in Azure IoT Edge document.
 Please follow [this link](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-csharp-module) to setup the build environment. 
@@ -113,7 +112,7 @@ Before running the module, proper configuration is required. Here is a sample co
 Meaning of each field:
 
 * "PublishInterval" - Interval between each push to IoT Hub in millisecond
-* "Version" - switch between the GA (Generally Available) and the latest Message Payload format. (valid value for GA: "1", all other values will switch to latest format) 
+* "Version" - switch between the GA (Generally Available) and the latest Message Payload format. (valid value for GA: "1", all other values will switch to the latest format) 
 * "SlaveConfigs" - Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
     * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave.
@@ -217,9 +216,31 @@ Latest Message Payload:
     }
   ]
 ```
-GA (generally available) Message Payload:
+GA (Generally Available) Message Payload:
 ```json
-
+[
+	{
+		"DisplayName":"RotaryOne",
+		"HwId":"Wise4012E",
+		"Address":"40001",
+		"Value":"0",
+		"SourceTimestamp":"2018-09-18 04:14:32"
+	},
+	{
+		"DisplayName":"SwitchOne",
+		"HwId":"Wise4012E",
+		"Address":"00001",
+		"Value":"1",
+		"SourceTimestamp":"2018-09-18 04:14:33"
+	},
+	{
+		"DisplayName":"RelayOne",
+		"HwId":"Wise4012E",
+		"Address":"00017",
+		"Value":"0",
+		"SourceTimestamp":"2018-09-18 04:14:33"
+	}
+]
 ```
 
 #### Route to IoT Hub ####
