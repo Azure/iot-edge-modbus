@@ -25,4 +25,4 @@ COPY --from=build-env-2 /app/libcomWrapper.so /usr/lib/
 RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 
-ENTRYPOINT ["dotnet", "iotedgeModbus.dll"]
+CMD ["dotnet", "iotedgeModbus.dll"]
