@@ -386,7 +386,9 @@
         #region Private Methods
         protected override async Task ConnectSlave()
         {
-            if (IPAddress.TryParse(config.SlaveConnection, out m_address))
+            string address = await ResolveHost(config.SlaveConnection);
+
+            if (IPAddress.TryParse(address, out m_address))
             {
                 try
                 {
@@ -470,6 +472,34 @@
                 request[m_dataBodyOffset + 4] = val_byte[1];
             }
         }
+        
+        protected async Task<string> ResolveHost(string host)
+        {
+            var address = host;
+
+            try
+            {
+                if (address.StartsWith("tcp:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var entry = await System.Net.Dns.GetHostEntryAsync(address.Substring(4));
+                    if (entry != null)
+                    {
+                        var resolved = entry.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                        if (resolved != null)
+                        {
+                            address = resolved.ToString();
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to determine IP for {address}.");
+            }
+
+            return address;
+        }
+        
         protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
             byte[] response = null;
@@ -842,7 +872,7 @@
 
         public ModbusConstants.ConnectionType GetConnectionType()
         {
-            if (IPAddress.TryParse(SlaveConnection, out IPAddress address))
+            if (IPAddress.TryParse(SlaveConnection, out IPAddress address) || SlaveConnection.StartsWith("tcp:", StringComparison.OrdinalIgnoreCase))
                 return ModbusConstants.ConnectionType.ModbusTCP;
             else if (SlaveConnection.Contains("COM") || SlaveConnection.Contains("/tty"))
                 return ModbusConstants.ConnectionType.ModbusRTU;
