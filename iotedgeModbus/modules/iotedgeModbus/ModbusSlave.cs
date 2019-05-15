@@ -972,6 +972,7 @@
 
     class ModuleConfig
     {
+        public string IoTCentralConnectionString;
         public Dictionary<string, ModbusSlaveConfig> SlaveConfigs;
         public ModuleConfig(Dictionary<string, ModbusSlaveConfig> slaves)
         {

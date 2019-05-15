@@ -23,6 +23,7 @@ namespace Modbus.Containers
         static int m_counter = 0;
         static List<Task> m_task_list = new List<Task>();
         static bool m_run = true;
+        static bool m_using_central = false;
         static ModbusPushInterval m_interval = null;
         static ModbusVersion m_version = null;
         static ModuleConfig m_existingConfig = null;
@@ -54,13 +55,14 @@ namespace Modbus.Containers
         /// <summary>
         /// Initializes the Azure IoT Client for the Edge Module
         /// </summary>
-        static async Task InitEdgeModule()
+        static async Task InitEdgeModule(string iotCentralConnectionString = null)
         {
             try
             {
                 // Open a connection to the Edge runtime using MQTT transport and
                 // the connection string provided as an environment variable
-                string connectionString = Environment.GetEnvironmentVariable("EdgeHubConnectionString");
+                string connectionString = iotCentralConnectionString == null ? 
+                    Environment.GetEnvironmentVariable("EdgeHubConnectionString") : iotCentralConnectionString;
                
                 AmqpTransportSettings amqpSettings = new AmqpTransportSettings(TransportType.Amqp_Tcp_Only);
                 // Suppress cert validation on Windows for now
@@ -93,7 +95,6 @@ namespace Modbus.Containers
                     Console.WriteLine("Error when initializing module: {0}", exception);
                 }
             }
-
         }
 
         /// <summary>
@@ -237,6 +238,18 @@ namespace Modbus.Containers
             {
                 Console.WriteLine("Attempt to load configuration: " + jsonStr);
                 config = JsonConvert.DeserializeObject<ModuleConfig>(jsonStr);
+
+                if (!string.IsNullOrEmpty(config.IoTCentralConnectionString))
+                {
+                    await InitEdgeModule(config.IoTCentralConnectionString);
+                    m_using_central = true;   
+                }
+                else if (m_using_central)
+                {
+                    await InitEdgeModule();
+                    m_using_central = false;
+                }
+
                 m_interval = JsonConvert.DeserializeObject<ModbusPushInterval>(jsonStr);
  
                 if (m_interval == null)
