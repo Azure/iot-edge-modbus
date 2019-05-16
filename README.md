@@ -56,6 +56,7 @@ Before running the module, proper configuration is required. Here is a sample co
 {
   "PublishInterval": "2000",
   "Version":"2",
+  "IoTCentralConnectionString": "",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "192.168.0.1",
