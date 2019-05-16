@@ -474,52 +474,59 @@
         {
             byte[] response = null;
             byte[] garbage = new byte[m_bufSize];
+            int retryForSocketError = 0;
+            bool sendSucceed = false;
 
-            m_semaphore_connection.Wait();
-            
-            if (m_socket != null && m_socket.Connected)
+            while (!sendSucceed && retryForSocketError < config.RetryCount)
             {
-                try
+                retryForSocketError++;
+                m_semaphore_connection.Wait();
+
+                if (m_socket != null && m_socket.Connected)
                 {
-                    // clear receive buffer
-                    while (m_socket.Available > 0)
+                    try
                     {
-                        int rec = m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
-                        Console.WriteLine("Dumping socket receive buffer...");
-                        string data = "";
-                        int cnt = 0;
-                        while(cnt < rec)
+                        // clear receive buffer
+                        while (m_socket.Available > 0)
                         {
-                            data += garbage[cnt].ToString();
-                            cnt++;
+                            int rec = m_socket.Receive(garbage, m_bufSize, SocketFlags.None);
+                            Console.WriteLine("Dumping socket receive buffer...");
+                            string data = "";
+                            int cnt = 0;
+                            while (cnt < rec)
+                            {
+                                data += garbage[cnt].ToString();
+                                cnt++;
+                            }
+                            Console.WriteLine(data);
                         }
-                        Console.WriteLine(data);
+
+                        // send request
+                        m_socket.Send(request, reqLen, SocketFlags.None);
+
+                        // read response
+                        response = ReadResponse();
+                        sendSucceed = true;
                     }
-
-                    // send request
-                    m_socket.Send(request, reqLen, SocketFlags.None);
-
-                    // read response
-                    response = ReadResponse();
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Something wrong with the socket, disposing...");
+                        Console.WriteLine(e.Message);
+                        m_socket.Disconnect(false);
+                        m_socket.Dispose();
+                        m_socket = null;
+                        Console.WriteLine("Connection lost, reconnecting...");
+                        await ConnectSlave();
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    Console.WriteLine("Something wrong with the socket, disposing...");
-                    Console.WriteLine(e.Message);
-                    m_socket.Disconnect(false);
-                    m_socket.Dispose();
-                    m_socket = null;
                     Console.WriteLine("Connection lost, reconnecting...");
                     await ConnectSlave();
                 }
-            }
-            else
-            {
-                Console.WriteLine("Connection lost, reconnecting...");
-                await ConnectSlave();
-            }
 
-            m_semaphore_connection.Release();
+                m_semaphore_connection.Release();
+            }
 
             return response;
         }
