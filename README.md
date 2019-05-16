@@ -112,7 +112,10 @@ Before running the module, proper configuration is required. Here is a sample co
 Meaning of each field:
 
 * "PublishInterval" - Interval between each push to IoT Hub in millisecond
-* "Version" - Switch between the PP (Public Preview) and the latest Message Payload format. (valid value for PP: "1", all other values will switch to the latest format) 
+* "Version" - Switch between the PP (Public Preview), the IoT Central format, and the latest Message Payload format.
+  * 1: PP
+  * 2: Central format
+  * All other valuse: latest format
 * "SlaveConfigs" - Contains one or more Modbus slaves' configuration. In this sample, we have "Slave01" and "Slave02" two devices:
     * "Slave01", "Slave02" - User defined names for each Modbus slave, cannot have duplicates under "SlaveConfigs".
     * "SlaveConnection" - Ipv4 address or the serial port name of the Modbus slave.

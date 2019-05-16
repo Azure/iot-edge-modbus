@@ -327,6 +327,19 @@ namespace Modbus.Containers
 
                         break;
 
+                    // Reformat for IoT Central
+                    case "2":
+                        List<object> resultV1 = moduleHandle.CollectAndResetOutMessageFromSessionsV1();
+                        Dictionary<string, string> resultCentral = ModuleHandle.UnfurlOutMessageForCentral(resultV1);
+
+                        if (resultV1.Count > 0)
+                        {
+                            message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(resultCentral)));
+                            message.Properties.Add("content-type", "application/edge-modbus-json");
+                        }
+
+                        break;
+
                     default:
                         List<object> result = moduleHandle.CollectAndResetOutMessageFromSessions();
 

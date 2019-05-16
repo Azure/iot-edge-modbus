@@ -142,6 +142,15 @@
             
             return obj_list;
         }
+
+        public static Dictionary UnfurlOutMessageForCentral(List<object> obj_list)
+        {
+            Dictionary<string, string> outDict = new Dictionary<string, string>();
+            foreach (ModbusOutMessageV1 outMessage in obj_list)
+            {
+                outDict.Add(outMessage.DisplayName, outMessage.Value);
+            }
+        }
     }
 
     /// <summary>
