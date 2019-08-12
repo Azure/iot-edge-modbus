@@ -1,0 +1,55 @@
+{
+  "PublishInterval": "2000",
+  "Version": "2",
+  "SlaveConfigs": {
+    "Slave01": {
+      "SlaveConnection": "192.168.0.1",
+      "HwId": "PowerMeter-0a:01:01:01:01:01",
+      "RetryCount": "10",
+      "RetryInterval": "50",
+      "Operations": {
+        "Op01": {
+          "PollingInterval": "1000",
+          "UnitId": "1",
+          "StartAddress": "400001",
+          "Count": "2",
+          "DisplayName": "Voltage",
+          "CorrelationId": "MessageType1"
+        },
+        "Op02": {
+          "PollingInterval": "1000",
+          "UnitId": "1",
+          "StartAddress": "400002",
+          "Count": "2",
+          "DisplayName": "Current",
+          "CorrelationId": "MessageType1"
+        }
+      }
+    },
+    "Slave02": {
+      "SlaveConnection": "ttyS0",
+      "HwId": "PowerMeter-0a:01:01:01:01:02",
+      "BaudRate": "9600",
+      "DataBits": "8",
+      "StopBits": "1",
+      "Parity": "ODD",
+      "FlowControl": "NONE",
+      "Operations": {
+        "Op01": {
+          "PollingInterval": "2000",
+          "UnitId": "1",
+          "StartAddress": "40001",
+          "Count": "1",
+          "DisplayName": "Power"
+        },
+        "Op02": {
+          "PollingInterval": "2000",
+          "UnitId": "1",
+          "StartAddress": "40003",
+          "Count": "1",
+          "DisplayName": "Status"
+        }
+      }
+    }
+  }
+}

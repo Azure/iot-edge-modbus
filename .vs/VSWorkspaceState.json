@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Docs",
+    "\\iotedgeModbus",
+    "\\iotedgeModbus\\modules",
+    "\\iotedgeModbus\\modules\\iotedgeModbus"
+  ],
+  "SelectedNode": "\\iotedgeModbus\\modules\\iotedgeModbus\\Program.cs",
+  "PreviewInSolutionExplorer": false
+}
