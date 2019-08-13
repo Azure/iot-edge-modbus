@@ -39,8 +39,8 @@
 
         public T DeserialiseDesiredProperties(string desiredProperties)
         {
-            // Validate configuration before deserialising.
-            //this.ValidateDeviceConfiguration(desiredProperties);
+            // Validate Json configuration before deserialising.
+            this.ValidateDeviceConfiguration(desiredProperties);
 
             return JsonConvert.DeserializeObject<T>(desiredProperties);
         }
