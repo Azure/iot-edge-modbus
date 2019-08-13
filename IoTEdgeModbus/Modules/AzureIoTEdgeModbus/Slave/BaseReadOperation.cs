@@ -1,5 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using Newtonsoft.Json;
     using System;
     using System.ComponentModel;
     using System.Configuration;
@@ -23,6 +24,13 @@
 
         [DefaultValue("DefaultCorrelationId")]
         public string CorrelationId { get; set; }
+
+        [DefaultValue(true)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public bool IsSimpleValue { get; set; }
+
+        public string ValueType { get; set; }
+
 
         public void Verify()
         {

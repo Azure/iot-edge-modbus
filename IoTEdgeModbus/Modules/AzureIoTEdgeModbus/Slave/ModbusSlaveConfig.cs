@@ -51,6 +51,8 @@
                     Count = pair.Value.Count,
                     DisplayName = pair.Value.DisplayName,
                     CorrelationId = pair.Value.CorrelationId,
+                    IsSimpleValue = pair.Value.IsSimpleValue,
+                    ValueType = pair.Value.ValueType
                 });
 
 

@@ -7,7 +7,7 @@ Project("{34036844-64E7-43A5-9151-4AD90E180989}") = "Azure.IoT.Edge.Modules", "A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AzureIoTEdgeModbus", "AzureIoTEdgeModbus\AzureIoTEdgeModbus.csproj", "{BA166F47-0BEE-4C77-8A35-36701691A5F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure.IoT.Edge.Modbus.Tests", "Azure.IoT.Edge.Modbus.Tests\Azure.IoT.Edge.Modbus.Tests.csproj", "{E8B83CCD-DBA0-452C-A912-49A96BECEDC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.IoT.Edge.Modbus.Tests", "Azure.IoT.Edge.Modbus.Tests\Azure.IoT.Edge.Modbus.Tests.csproj", "{E8B83CCD-DBA0-452C-A912-49A96BECEDC5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

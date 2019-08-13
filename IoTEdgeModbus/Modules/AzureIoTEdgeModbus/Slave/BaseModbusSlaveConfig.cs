@@ -1,5 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using Newtonsoft.Json;
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Configuration;
@@ -22,6 +23,7 @@
 
         [DefaultValue(502)]
         [IntegerValidator(MinValue = 1)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public int? TcpPort { get; set; }
 
         public string HwId { get; set; }

@@ -3,7 +3,7 @@
   "Version": "2",
   "SlaveConfigs": {
     "Slave01": {
-      "SlaveConnection": "192.168.0.1",
+      "SlaveConnection": "52.165.30.205",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
       "RetryCount": "10",
       "RetryInterval": "50",
@@ -14,7 +14,9 @@
           "StartAddress": "400001",
           "Count": "2",
           "DisplayName": "Voltage",
-          "CorrelationId": "MessageType1"
+          "CorrelationId": "MessageType1",
+          "IsSimpleValue": "false",
+          "ValueType": "float"
         },
         "Op02": {
           "PollingInterval": "1000",
@@ -22,7 +24,9 @@
           "StartAddress": "400002",
           "Count": "2",
           "DisplayName": "Current",
-          "CorrelationId": "MessageType1"
+          "CorrelationId": "MessageType1",
+          "IsSimpleValue": "false",
+          "ValueType": "float"
         }
       }
     },
@@ -40,14 +44,18 @@
           "UnitId": "1",
           "StartAddress": "40001",
           "Count": "1",
-          "DisplayName": "Power"
+          "DisplayName": "Power",
+          "IsSimpleValue": "false",
+          "ValueType": "float"
         },
         "Op02": {
           "PollingInterval": "2000",
           "UnitId": "1",
           "StartAddress": "40003",
           "Count": "1",
-          "DisplayName": "Status"
+          "DisplayName": "Status",
+          "IsSimpleValue": "false",
+          "ValueType": "float"
         }
       }
     }

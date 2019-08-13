@@ -1,7 +1,10 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using Microsoft.Azure.Devices.Client;
+    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -40,6 +43,20 @@
             foreach (var op_pair in this.config.Operations)
             {
                 ReadOperation x = op_pair.Value;
+
+                //If working with complex value we need to override count
+                if (x.IsSimpleValue == false)
+                {
+                    switch (x.ValueType)
+                    {
+                        case ModbusComplexValuesTypes.Float:
+
+                            x.Count = 2;
+                            break;
+
+                        default: break;
+                    }
+                }
 
                 x.RequestLen = this.m_reqSize;
                 x.Request = new byte[m_bufSize];
@@ -114,54 +131,70 @@
             int step_size = 0;
             int start_digit = 0;
             List<ModbusOutValue> value_list = new List<ModbusOutValue>();
-            switch (x.Response[this.m_dataBodyOffset])//function code
+            switch (x.Response[m_dataBodyOffset])//function code
             {
                 case (byte)FunctionCodeType.ReadCoils:
                 case (byte)FunctionCodeType.ReadInputs:
                     {
-                        count = x.Response[this.m_dataBodyOffset + 1] * 8;
+                        count = x.Response[m_dataBodyOffset + 1] * 8;
                         count = (count > x.Count) ? x.Count : count;
                         step_size = 1;
-                        start_digit = x.Response[this.m_dataBodyOffset] - 1;
+                        start_digit = x.Response[m_dataBodyOffset] - 1;
                         break;
                     }
                 case (byte)FunctionCodeType.ReadHoldingRegisters:
                 case (byte)FunctionCodeType.ReadInputRegisters:
                     {
-                        count = x.Response[this.m_dataBodyOffset + 1];
+                        count = x.Response[m_dataBodyOffset + 1];
                         step_size = 2;
-                        start_digit = (x.Response[this.m_dataBodyOffset] == 3) ? 4 : 3;
+                        start_digit = (x.Response[m_dataBodyOffset] == 3) ? 4 : 3;
                         break;
                     }
             }
-            for (int i = 0; i < count; i += step_size)
+            var initialCell = string.Format(x.OutFormat, (char)x.Entity, x.Address + 1);
+
+            if (x.IsSimpleValue == true)
             {
-                string res = "";
-                string cell = "";
-                string val = "";
-                if (step_size == 1)
+                for (int i = 0; i < count; i += step_size)
                 {
-                    cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + i + 1);
-                    val = string.Format("{0}", (x.Response[this.m_dataBodyOffset + 2 + (i / 8)] >> (i % 8)) & 0b1);
+                    string res = "";
+                    string cell = "";
+                    string val = "";
+                    if (step_size == 1)
+                    {
+                        cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + i + 1);
+                        val = string.Format("{0}", (x.Response[m_dataBodyOffset + 2 + (i / 8)] >> (i % 8)) & 0b1);
+                    }
+                    else if (step_size == 2)
+                    {
+                        cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + (i / 2) + 1);
+                        val = string.Format("{0,00000}", ((x.Response[m_dataBodyOffset + 2 + i]) * 0x100 + x.Response[m_dataBodyOffset + 3 + i]));
+                    }
+                    res = cell + ": " + val + "\n";
+                    Console.WriteLine(res);
+
+                    ModbusOutValue value = new ModbusOutValue()
+                    { DisplayName = x.DisplayName, Address = cell, Value = val };
+                    value_list.Add(value);
                 }
-                else if (step_size == 2)
-                {
-                    cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + (i / 2) + 1);
-                    val = string.Format("{0,00000}", ((x.Response[this.m_dataBodyOffset + 2 + i]) * 0x100 + x.Response[this.m_dataBodyOffset + 3 + i]));
-                }
-                res = cell + ": " + val + "\n";
-                Console.WriteLine(res);
+            }
+            //We need to merge complex value
+            else
+            {
+                var bytesA = x.Response.SubArray(m_dataBodyOffset + 2, step_size * x.Count);
+                var val = ModbusComplexValues.MergeComplexValue(x.ValueType, bytesA);
 
                 ModbusOutValue value = new ModbusOutValue()
-                { DisplayName = x.DisplayName, Address = cell, Value = val };
+                { DisplayName = x.DisplayName + "_merged", Address = initialCell, Value = val };
                 value_list.Add(value);
+
+                var res = initialCell + "_merged: " + val + "\n";
+                Console.WriteLine(res);
             }
 
             if (value_list.Count > 0)
-            {
-                this.PrepareOutMessage(config.HwId, x.CorrelationId, value_list);
-            }
-        }
+                PrepareOutMessage(config.HwId, x.CorrelationId, value_list);
+         }
         protected void PrepareOutMessage(string HwId, string CorrelationId, List<ModbusOutValue> ValueList)
         {
             this.m_semaphore_collection.Wait();

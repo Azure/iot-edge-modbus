@@ -1,6 +1,7 @@
 ﻿namespace AzureIoTEdgeModbus.DeviceTwin
 {
     using AzureIoTEdgeModbus.Configuration;
+    using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Wrappers;
     using Newtonsoft.Json;
 
@@ -29,6 +30,8 @@
                 Console.WriteLine($"Desired properties retrieved from twin: {Environment.NewLine}{twinProperties.Properties.Desired}");
 
                 var desiredProperties = JsonConvert.SerializeObject(twinProperties.Properties.Desired);
+                if (!desiredProperties.Contains("SlaveConfigs"))
+                    return await (this.DeviceConfiguration as FileConfiguration<T>).GetConfigurationAsync(cancellationToken);
 
                 return this.DeserialiseDesiredProperties(desiredProperties);
             }
