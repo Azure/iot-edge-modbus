@@ -20,6 +20,10 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '2.2.300'
     - task: DotNetCoreCLI@2
       displayName: 'Publish Artefacts'
       inputs:
