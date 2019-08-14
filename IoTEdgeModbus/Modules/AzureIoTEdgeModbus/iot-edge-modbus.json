@@ -1,31 +1,31 @@
 {
-  "PublishInterval": "2000",
+  "PublishInterval": 2000,
   "Version": "2",
   "SlaveConfigs": {
     "Slave01": {
       "SlaveConnection": "52.165.30.205",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
-      "RetryCount": "10",
-      "RetryInterval": "50",
+      "RetryCount": 10,
+      "RetryInterval": 50,
       "Operations": {
         "Op01": {
-          "PollingInterval": "1000",
-          "UnitId": "1",
-          "StartAddress": "400001",
-          "Count": "2",
+          "PollingInterval": 1000,
+          "UnitId":1,
+          "StartAddress": "40000",
+          "Count": 2,
           "DisplayName": "Voltage",
           "CorrelationId": "MessageType1",
-          "IsSimpleValue": "false",
+          "IsSimpleValue": false,
           "ValueType": "float"
         },
         "Op02": {
-          "PollingInterval": "1000",
-          "UnitId": "1",
+          "PollingInterval": 1000,
+          "UnitId": 1,
           "StartAddress": "400002",
-          "Count": "2",
+          "Count": 2,
           "DisplayName": "Current",
           "CorrelationId": "MessageType1",
-          "IsSimpleValue": "false",
+          "IsSimpleValue": false,
           "ValueType": "float"
         }
       }
@@ -33,28 +33,28 @@
     "Slave02": {
       "SlaveConnection": "ttyS0",
       "HwId": "PowerMeter-0a:01:01:01:01:02",
-      "BaudRate": "9600",
-      "DataBits": "8",
-      "StopBits": "1",
-      "Parity": "ODD",
+      "BaudRate": 9600,
+      "DataBits": 8,
+      "StopBits": "One",
+      "Parity": "Odd",
       "FlowControl": "NONE",
       "Operations": {
         "Op01": {
-          "PollingInterval": "2000",
-          "UnitId": "1",
+          "PollingInterval": 2000,
+          "UnitId": 1,
           "StartAddress": "40001",
-          "Count": "1",
+          "Count": 1,
           "DisplayName": "Power",
-          "IsSimpleValue": "false",
+          "IsSimpleValue": false,
           "ValueType": "float"
         },
         "Op02": {
-          "PollingInterval": "2000",
-          "UnitId": "1",
+          "PollingInterval": 2000,
+          "UnitId": 1,
           "StartAddress": "40003",
-          "Count": "1",
+          "Count": 1,
           "DisplayName": "Status",
-          "IsSimpleValue": "false",
+          "IsSimpleValue": false,
           "ValueType": "float"
         }
       }

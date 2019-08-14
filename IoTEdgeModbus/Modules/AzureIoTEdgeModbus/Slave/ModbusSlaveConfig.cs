@@ -17,7 +17,7 @@
             {
                 return ConnectionType.ModbusTCP;
             }
-            else if (this.SlaveConnection.Contains("COM") || this.SlaveConnection.Contains("/tty"))
+            else if (this.SlaveConnection.Contains("COM") || this.SlaveConnection.Contains("tty"))
             {
                 return ConnectionType.ModbusRTU;
             }
@@ -38,7 +38,8 @@
                 BaudRate = this.BaudRate,
                 StopBits = this.StopBits,
                 DataBits = this.DataBits,
-                Parity = this.Parity
+                Parity = this.Parity,
+                FlowControl = this.FlowControl
             };
 
             baseConfig.Operations = this.Operations.ToDictionary(

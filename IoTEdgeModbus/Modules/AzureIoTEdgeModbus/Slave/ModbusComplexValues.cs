@@ -8,6 +8,8 @@ namespace AzureIoTEdgeModbus.Slave
     public class ModbusComplexValuesTypes
     {
         public const string Float = "float";
+
+        public static readonly List<string> ValuesList = new List<string>() { Float };
     }
 
     public class ModbusComplexValues

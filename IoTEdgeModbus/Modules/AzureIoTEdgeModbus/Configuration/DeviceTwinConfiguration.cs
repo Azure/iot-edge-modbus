@@ -31,7 +31,12 @@
 
                 var desiredProperties = JsonConvert.SerializeObject(twinProperties.Properties.Desired);
                 if (!desiredProperties.Contains("SlaveConfigs"))
+                {
+                    if (this.DeviceConfiguration == null)
+                        throw new Exception("Neither Device Twin or File device configurations were provided");
+
                     return await (this.DeviceConfiguration as FileConfiguration<T>).GetConfigurationAsync(cancellationToken);
+                }
 
                 return this.DeserialiseDesiredProperties(desiredProperties);
             }

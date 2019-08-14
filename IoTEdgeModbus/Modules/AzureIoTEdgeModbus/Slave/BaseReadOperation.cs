@@ -1,6 +1,7 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Serialization;
     using System;
     using System.ComponentModel;
     using System.Configuration;
@@ -10,19 +11,24 @@
     /// </summary>
     public class BaseReadOperation
     {
+        [DefaultValue(1000)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public int PollingInterval { get; set; }
 
         public byte UnitId { get; set; }
 
         [StringValidator(MinLength = 5)]
+        [JsonProperty(Required = Required.Always)]
         public string StartAddress { get; set; }
 
         [IntegerValidator(MinValue = 1)]
         public UInt16 Count { get; set; }
 
+        [JsonProperty(Required=Required.Always)]
         public string DisplayName { get; set; }
 
         [DefaultValue("DefaultCorrelationId")]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public string CorrelationId { get; set; }
 
         [DefaultValue(true)]
