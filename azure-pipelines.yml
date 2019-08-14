@@ -39,7 +39,7 @@ stages:
     - task: Bash@3
       inputs:
         targetType: 'inline'
-        script: 'gcc -shared -o IoTEdgeModbus/Modules/AzureIoTEdgeModbus/published/iotedgeModbus/libcomWrapper.so -fPIC IoTEdgeModbus/Modules/AzureIoTEdgeModbus/comWrapper.c'
+        script: 'gcc -shared -o IoTEdgeModbus/Modules/AzureIoTEdgeModbus/published/iotedgeModbus/libcomWrapper.so -fPIC IoTEdgeModbus/Modules/AzureIoTEdgeModbus/ComWrapper.c'
     - task: PublishBuildArtifacts@1
       inputs:
         PathtoPublish: 'IoTEdgeModbus/Modules/AzureIoTEdgeModbus/published'
