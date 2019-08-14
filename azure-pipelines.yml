@@ -63,5 +63,5 @@ stages:
         repository: 'acr1907a.azurecr.io/oss-modbus'
         command: 'buildAndPush'
         Dockerfile: 'IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Dockerfile.amd64.cicd'
-        tags: '$(Build.BuildId)-ci-linux64'
+        tags: '$(Build.BuildId)-github-ci-linux64'
         buildContext: '$(Build.ArtifactStagingDirectory)'
