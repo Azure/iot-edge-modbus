@@ -2,18 +2,62 @@
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
-
 trigger:
-- master
-
-pool:
-  vmImage: 'ubuntu-latest'
-
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+  branches:
+    include:
+    - master
+  paths:
+    exclude:
+    - /doc
+    - test/testenv
+    - v1
+    - README.md
+    - azure-pipelines.yml
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish Artefacts'
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        projects: '**/iotedgeModbus/modules/iotedgeModbus/iotedgeModbus.csproj'
+        arguments: '-c Debug -o published'
+        zipAfterPublish: false
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: 'sudo apt-get update && sudo apt install gcc -y'
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: 'gcc -shared -o iotedgeModbus/modules/iotedgeModbus/published/iotedgeModbus/libcomWrapper.so -fPIC iotedgeModbus/modules/iotedgeModbus/comWrapper.c'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: 'iotedgeModbus/modules/iotedgeModbus/published'
+        ArtifactName: 'Build'
+        publishLocation: 'Container'
+- stage: Deploy
+  dependsOn:
+  - Build
+  jobs:
+  - job: Linux_Image_Deploy
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifact: "Build"
+        targetPath: "$(Build.ArtifactStagingDirectory)"
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'OSS Modbus ACR'
+        repository: 'acr1907a.azurecr.io/oss-modbus'
+        command: 'buildAndPush'
+        Dockerfile: 'iotedgeModbus/modules/iotedgeModbus/Dockerfile.amd64.cicd'
+        tags: '$(Build.BuildId)-ci-linux64'
+        buildContext: '$(Build.ArtifactStagingDirectory)'
