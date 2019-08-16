@@ -32,15 +32,10 @@ stages:
         projects: '**/IoTEdgeModbus/Modules/AzureIoTEdgeModbus/AzureIoTEdgeModbus.csproj'
         arguments: '-c Debug -o published'
         zipAfterPublish: false
-    - task: VSTest@2
+    - task: DotNetCoreCLI@2
       inputs:
-        testSelector: 'testAssemblies'
-        testAssemblyVer2: |
-          **\*test*.dll
-          !**\*TestAdapter.dll
-          !**\obj\**
-        searchFolder: '$(System.DefaultWorkingDirectory)'
-        vsTestVersion: '16.0'
+        command: 'test'
+        projects: '''**/IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Azure.IoT.Edge.Modbus.Tests.csproj'''
     - task: Bash@3
       inputs:
         targetType: 'inline'
