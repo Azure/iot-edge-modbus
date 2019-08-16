@@ -59,8 +59,8 @@ stages:
         targetPath: "$(Build.ArtifactStagingDirectory)"
     - task: Docker@2
       inputs:
-        containerRegistry: 'OSS Modbus ACR'
-        repository: 'acr1907a.azurecr.io/oss-modbus'
+        containerRegistry: 'OSS Modbus DockerHub'
+        repository: 'suneetnangia/iot-edge-modbus'
         command: 'buildAndPush'
         Dockerfile: 'IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Dockerfile.amd64.cicd'
         tags: '$(Build.BuildId)-github-ci-linux64'
