@@ -10,6 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectCapability Include="AzureIoTEdgeModule"/>
+  </ItemGroup>
+  
+  <ItemGroup>
     <PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.21.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="2.2.0" />
