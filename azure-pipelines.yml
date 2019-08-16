@@ -23,7 +23,12 @@ stages:
     - task: UseDotNet@2
       inputs:
         packageType: 'sdk'
-        version: '2.2.300'
+        version: '2.2.300'    
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/IoTEdgeModbus/Modules/Azure.IoT.Edge.Modbus.Tests/Azure.IoT.Edge.Modbus.Tests.csproj'
     - task: DotNetCoreCLI@2
       displayName: 'Publish Artefacts'
       inputs:
