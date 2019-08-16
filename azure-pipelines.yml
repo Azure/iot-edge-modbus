@@ -27,7 +27,7 @@ stages:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'test'
-        projects: '''**/IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Azure.IoT.Edge.Modbus.Tests.csproj'''
+        projects: '**/IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Azure.IoT.Edge.Modbus.Tests.csproj'
     - task: DotNetCoreCLI@2
       displayName: 'Publish Artefacts'
       inputs:
