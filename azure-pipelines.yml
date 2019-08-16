@@ -25,6 +25,7 @@ stages:
         packageType: 'sdk'
         version: '2.2.300'
     - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
       inputs:
         command: 'test'
         projects: '**/IoTEdgeModbus/Modules/AzureIoTEdgeModbus/Azure.IoT.Edge.Modbus.Tests.csproj'
