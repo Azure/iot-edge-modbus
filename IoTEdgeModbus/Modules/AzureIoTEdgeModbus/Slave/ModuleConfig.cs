@@ -1,17 +1,19 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
-    using AzureIoTEdgeModbus.Configuration;
-    using DotNetty.Common.Utilities;
+    using Newtonsoft.Json;
     using System.Collections.Generic;
     using System.ComponentModel;
-    using System.Configuration;
+    using System.ComponentModel.DataAnnotations;
 
     public class ModuleConfig
     {
         [DefaultValue(5000)]
-        [IntegerValidator(MinValue = 1)]
+
+        [Range(1, int.MaxValue)]
+        [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int PublishInterval { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public Dictionary<string, ModbusSlaveConfig> SlaveConfigs { get; set; }
     }
 }

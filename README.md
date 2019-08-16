@@ -1,3 +1,7 @@
+[![Build Status](https://dev.azure.com/bengui/TPFOF/_apis/build/status/GitHub-OSS-Modbus-Module-Release?branchName=master)](https://dev.azure.com/bengui/TPFOF/_build/latest?definitionId=9&branchName=master) 
+
+[Docker Container Registry](https://cloud.docker.com/repository/registry-1.docker.io/suneetnangia/iot-edge-modbus)
+
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments
 
 # Azure IoT Edge Modbus Module GA #
@@ -54,28 +58,28 @@ You can check your container status in the VS Code Docker explorer or by run the
 Before running the module, proper configuration is required. Here is a sample configuration for your reference.
 ```json
 {
-  "PublishInterval": "2000",
-  "Version":"2",
+  "PublishInterval": 2000,
+  "Version": "2",
   "SlaveConfigs": {
     "Slave01": {
-      "SlaveConnection": "192.168.0.1",
+      "SlaveConnection": "127.0.0.1",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
-      "RetryCount": "10",
-      "RetryInterval": "50",
+      "RetryCount": 10,
+      "RetryInterval": 50,
       "Operations": {
         "Op01": {
-          "PollingInterval": "1000",
-          "UnitId": "1",
+          "PollingInterval": 1000,
+          "UnitId": 1,
           "StartAddress": "400001",
-          "Count": "2",
+          "Count": 2,
           "DisplayName": "Voltage",
           "CorrelationId": "MessageType1"
         },
         "Op02": {
-          "PollingInterval": "1000",
-          "UnitId": "1",
+          "PollingInterval": 1000,
+          "UnitId": 1,
           "StartAddress": "400002",
-          "Count": "2",
+          "Count": 2,
           "DisplayName": "Current",
           "CorrelationId": "MessageType1"
         }
@@ -84,24 +88,24 @@ Before running the module, proper configuration is required. Here is a sample co
     "Slave02": {
       "SlaveConnection": "ttyS0",
       "HwId": "PowerMeter-0a:01:01:01:01:02",
-      "BaudRate": "9600",
-      "DataBits": "8",
-      "StopBits": "1",
-      "Parity": "ODD",
+      "BaudRate": 9600,
+      "DataBits": 8,
+      "StopBits": 1,
+      "Parity": 1,
       "FlowControl": "NONE",
       "Operations": {
         "Op01": {
-          "PollingInterval": "2000",
-          "UnitId": "1",
+          "PollingInterval": 2000,
+          "UnitId": 1,
           "StartAddress": "40001",
-          "Count": "1",
+          "Count": 1,
           "DisplayName": "Power"
         },
         "Op02": {
-          "PollingInterval": "2000",
-          "UnitId": "1",
+          "PollingInterval": 2000,
+          "UnitId": 1,
           "StartAddress": "40003",
-          "Count": "1",
+          "Count": 1,
           "DisplayName": "Status"
         }
       }

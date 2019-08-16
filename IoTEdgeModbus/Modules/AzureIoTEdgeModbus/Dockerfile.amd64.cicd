@@ -1,0 +1,9 @@
+FROM microsoft/dotnet:2.2-runtime
+WORKDIR /app
+COPY /AzureIoTEdgeModbus/** ./
+COPY /AzureIoTEdgeModbus/libcomWrapper.so /usr/lib/
+
+RUN useradd -ms /bin/bash moduleuser
+USER moduleuser
+
+ENTRYPOINT ["dotnet", "AzureIoTEdgeModbus.dll"]

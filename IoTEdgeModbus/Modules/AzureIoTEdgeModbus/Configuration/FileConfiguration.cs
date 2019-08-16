@@ -16,7 +16,7 @@
             this.FileTextReader = textReader;
         }
 
-        public override async Task<T> GetConfigurationAsync(CancellationToken cancellationToken)
+        protected override async Task<T> GetConfigurationAsync(CancellationToken cancellationToken)
         {
             // Get desired properties from local file.
             var desiredProperties = await this.FileTextReader.ReadToEndAsync().ConfigureAwait(false);

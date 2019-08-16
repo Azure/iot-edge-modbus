@@ -18,7 +18,7 @@
             return this.GetConfigurationAsync(cancellationToken);
         }
 
-        public abstract Task<T> GetConfigurationAsync(CancellationToken cancellationToken);
+        protected abstract Task<T> GetConfigurationAsync(CancellationToken cancellationToken);
 
         private void ValidateDeviceConfiguration(string jsonString)
         {
@@ -42,13 +42,10 @@
 
         public T DeserialiseDesiredProperties(string desiredProperties)
         {
-            // Validate configuration before deserialising.
+            // Validate Json configuration before deserialising.
             this.ValidateDeviceConfiguration(desiredProperties);
 
-            var config = JsonConvert.DeserializeObject<T>(desiredProperties);
-            ConfigValidators.ValidateConfig<T>(config);
-
-            return config;
+            return JsonConvert.DeserializeObject<T>(desiredProperties);
         }
     }
 }

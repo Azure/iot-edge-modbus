@@ -1,5 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using Newtonsoft.Json;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
@@ -9,6 +10,7 @@
     /// </summary>
     public class ModbusSlaveConfig : BaseModbusSlaveConfig
     {
+        [JsonProperty(Required = Required.Always)]
         public new Dictionary<string, ReadOperation> Operations = null;
 
         public ConnectionType GetConnectionType()
@@ -28,7 +30,7 @@
         public BaseModbusSlaveConfig AsBase()
         {
             // Unfortunately we need to create new objects since simple polymorphism will still keep the same fields of the child classes.
-            BaseModbusSlaveConfig baseConfig = new BaseModbusSlaveConfig
+            var baseConfig = new BaseModbusSlaveConfig
             {
                 SlaveConnection = this.SlaveConnection,
                 RetryCount = this.RetryCount,
