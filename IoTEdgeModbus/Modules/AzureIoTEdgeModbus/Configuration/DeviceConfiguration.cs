@@ -1,5 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Configuration
 {
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using Newtonsoft.Json.Schema;
@@ -13,6 +14,13 @@
 
     public abstract class DeviceConfiguration<T> : IDeviceConfiguration<T>
     {
+        protected ILogger Logger { get; }
+
+        public DeviceConfiguration(ILogger<ModbusModule> logger)
+        {
+            this.Logger = logger;
+        }
+
         public Task<T> GetDeviceConfigurationAsync(CancellationToken cancellationToken)
         {
             return this.GetConfigurationAsync(cancellationToken);
@@ -27,10 +35,10 @@
 
             if (!config.IsValid(schema, out IList<string> messages))
             {
-                Console.WriteLine($"Configuration received is invalid, validation errors- {Environment.NewLine}");
+                this.Logger.LogWarning($"Configuration received is invalid, validation errors- {Environment.NewLine}");
                 foreach (var message in messages)
                 {
-                    Console.WriteLine(message);
+                    this.Logger.LogWarning(message);
                 }
 
                 throw new ConfigurationErrorsException(string.Concat(messages));

@@ -6,6 +6,7 @@ namespace Modbus.Containers
     using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Wrappers;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Logging;
 
     using System;
     using System.IO;
@@ -28,22 +29,28 @@ namespace Modbus.Containers
 
                 // Bootstrap services using dependency injection.
                 var services = new ServiceCollection();
+                services.AddLogging(cfg => cfg.AddConsole());
+                //services.AddLogging(cfg => cfg.AddApplicationInsights(Environment.GetEnvironmentVariable("ApplicationInsightsKey")))
+                //    .Configure<LoggerFilterOptions>(cfg => cfg.MinLevel = LogLevel.Trace);
+
                 services.AddSingleton<IModuleClient, ModuleClientWrapper>();
                 services.AddSingleton<IEdgeModule, ModbusModule>();
                 services.AddSingleton<ISessionsHandle, SessionsHandle>();
                 services.AddSingleton<IDeviceConfiguration<ModuleConfig>, DeviceTwinConfiguration<ModuleConfig>>(
                                         sp => new DeviceTwinConfiguration<ModuleConfig>(
-                                            File.Exists(secondaryConfigFile) ? new FileConfiguration<ModuleConfig>(File.OpenText(secondaryConfigFile)) : null, sp.GetService<IModuleClient>()));
+                                            sp.GetService<ILogger<ModbusModule>>(), File.Exists(secondaryConfigFile) ? new FileConfiguration<ModuleConfig>(sp.GetService<ILogger<ModbusModule>>(), File.OpenText(secondaryConfigFile)) : null, sp.GetService<IModuleClient>()));
 
                 // Dispose method of ServiceProvider will dispose all disposable objects constructed by it as well.
                 using (var serviceProvider = services.BuildServiceProvider())
                 {
+                    var logger = serviceProvider.GetService<ILogger<ModbusModule>>();
+
                     // Get a new module object.
                     using (var module = serviceProvider.GetService<IEdgeModule>())
                     {
                         using (var moduleClient = serviceProvider.GetService<IModuleClient>())
                         {
-                            Console.WriteLine("IoT Hub module client and slave sessions initializing...");
+                            logger.LogInformation("IoT Hub module client and slave sessions initializing...");
                             await module.OpenConnectionAsync(serviceProvider.GetService<ISessionsHandle>(), cts.Token).ConfigureAwait(false);
 
                             WhenCancelled(cts.Token).Wait();

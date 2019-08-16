@@ -2,6 +2,7 @@
 {
     using AzureIoTEdgeModbus.Configuration;
     using AzureIoTEdgeModbus.Wrappers;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
     using System;
@@ -14,7 +15,8 @@
         private IDeviceConfiguration<T> DeviceConfiguration { get; }
         private IModuleClient IotHubModuleClient { get; }
 
-        public DeviceTwinConfiguration(IDeviceConfiguration<T> deviceConfiguration, IModuleClient moduleClient)
+        public DeviceTwinConfiguration(ILogger<ModbusModule> logger, IDeviceConfiguration<T> deviceConfiguration, IModuleClient moduleClient)
+            :base(logger)
         {
             this.DeviceConfiguration = deviceConfiguration;
             this.IotHubModuleClient = moduleClient;
@@ -26,7 +28,7 @@
             {
                 // Get desired properties from twin.
                 var twin = await this.IotHubModuleClient.GetTwinAsync(cancellationToken).ConfigureAwait(false);
-                Console.WriteLine($"Desired properties retrieved from twin: {Environment.NewLine}{twin.Properties.Desired}");
+                this.Logger.LogInformation($"Desired properties retrieved from twin: {Environment.NewLine}{twin.Properties.Desired}");
 
                 var desiredProperties = JsonConvert.SerializeObject(twin.Properties.Desired);
 
@@ -34,7 +36,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Could not use desired properties from twin, error: {ex.Message}");
+                this.Logger.LogWarning($"Could not use desired properties from twin, error: {ex.Message}");
 
                 return this.DeviceConfiguration == null ? throw new ConfigurationErrorsException("Could not find secondary configuration store.")
                     : await this.DeviceConfiguration.GetDeviceConfigurationAsync(cancellationToken).ConfigureAwait(false);

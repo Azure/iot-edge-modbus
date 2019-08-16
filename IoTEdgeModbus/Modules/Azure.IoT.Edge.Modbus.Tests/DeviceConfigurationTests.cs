@@ -1,10 +1,12 @@
 ﻿namespace Azure.IoT.Edge.Modbus.Tests
 {
+    using AzureIoTEdgeModbus;
     using AzureIoTEdgeModbus.Configuration;
     using AzureIoTEdgeModbus.DeviceTwin;
     using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Wrappers;
     using Microsoft.Azure.Devices.Shared;
+    using Microsoft.Extensions.Logging;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Moq;
@@ -20,6 +22,7 @@
     {
         private ModuleConfig validModuleConfig;
         private ModuleConfig invalidModuleConfig;
+        private ILogger<ModbusModule> logger;
 
         [TestInitialize]
         public void Setup()
@@ -71,6 +74,7 @@
                     }
                 }
             };
+            this.logger = new Mock<ILogger<ModbusModule>>().Object;
         }
 
         [TestMethod]
@@ -81,7 +85,7 @@
             var configJsonReader = new StringReader(configJson);
 
             // Act
-            using (var fileConfig = new FileConfiguration<ModuleConfig>(configJsonReader))
+            using (var fileConfig = new FileConfiguration<ModuleConfig>(this.logger, configJsonReader))
             {
                 var typedConfig = await fileConfig.GetDeviceConfigurationAsync(new CancellationToken()).ConfigureAwait(false);
 
@@ -104,7 +108,7 @@
             moduleClientMock.Setup(mc => mc.GetTwinAsync(new CancellationToken())).ReturnsAsync(new Twin(twinProperties));
 
             // Act
-            var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(null, moduleClientMock.Object);
+            var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(this.logger, null, moduleClientMock.Object);
             var typedConfig = await deviceTwinConfig.GetDeviceConfigurationAsync(new CancellationToken()).ConfigureAwait(false);
 
             // Assert
@@ -128,9 +132,9 @@
             moduleClientMock.Setup(mc => mc.GetTwinAsync(new CancellationToken())).ReturnsAsync(new Twin(twinProperties));
 
             // Act
-            using (var fileConfig = new FileConfiguration<ModuleConfig>(configJsonReader))
+            using (var fileConfig = new FileConfiguration<ModuleConfig>(this.logger, configJsonReader))
             {
-                var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(fileConfig, moduleClientMock.Object);
+                var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(this.logger, fileConfig, moduleClientMock.Object);
                 var typedConfig = await deviceTwinConfig.GetDeviceConfigurationAsync(new CancellationToken()).ConfigureAwait(false);
 
                 // Assert
@@ -153,8 +157,8 @@
             moduleClientMock.Setup(mc => mc.GetTwinAsync(new CancellationToken())).ReturnsAsync(new Twin(twinProperties));
 
             // Act
-            var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(null, moduleClientMock.Object);
-            var typedConfig = await deviceTwinConfig.GetDeviceConfigurationAsync(new CancellationToken()).ConfigureAwait(false);            
+            var deviceTwinConfig = new DeviceTwinConfiguration<ModuleConfig>(this.logger, null, moduleClientMock.Object);
+            var typedConfig = await deviceTwinConfig.GetDeviceConfigurationAsync(new CancellationToken()).ConfigureAwait(false);
         }
     }
 }
