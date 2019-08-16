@@ -18,7 +18,7 @@
             return this.GetConfigurationAsync(cancellationToken);
         }
 
-        public abstract Task<T> GetConfigurationAsync(CancellationToken cancellationToken);
+        protected abstract Task<T> GetConfigurationAsync(CancellationToken cancellationToken);
 
         private void ValidateDeviceConfiguration(string jsonString)
         {

@@ -20,15 +20,15 @@
             this.IotHubModuleClient = moduleClient;
         }
 
-        public override async Task<T> GetConfigurationAsync(CancellationToken cancellationToken)
+        protected override async Task<T> GetConfigurationAsync(CancellationToken cancellationToken)
         {
             try
             {
                 // Get desired properties from twin.
-                var twinProperties = await this.IotHubModuleClient.GetTwinAsync(cancellationToken).ConfigureAwait(false);
-                Console.WriteLine($"Desired properties retrieved from twin: {Environment.NewLine}{twinProperties.Properties.Desired}");
+                var twin = await this.IotHubModuleClient.GetTwinAsync(cancellationToken).ConfigureAwait(false);
+                Console.WriteLine($"Desired properties retrieved from twin: {Environment.NewLine}{twin.Properties.Desired}");
 
-                var desiredProperties = JsonConvert.SerializeObject(twinProperties.Properties.Desired);
+                var desiredProperties = JsonConvert.SerializeObject(twin.Properties.Desired);
 
                 return this.DeserialiseDesiredProperties(desiredProperties);
             }
