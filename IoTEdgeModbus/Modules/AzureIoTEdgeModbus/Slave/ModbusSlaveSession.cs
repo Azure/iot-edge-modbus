@@ -7,6 +7,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Threading.Tasks.Dataflow;
 
     /// <summary>
     /// Base class of Modbus session.
@@ -44,20 +45,14 @@
             {
                 ReadOperation x = op_pair.Value;
 
+                //Can't read float from coils/inputs
+                if (x.FunctionCode == (byte)FunctionCodeType.ReadCoils || x.FunctionCode == (byte)FunctionCodeType.ReadInputs)
+                    x.IsFloat = false;
+
                 //If working with complex value we need to override count
-                if (x.IsSimpleValue == false)
-                {
-                    switch (x.ValueType)
-                    {
-                        case ModbusComplexValuesTypes.Float:
-
-                            x.Count = 2;
-                            break;
-
-                        default: break;
-                    }
-                }
-
+                if (x.IsFloat == true )
+                    x.Count = 2;
+              
                 x.RequestLen = this.m_reqSize;
                 x.Request = new byte[m_bufSize];
 
@@ -65,16 +60,39 @@
             }
         }
 
-        public async Task WriteCB(string uid, ReadOperation readOperation, string value)
+        public async Task WriteMessage(WriteOperation operation)
+        {
+            if (operation.IsFloat == true)
+            {
+                //Obtain value split into several int values
+                var valuesToBeWritten = ModbusFloatHandler.SplitFloat(operation.Value);
+
+                //We need to write each part of complex value to separate registry
+                foreach (var v in valuesToBeWritten)
+                {
+                    operation.IntValueToWrite = Convert.ToUInt16(operation.Value);
+                    await WriteCB(operation);
+                    operation.StartAddress = (Convert.ToInt32(operation.StartAddress) + 1).ToString();
+                }
+            }
+            else
+            {
+                operation.IntValueToWrite = Convert.ToUInt16(operation.Value);
+                await WriteCB(operation);
+            }
+        }
+
+        public async Task WriteCB(WriteOperation operation)
         {
             byte[] writeRequest = new byte[m_bufSize];
             byte[] writeResponse = null;
             int reqLen = this.m_reqSize;
 
-            this.EncodeWrite(writeRequest, uid, readOperation, value);
+            this.EncodeWrite(writeRequest, operation);
 
             writeResponse = await this.SendRequest(writeRequest, reqLen);
         }
+
         public void ProcessOperations()
         {
             this.m_run = true;
@@ -100,7 +118,7 @@
         #endregion
 
         #region Protected Methods
-        protected abstract void EncodeWrite(byte[] request, string uid, ReadOperation readOperation, string value);
+        protected abstract void EncodeWrite(byte[] writeRequest, WriteOperation readOperation);
         protected abstract Task<byte[]> SendRequest(byte[] request, int reqLen);
         protected abstract Task ConnectSlave();
         protected abstract void EncodeRead(ReadOperation operation);
@@ -125,7 +143,8 @@
                 await Task.Delay(x.PollingInterval - this.m_silent);
             }
         }
-        protected void ProcessResponse(ModbusSlaveConfig config, ReadOperation x)
+
+        protected List<ModbusOutValue> ProcessResponse(ModbusSlaveConfig config, ReadOperation x)
         {
             int count = 0;
             int step_size = 0;
@@ -153,7 +172,7 @@
             }
             var initialCell = string.Format(x.OutFormat, (char)x.Entity, x.Address + 1);
 
-            if (x.IsSimpleValue == true)
+            if (x.IsFloat == false)
             {
                 for (int i = 0; i < count; i += step_size)
                 {
@@ -182,18 +201,20 @@
             else
             {
                 var bytesA = x.Response.SubArray(m_dataBodyOffset + 2, step_size * x.Count);
-                var val = ModbusComplexValues.MergeComplexValue(x.ValueType, bytesA);
+                var val = ModbusFloatHandler.MergeFloat(bytesA, true);
 
                 ModbusOutValue value = new ModbusOutValue()
-                { DisplayName = x.DisplayName + "_merged", Address = initialCell, Value = val };
+                { DisplayName = x.DisplayName, Address = initialCell, Value = val };
                 value_list.Add(value);
 
-                var res = initialCell + "_merged: " + val + "\n";
+                var res = initialCell + " : " + val + "\n";
                 Console.WriteLine(res);
             }
 
             if (value_list.Count > 0)
                 PrepareOutMessage(config.HwId, x.CorrelationId, value_list);
+
+            return value_list;
          }
         protected void PrepareOutMessage(string HwId, string CorrelationId, List<ModbusOutValue> ValueList)
         {

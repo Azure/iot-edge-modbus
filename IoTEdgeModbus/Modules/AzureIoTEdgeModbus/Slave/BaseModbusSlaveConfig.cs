@@ -24,11 +24,7 @@
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int? RetryInterval { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string HwId { get; set; }
-
         [DefaultValue(502)]
-
         [Range(1, int.MaxValue)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int? TcpPort { get; set; }
@@ -53,6 +49,6 @@
         public string FlowControl { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public Dictionary<string, BaseReadOperation> Operations;
+        public Dictionary<string, ReadOperation> Operations;
     }
 }

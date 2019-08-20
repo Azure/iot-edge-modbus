@@ -17,4 +17,16 @@
     <ProjectReference Include="..\AzureIoTEdgeModbus\AzureIoTEdgeModbus.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="MockData\FloatReadOperationWithResponse.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="MockData\InputReadOperationWithResponse.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="MockData\IntReadOperationWithResponse.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

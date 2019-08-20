@@ -46,7 +46,7 @@
 
             baseConfig.Operations = this.Operations.ToDictionary(
                 pair => pair.Key,
-                pair => new BaseReadOperation
+                pair => new ReadOperation
                 {
                     PollingInterval = pair.Value.PollingInterval,
                     UnitId = pair.Value.UnitId,
@@ -54,8 +54,7 @@
                     Count = pair.Value.Count,
                     DisplayName = pair.Value.DisplayName,
                     CorrelationId = pair.Value.CorrelationId,
-                    IsSimpleValue = pair.Value.IsSimpleValue,
-                    ValueType = pair.Value.ValueType
+                    IsFloat = pair.Value.IsFloat,
                 });
 
 
