@@ -29,9 +29,7 @@ namespace Modbus.Containers
 
                 // Bootstrap services using dependency injection.
                 var services = new ServiceCollection();
-                services.AddLogging(cfg => cfg.AddConsole());
-                //services.AddLogging(cfg => cfg.AddApplicationInsights(Environment.GetEnvironmentVariable("ApplicationInsightsKey")))
-                //    .Configure<LoggerFilterOptions>(cfg => cfg.MinLevel = LogLevel.Trace);
+                services.AddLogging(cfg => cfg.AddConsole());                
 
                 services.AddSingleton<IModuleClient, ModuleClientWrapper>();
                 services.AddSingleton<IEdgeModule, ModbusModule>();
@@ -53,7 +51,7 @@ namespace Modbus.Containers
                             logger.LogInformation("IoT Hub module client and slave sessions initializing...");
                             await module.OpenConnectionAsync(serviceProvider.GetService<ISessionsHandle>(), cts.Token).ConfigureAwait(false);
 
-                            WhenCancelled(cts.Token).Wait();
+                            await WhenCancelled(cts.Token).ConfigureAwait(false);
                         }
                     }
                 }
