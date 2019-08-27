@@ -15,18 +15,44 @@
     public abstract class DeviceConfiguration<T> : IDeviceConfiguration<T>
     {
         protected ILogger Logger { get; }
+        private IDeviceConfiguration<T> Configuration { get; }
+
+        public DeviceConfiguration(ILogger<ModbusModule> logger, IDeviceConfiguration<T> deviceConfiguration)
+        {
+            this.Logger = logger;
+            this.Configuration = deviceConfiguration;
+        }
 
         public DeviceConfiguration(ILogger<ModbusModule> logger)
         {
             this.Logger = logger;
         }
 
-        public Task<T> GetDeviceConfigurationAsync(CancellationToken cancellationToken)
+        public async Task<T> GetDeviceConfigurationAsync(CancellationToken cancellationToken)
         {
-            return this.GetConfigurationAsync(cancellationToken);
+            try
+            {
+                this.Logger.LogInformation($"Attempting to retrieve desired configuration from type {this.GetType().Name}.");
+                return this.DeserialiseDesiredProperties(await this.GetConfigurationAsync(cancellationToken).ConfigureAwait(false));
+            }
+            catch (Exception ex)
+            {
+                this.Logger.LogWarning($"Could not retrieve desired properties from store, error: {ex.Message}");
+
+                return this.Configuration == null ? throw new ConfigurationErrorsException("Could not find settings of the next configuration store.")
+                    : await this.Configuration.GetDeviceConfigurationAsync(cancellationToken).ConfigureAwait(false);
+            }
         }
 
-        protected abstract Task<T> GetConfigurationAsync(CancellationToken cancellationToken);
+        public T DeserialiseDesiredProperties(string desiredProperties)
+        {
+            // Validate Json configuration before deserialising.
+            this.ValidateDeviceConfiguration(desiredProperties);
+
+            return JsonConvert.DeserializeObject<T>(desiredProperties);
+        }
+
+        protected abstract Task<string> GetConfigurationAsync(CancellationToken cancellationToken);
 
         private void ValidateDeviceConfiguration(string jsonString)
         {
@@ -43,14 +69,6 @@
 
                 throw new ConfigurationErrorsException(string.Concat(messages));
             }
-        }
-
-        public T DeserialiseDesiredProperties(string desiredProperties)
-        {
-            // Validate Json configuration before deserialising.
-            this.ValidateDeviceConfiguration(desiredProperties);
-
-            return JsonConvert.DeserializeObject<T>(desiredProperties);
         }
     }
 }

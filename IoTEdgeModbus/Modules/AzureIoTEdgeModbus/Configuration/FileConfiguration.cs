@@ -18,13 +18,13 @@
             this.FileTextReader = textReader;
         }
 
-        protected override async Task<T> GetConfigurationAsync(CancellationToken cancellationToken)
+        protected override async Task<string> GetConfigurationAsync(CancellationToken cancellationToken)
         {
             // Get desired properties from local file.
             var desiredProperties = await this.FileTextReader.ReadToEndAsync().ConfigureAwait(false);
             this.Logger.LogInformation($"Desired properties retrieved from file: {Environment.NewLine}{desiredProperties}");
 
-            return this.DeserialiseDesiredProperties(desiredProperties);
+            return desiredProperties;
         }
 
         public void Dispose()
