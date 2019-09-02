@@ -74,7 +74,7 @@
 
             foreach (ModbusSlaveSession session in this.ModbusSessionList)
             {
-                ModbusOutContent message = session.GetOutMessage();
+                var message = session.GetOutMessage();
                 if (message != null)
                 {
                     contents.Add(message);

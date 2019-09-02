@@ -1,7 +1,6 @@
-﻿using Newtonsoft.Json;
-
-namespace AzureIoTEdgeModbus.Slave
+﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using Newtonsoft.Json;
     using System.Collections.Generic;
 
     public class ModbusOutContent
