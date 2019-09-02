@@ -49,6 +49,15 @@
         public string FlowControl { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public Dictionary<string, ReadOperation> Operations;
+        public Dictionary<string, ReadOperation> Operations { get; set; }
+
+        //Handling complex values
+        [DefaultValue(false)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public bool EndianSwap { get; set; }
+
+        [DefaultValue(false)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public bool MidEndianSwap { get; set; }
     }
 }

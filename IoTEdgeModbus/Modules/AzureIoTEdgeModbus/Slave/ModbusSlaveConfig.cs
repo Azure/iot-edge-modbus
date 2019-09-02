@@ -41,7 +41,11 @@
                 StopBits = this.StopBits,
                 DataBits = this.DataBits,
                 Parity = this.Parity,
-                FlowControl = this.FlowControl
+                FlowControl = this.FlowControl,
+                EndianSwap = this.EndianSwap,
+                MidEndianSwap = this.MidEndianSwap
+                
+                
             };
 
             baseConfig.Operations = this.Operations.ToDictionary(
@@ -54,7 +58,7 @@
                     Count = pair.Value.Count,
                     DisplayName = pair.Value.DisplayName,
                     CorrelationId = pair.Value.CorrelationId,
-                    IsFloat = pair.Value.IsFloat,
+                    ValueType = pair.Value.ValueType,
                 });
 
 

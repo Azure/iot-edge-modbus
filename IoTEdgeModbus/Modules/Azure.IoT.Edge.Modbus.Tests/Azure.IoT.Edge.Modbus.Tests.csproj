@@ -24,6 +24,9 @@
     <None Update="MockData\InputReadOperationWithResponse.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="MockData\Int32ReadOperationWithResponse.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="MockData\IntReadOperationWithResponse.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

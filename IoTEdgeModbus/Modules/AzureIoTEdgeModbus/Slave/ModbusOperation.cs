@@ -1,6 +1,7 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
     using System;
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
@@ -18,9 +19,10 @@
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public string StartAddress { get; set; }
 
-        [DefaultValue(false)]
+        [DefaultValue(ModbusValueType.Basic)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
-        public bool IsFloat { get; set; }
+        [JsonConverter(typeof(StringEnumConverter))]
+        public ModbusValueType ValueType { get; set; }
 
         [JsonProperty(Required = Required.Default)]
         public byte Entity

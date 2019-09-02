@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Newtonsoft.Json;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,8 +33,10 @@ namespace Azure.IoT.Edge.Modbus.Tests
             var res = slaveSession.ProcessResponse(config.SlaveConfigs.Values.First(), intReplies);
 
             //Assert
-            Assert.AreEqual<int>(res.Count(), 3, "Unexpected count of out results");
             Assert.AreEqual<string>(res[0].Value, "52429", "Unexpected response value");
+            
+            //In this test we test processing of other fields as well
+            Assert.AreEqual<int>(res.Count(), 3, "Unexpected count of out results");
             Assert.AreEqual<string>(res[1].Value, "0", "Unexpected response value");
             Assert.AreEqual<string>(res[0].Address, config.SlaveConfigs.Values.First().Operations.ElementAt(1).Value.StartAddress, "Unexpected cell address");
             Assert.AreEqual<string>(res[0].DisplayName, config.SlaveConfigs.Values.First().Operations.ElementAt(1).Value.DisplayName, "Unexpected result display name");
@@ -42,7 +45,6 @@ namespace Azure.IoT.Edge.Modbus.Tests
         [TestMethod]
         public void CanProcessResponseForFloatReadOperation()
         {
-
             //Arrange
             var floatReplies = JsonConvert.DeserializeObject<ReadOperation>((File.ReadAllText("MockData/FloatReadOperationWithResponse.json")));
 
@@ -50,10 +52,21 @@ namespace Azure.IoT.Edge.Modbus.Tests
             var res = slaveSession.ProcessResponse(config.SlaveConfigs.Values.First(), floatReplies);
 
             //Assert
-            Assert.AreEqual<int>(res.Count(), 1, "Unexpected count of out results");
-            Assert.AreEqual<string>(res[0].Value, "3.450", "Unexpected response value");
-            Assert.AreEqual<string>(res[0].Address, config.SlaveConfigs.Values.First().Operations.First().Value.StartAddress, "Unexpected cell address");
-            Assert.AreEqual<string>(res[0].DisplayName, config.SlaveConfigs.Values.First().Operations.First().Value.DisplayName, "Unexpected result display name");
+            Assert.AreEqual<string>(res[0].Value, "10.750", "Unexpected response value");
+        }
+
+
+        [TestMethod]
+        public void CanProcessResponseForInt32ReadOperation()
+        {
+            //Arrange
+            var int32Replies = JsonConvert.DeserializeObject<ReadOperation>((File.ReadAllText("MockData/Int32ReadOperationWithResponse.json")));
+
+            //Act
+            var res = slaveSession.ProcessResponse(config.SlaveConfigs.Values.First(), int32Replies);
+
+            //Assert 
+            Assert.AreEqual<string>(res[0].Value, Int32.MaxValue.ToString(), "Unexpected response value");
         }
 
         [TestMethod]
@@ -68,8 +81,6 @@ namespace Azure.IoT.Edge.Modbus.Tests
             //Assert
             Assert.AreEqual<int>(res.Count(), 2, "Unexpected count of out results");
             Assert.AreEqual<string>(res[0].Value, "0", "Unexpected response value");
-            Assert.AreEqual<string>(res[0].Address, config.SlaveConfigs.Values.First().Operations.ElementAt(2).Value.StartAddress, "Unexpected cell address");
-            Assert.AreEqual<string>(res[0].DisplayName, config.SlaveConfigs.Values.First().Operations.ElementAt(2).Value.DisplayName, "Unexpected result display name");
         }
 
         [TestMethod]
@@ -77,7 +88,7 @@ namespace Azure.IoT.Edge.Modbus.Tests
         {
             //Act
             await slaveSession.InitSession();
-            var invalidOps = slaveSession.config.Operations.Where(o => o.Value.IsFloat == true && o.Value.Count != 2).Any();
+            var invalidOps = slaveSession.config.Operations.Where(o => o.Value.ValueType != ModbusValueType.Basic && o.Value.Count != 2).Any();
 
             //Assert
             Assert.IsTrue(!invalidOps, "Count for IsFloat operation was not set correctly");

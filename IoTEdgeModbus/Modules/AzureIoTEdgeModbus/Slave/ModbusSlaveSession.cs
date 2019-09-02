@@ -47,11 +47,12 @@
 
                 //Can't read float from coils/inputs
                 if (x.FunctionCode == (byte)FunctionCodeType.ReadCoils || x.FunctionCode == (byte)FunctionCodeType.ReadInputs)
-                    x.IsFloat = false;
+                    x.ValueType = ModbusValueType.Basic;
 
                 //If working with complex value we need to override count
-                if (x.IsFloat == true )
-                    x.Count = 2;
+                if (x.ValueType != ModbusValueType.Basic)
+                    x.Count = ModbusComplexValuesHandler.GetCountForValueType(x.ValueType);
+                  
               
                 x.RequestLen = this.m_reqSize;
                 x.Request = new byte[m_bufSize];
@@ -62,10 +63,11 @@
 
         public async Task WriteMessage(WriteOperation operation)
         {
-            if (operation.IsFloat == true)
+            if (operation.ValueType != ModbusValueType.Basic)
             {
+                //Handling complex value
                 //Obtain value split into several int values
-                var valuesToBeWritten = ModbusFloatHandler.SplitFloat(operation.Value);
+                var valuesToBeWritten = ModbusComplexValuesHandler.SplitComplexValue(operation.Value, operation.ValueType);
 
                 //We need to write each part of complex value to separate registry
                 foreach (var v in valuesToBeWritten)
@@ -129,6 +131,8 @@
                 x.Response = null;
                 x.Response = await this.SendRequest(x.Request, x.RequestLen);
 
+                string res = JsonConvert.SerializeObject(x);
+
                 if (x.Response != null)
                 {
                     if (x.Request[this.m_dataBodyOffset] == x.Response[this.m_dataBodyOffset])
@@ -172,7 +176,7 @@
             }
             var initialCell = string.Format(x.OutFormat, (char)x.Entity, x.Address + 1);
 
-            if (x.IsFloat == false)
+            if (x.ValueType == ModbusValueType.Basic)
             {
                 for (int i = 0; i < count; i += step_size)
                 {
@@ -201,7 +205,7 @@
             else
             {
                 var bytesA = x.Response.SubArray(m_dataBodyOffset + 2, step_size * x.Count);
-                var val = ModbusFloatHandler.MergeFloat(bytesA, true);
+                var val = ModbusComplexValuesHandler.MergeComplexValue(bytesA,  x.ValueType, this.config.EndianSwap, this.config.MidEndianSwap);
 
                 ModbusOutValue value = new ModbusOutValue()
                 { DisplayName = x.DisplayName, Address = initialCell, Value = val };

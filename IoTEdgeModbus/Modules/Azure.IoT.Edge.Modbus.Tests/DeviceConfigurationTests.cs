@@ -77,6 +77,7 @@
         public async Task CanRetrieveValidDesiredConfigurationFromFile()
         {
             // Arrange
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
             var configJson = JsonConvert.SerializeObject(this.validModuleConfig);
             var configJsonReader = new StringReader(configJson);
 
