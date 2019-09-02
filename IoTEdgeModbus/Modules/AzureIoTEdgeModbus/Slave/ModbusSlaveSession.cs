@@ -162,7 +162,7 @@
                 this.PrepareOutMessage(config, x.CorrelationId, value_list);
             }
         }
-        private void PrepareOutMessage(ModbusSlaveConfig config, string CorrelationId, List<ModbusOutValue> ValueList)
+        private void PrepareOutMessage(ModbusSlaveConfig config, string correlationId, List<ModbusOutValue> valueList)
         {
             this.m_semaphore_collection.Wait();
             ModbusOutContent content = null;
@@ -185,7 +185,7 @@
             ModbusOutData data = null;
             foreach (var d in content.Data)
             {
-                if (d.CorrelationId == CorrelationId && d.SourceTimestamp == timestamp)
+                if (d.CorrelationId == correlationId && d.SourceTimestamp == timestamp)
                 {
                     data = d;
                     break;
@@ -195,14 +195,14 @@
             {
                 data = new ModbusOutData
                 {
-                    CorrelationId = CorrelationId,
+                    CorrelationId = correlationId,
                     SourceTimestamp = timestamp,
                     Values = new List<ModbusOutValue>()
                 };
                 content.Data.Add(data);
             }
 
-            data.Values.AddRange(ValueList);
+            data.Values.AddRange(valueList);
 
             this.m_semaphore_collection.Release();
 
