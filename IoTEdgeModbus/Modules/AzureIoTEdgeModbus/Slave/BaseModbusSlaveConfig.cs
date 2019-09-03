@@ -46,5 +46,8 @@
 
         [JsonProperty(Required = Required.Always)]
         public Dictionary<string, BaseReadOperation> Operations;
+
+        [JsonProperty(Required = Required.Default)]
+        public Dictionary<string, string> AdditionalProperties;
     }
 }
