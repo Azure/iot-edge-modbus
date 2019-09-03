@@ -1,5 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Configuration
 {
+    using AzureIoTEdgeModbus.Instrumentation;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -14,30 +15,30 @@
 
     public abstract class DeviceConfiguration<T> : IDeviceConfiguration<T>
     {
-        protected ILogger Logger { get; }
+        protected MicrosoftExtensionsLog Log { get; }
         private IDeviceConfiguration<T> Configuration { get; }
 
-        public DeviceConfiguration(ILogger<ModbusModule> logger, IDeviceConfiguration<T> deviceConfiguration)
+        public DeviceConfiguration(MicrosoftExtensionsLog log, IDeviceConfiguration<T> deviceConfiguration)
         {
-            this.Logger = logger;
+            this.Log = log;
             this.Configuration = deviceConfiguration;
         }
 
-        public DeviceConfiguration(ILogger<ModbusModule> logger)
+        public DeviceConfiguration(MicrosoftExtensionsLog log)
         {
-            this.Logger = logger;
+            this.Log = log;
         }
 
         public async Task<T> GetDeviceConfigurationAsync(CancellationToken cancellationToken)
         {
             try
             {
-                this.Logger.LogInformation($"Attempting to retrieve desired configuration from type {this.GetType().Name}.");
+                this.Log.RetrieveDesiredConfigurationFrom(this.GetType().Name);
                 return this.DeserialiseDesiredProperties(await this.GetConfigurationAsync(cancellationToken).ConfigureAwait(false));
             }
             catch (Exception ex)
             {
-                this.Logger.LogWarning($"Could not retrieve desired properties from store, error: {ex.Message}");
+                this.Log.ConfgurationRetrivalError(ex);
 
                 return this.Configuration == null ? throw new ConfigurationErrorsException("Could not find settings of the next configuration store.")
                     : await this.Configuration.GetDeviceConfigurationAsync(cancellationToken).ConfigureAwait(false);
@@ -61,10 +62,9 @@
 
             if (!config.IsValid(schema, out IList<string> messages))
             {
-                this.Logger.LogWarning($"Configuration received is invalid, validation errors- {Environment.NewLine}");
                 foreach (var message in messages)
                 {
-                    this.Logger.LogWarning(message);
+                    this.Log.ConfgurationValidationError(message);
                 }
 
                 throw new ConfigurationErrorsException(string.Concat(messages));
