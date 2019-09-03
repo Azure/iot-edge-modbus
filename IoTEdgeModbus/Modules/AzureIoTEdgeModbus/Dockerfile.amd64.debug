@@ -1,4 +1,4 @@
-FROM microsoft/dotnet:2.0-runtime-stretch AS base
+FROM microsoft/dotnet:2.2-runtime-stretch AS base
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends unzip procps && \
@@ -8,7 +8,7 @@ RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 RUN curl -sSL https://aka.ms/getvsdbgsh | bash /dev/stdin -v latest -l ~/vsdbg
 
-FROM microsoft/dotnet:2.1-sdk AS build-env
+FROM microsoft/dotnet:2.2-sdk AS build-env
 WORKDIR /app
 
 COPY *.csproj ./
@@ -25,11 +25,11 @@ COPY *.c ./
 COPY *.h ./
 
 # build
-RUN gcc -shared -o libcomWrapper.so -fPIC comWrapper.c
+RUN gcc -shared -o libcomWrapper.so -fPIC ComWrapper.c
 
 FROM base
 WORKDIR /app
 COPY --from=build-env /app/out ./
 COPY --from=build-env-2 /app/libcomWrapper.so /usr/lib/
 
-ENTRYPOINT ["dotnet", "iotedgeModbus.dll"]
+ENTRYPOINT ["dotnet", "AzureIoTEdgeModbus.dll"]
