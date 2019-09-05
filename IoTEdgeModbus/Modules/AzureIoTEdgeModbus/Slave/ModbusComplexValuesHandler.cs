@@ -1,25 +1,21 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Text;
-
-namespace AzureIoTEdgeModbus.Slave
+﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using System;
+    using System.Collections.Generic;
+    using Data;
+
     public class ModbusComplexValuesHandler
     {
 
-        public static Int16[] SplitComplexValue(float value, ModbusValueType valueType)
+        public static Int16[] SplitComplexValue(float value, ModbusDataType valueType)
         {
             throw new NotImplementedException();
         }
 
-        public static string MergeComplexValue(byte[] values, ModbusValueType valueType, bool endianSwap = false, bool midEndianSwap = false)
+        public static string MergeComplexValue(byte[] values, ModbusDataType valueType, bool endianSwap = false, bool midEndianSwap = false)
         {
             //In case of adding new value type, modify endian handling logic
-            if(midEndianSwap && (valueType == ModbusValueType.Float || valueType == ModbusValueType.Int32))
+            if(midEndianSwap && (valueType == ModbusDataType.Float || valueType == ModbusDataType.Int32))
             {
                 //Mid endian swap logic
                 Array.Reverse(values, 0,2);
@@ -31,9 +27,9 @@ namespace AzureIoTEdgeModbus.Slave
 
             switch (valueType)
             {
-                case ModbusValueType.Float:
+                case ModbusDataType.Float:
                     return String.Format("{0:F3}", BitConverter.ToSingle(values));
-                case ModbusValueType.Int32:
+                case ModbusDataType.Int32:
                     return BitConverter.ToInt32(values).ToString();
                 default:
                     return "Uknown value type";
@@ -41,15 +37,15 @@ namespace AzureIoTEdgeModbus.Slave
 
         }
 
-        private static Int16[] SplitComplexValue(string value, ModbusValueType valueType)
+        private static Int16[] SplitComplexValue(string value, ModbusDataType valueType)
         {
             byte[] bf;
             //float f = float.Parse(value);
             switch(valueType){
-                case ModbusValueType.Float:
+                case ModbusDataType.Float:
                     bf = BitConverter.GetBytes(float.Parse(value));
                     break;
-                case ModbusValueType.Int32:
+                case ModbusDataType.Int32:
                     bf = BitConverter.GetBytes(Convert.ToInt32(value));
                     break;
                 default:
@@ -63,17 +59,17 @@ namespace AzureIoTEdgeModbus.Slave
             return new Int16[] { p1, p2 };
         }
 
-        internal static ushort GetCountForValueType(ModbusValueType valueType)
+        internal static ushort GetCountForValueType(ModbusDataType valueType)
         {
             return RegistryCountsForValue.GetValueOrDefault(valueType);
         }
 
 
         //In case of adding new complex value type, provide number of registries to use here
-        private static Dictionary<ModbusValueType, ushort> RegistryCountsForValue = new Dictionary<ModbusValueType, ushort>()
+        private static Dictionary<ModbusDataType, ushort> RegistryCountsForValue = new Dictionary<ModbusDataType, ushort>()
         {
-            { ModbusValueType.Float, 2 },
-            { ModbusValueType.Int32, 2 }
+            { ModbusDataType.Float, 2 },
+            { ModbusDataType.Int32, 2 }
         };
 
     }

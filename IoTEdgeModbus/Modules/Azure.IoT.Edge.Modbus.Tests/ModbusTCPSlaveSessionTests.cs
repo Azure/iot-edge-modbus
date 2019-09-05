@@ -6,6 +6,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.IoT.Edge.Modbus.Tests.MockData;
+using AzureIoTEdgeModbus.Slave.Data;
 
 namespace Azure.IoT.Edge.Modbus.Tests
 {
@@ -42,18 +44,18 @@ namespace Azure.IoT.Edge.Modbus.Tests
             Assert.AreEqual<string>(res[0].DisplayName, config.SlaveConfigs.Values.First().Operations.ElementAt(1).Value.DisplayName, "Unexpected result display name");
         }
 
-        [TestMethod]
-        public void CanProcessResponseForFloatReadOperation()
-        {
-            //Arrange
-            var floatReplies = JsonConvert.DeserializeObject<ReadOperation>((File.ReadAllText("MockData/FloatReadOperationWithResponse.json")));
+        //[TestMethod]
+        //public void CanProcessResponseForFloatReadOperation()
+        //{
+        //    //Arrange
+        //    var floatReplies = JsonConvert.DeserializeObject<ReadOperation>((File.ReadAllText("MockData/FloatReadOperationWithResponse.json")));
 
-            //Act
-            var res = slaveSession.ProcessResponse(config.SlaveConfigs.Values.First(), floatReplies);
+        //    //Act
+        //    var res = slaveSession.ProcessResponse(config.SlaveConfigs.Values.First(), floatReplies);
 
-            //Assert
-            Assert.AreEqual<string>(res[0].Value, "10.750", "Unexpected response value");
-        }
+        //    //Assert
+        //    Assert.AreEqual<string>(res[0].Value, "10.750", "Unexpected response value");
+        //}
 
 
         [TestMethod]
@@ -88,7 +90,7 @@ namespace Azure.IoT.Edge.Modbus.Tests
         {
             //Act
             await slaveSession.InitSession();
-            var invalidOps = slaveSession.config.Operations.Where(o => o.Value.ValueType != ModbusValueType.Basic && o.Value.Count != 2).Any();
+            var invalidOps = slaveSession.Config.Operations.Any(o => o.Value.DataType != ModbusDataType.Int16 && o.Value.Count != 2);
 
             //Assert
             Assert.IsTrue(!invalidOps, "Count for IsFloat operation was not set correctly");

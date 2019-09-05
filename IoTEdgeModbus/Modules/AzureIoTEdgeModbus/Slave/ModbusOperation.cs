@@ -6,6 +6,7 @@
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
     using System.Text;
+    using Data;
 
     /// <summary>
     /// Base Modbus Operation Class
@@ -19,10 +20,14 @@
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public string StartAddress { get; set; }
 
-        [DefaultValue(ModbusValueType.Basic)]
+        [JsonProperty(Required = Required.Always)]
+        [JsonConverter(typeof(StringEnumConverter))]
+        public ModbusDataType DataType { get; set; }
+
+        [DefaultValue(Data.SwapMode.None)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public ModbusValueType ValueType { get; set; }
+        public SwapMode SwapMode { get; set; }
 
         [JsonProperty(Required = Required.Default)]
         public byte Entity
@@ -36,15 +41,11 @@
         /// Only Read Supported
         /// </summary>
         [JsonProperty(Required = Required.Default)]
-        public byte FunctionCode
-           => (
-                (char)this.Entity == (char)EntityType.CoilStatus ? (byte)FunctionCodeType.ReadCoils :
-                (char)this.Entity == (char)EntityType.HoldingRegister ? (byte)FunctionCodeType.ReadHoldingRegisters :
-                (char)this.Entity == (char)EntityType.InputStatus ? (byte)FunctionCodeType.ReadInputs :
-                (char)this.Entity == (char)EntityType.InputRegister ? (byte)FunctionCodeType.ReadInputRegisters :
-                byte.MinValue
-            );
-
-
+        public FunctionCode FunctionCode
+            => (char)this.Entity == (char)EntityType.CoilStatus ? FunctionCode.ReadCoils :
+                (char)this.Entity == (char)EntityType.HoldingRegister ? FunctionCode.ReadHoldingRegisters :
+                (char)this.Entity == (char)EntityType.InputStatus ? FunctionCode.ReadInputs :
+                (char)this.Entity == (char)EntityType.InputRegister ? FunctionCode.ReadInputRegisters :
+                FunctionCode.Unknown;
     }
 }

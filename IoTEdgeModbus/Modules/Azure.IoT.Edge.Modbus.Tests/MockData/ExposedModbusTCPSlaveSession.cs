@@ -1,21 +1,18 @@
-﻿using AzureIoTEdgeModbus.Slave;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AzureIoTEdgeModbus.Slave;
 
-namespace Azure.IoT.Edge.Modbus.Tests
+namespace Azure.IoT.Edge.Modbus.Tests.MockData
 {
     public class ExposedModbusTCPSlaveSession : ModbusSlaveSession
     {
-        protected override int m_dataBodyOffset => 7;
+        protected override int Silent => 0;
+        protected override int RequestSize => 12;
+        protected override int FunctionCodeOffset => 7;
 
         public ExposedModbusTCPSlaveSession(ModbusSlaveConfig conf)
           : base(conf)
         {
-        }
-
-        public List<ModbusOutValue> ProcessResponse(ModbusSlaveConfig config, ReadOperation x)
-        {
-            return base.ProcessResponse(config,x);
         }
 
         public override void ReleaseSession()

@@ -1,10 +1,10 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using Newtonsoft.Json;
-
     using System;
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
+    using Decoding;
 
     /// <summary>
     /// This class contains the configuration for a single Modbus read request.
@@ -40,5 +40,7 @@
         public string OutFormat
             => (this.StartAddress.Length == 5 ? "{0}{1:0000}" : this.StartAddress.Length == 6 ? "{0}{1:00000}" : string.Empty);
 
+        [JsonProperty(Required = Required.Default)]
+        public IModbusDataDecoder Decoder;
     }
 }

@@ -58,7 +58,7 @@
                     Count = pair.Value.Count,
                     DisplayName = pair.Value.DisplayName,
                     CorrelationId = pair.Value.CorrelationId,
-                    ValueType = pair.Value.ValueType,
+                    DataType = pair.Value.DataType,
                 });
 
 
