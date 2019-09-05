@@ -144,6 +144,7 @@
                         Console.WriteLine($"Modbus exception code: {x.Response[this.m_dataBodyOffset + 1]}");
                     }
                 }
+
                 await Task.Delay(x.PollingInterval - this.m_silent);
             }
         }
@@ -219,8 +220,10 @@
             {
                 this.PrepareOutMessage(config, x.CorrelationId, value_list);
             }
+
+            return value_list;
         }
-      
+
         private void PrepareOutMessage(ModbusSlaveConfig config, string correlationId, List<ModbusOutValue> valueList)
         {  
             this.m_semaphore_collection.Wait();

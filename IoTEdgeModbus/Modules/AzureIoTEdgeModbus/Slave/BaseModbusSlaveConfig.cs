@@ -48,12 +48,10 @@
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
         public string FlowControl { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public Dictionary<string, BaseReadOperation> Operations;
-
         [JsonProperty(Required = Required.Default)]
         public Dictionary<string, string> AdditionalProperties;
-      
+
+        [JsonProperty(Required = Required.Always)]
         public Dictionary<string, ReadOperation> Operations { get; set; }
 
         //Handling complex values
