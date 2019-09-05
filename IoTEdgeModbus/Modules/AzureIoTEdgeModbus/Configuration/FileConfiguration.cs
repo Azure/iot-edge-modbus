@@ -1,6 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Configuration
 {
-    using Microsoft.Extensions.Logging;
+    using AzureIoTEdgeModbus.Instrumentation;
 
     using System;
     using System.IO;
@@ -13,7 +13,8 @@
 
         private TextReader FileTextReader { get; }
 
-        public FileConfiguration(ILogger<ModbusModule> logger, TextReader textReader) : base(logger)
+        public FileConfiguration(MicrosoftExtensionsLog log, TextReader textReader)
+            : base(log)
         {
             this.FileTextReader = textReader;
         }
@@ -22,7 +23,7 @@
         {
             // Get desired properties from local file.
             var desiredProperties = await this.FileTextReader.ReadToEndAsync().ConfigureAwait(false);
-            this.Logger.LogInformation($"Desired properties retrieved from file: {Environment.NewLine}{desiredProperties}");
+            this.Log.DesiredPropertiesReceivedFromFile(desiredProperties);
 
             return desiredProperties;
         }

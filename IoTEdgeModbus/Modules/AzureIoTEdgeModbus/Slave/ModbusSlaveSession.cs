@@ -17,7 +17,7 @@
         public static int ModbusExceptionCode = 0x80;
 
         public ModbusSlaveConfig config;
-        protected object OutMessage = null;
+        protected ModbusOutContent OutMessage = null;
         protected const int m_bufSize = 512;
         protected SemaphoreSlim m_semaphore_collection = new SemaphoreSlim(1, 1);
         protected SemaphoreSlim m_semaphore_connection = new SemaphoreSlim(1, 1);
@@ -105,7 +105,7 @@
                 this.m_taskList.Add(t);
             }
         }
-        public object GetOutMessage()
+        public ModbusOutContent GetOutMessage()
         {
             return this.OutMessage;
         }
@@ -216,33 +216,35 @@
             }
 
             if (value_list.Count > 0)
-                PrepareOutMessage(config.HwId, x.CorrelationId, value_list);
-
-            return value_list;
-         }
-        protected void PrepareOutMessage(string HwId, string CorrelationId, List<ModbusOutValue> ValueList)
-        {
+            {
+                this.PrepareOutMessage(config, x.CorrelationId, value_list);
+            }
+        }
+      
+        private void PrepareOutMessage(ModbusSlaveConfig config, string correlationId, List<ModbusOutValue> valueList)
+        {  
             this.m_semaphore_collection.Wait();
             ModbusOutContent content = null;
             if (this.OutMessage == null)
             {
                 content = new ModbusOutContent
                 {
-                    HwId = HwId,
-                    Data = new List<ModbusOutData>()
+                    HwId = config.HwId,
+                    Data = new List<ModbusOutData>(),
+                    AdditionalProperties = config.AdditionalProperties
                 };
                 this.OutMessage = content;
             }
             else
             {
-                content = (ModbusOutContent)this.OutMessage;
+                content = this.OutMessage;
             }
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             ModbusOutData data = null;
             foreach (var d in content.Data)
             {
-                if (d.CorrelationId == CorrelationId && d.SourceTimestamp == timestamp)
+                if (d.CorrelationId == correlationId && d.SourceTimestamp == timestamp)
                 {
                     data = d;
                     break;
@@ -252,14 +254,14 @@
             {
                 data = new ModbusOutData
                 {
-                    CorrelationId = CorrelationId,
+                    CorrelationId = correlationId,
                     SourceTimestamp = timestamp,
                     Values = new List<ModbusOutValue>()
                 };
                 content.Data.Add(data);
             }
 
-            data.Values.AddRange(ValueList);
+            data.Values.AddRange(valueList);
 
             this.m_semaphore_collection.Release();
 

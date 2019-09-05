@@ -1,11 +1,10 @@
 ﻿namespace AzureIoTEdgeModbus.DeviceTwin
 {
     using AzureIoTEdgeModbus.Configuration;
+    using AzureIoTEdgeModbus.Instrumentation;
     using AzureIoTEdgeModbus.Wrappers;
-    using Microsoft.Extensions.Logging;
-    using Newtonsoft.Json;
 
-    using System;
+    using Newtonsoft.Json;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -13,8 +12,8 @@
     {
         private IModuleClient IotHubModuleClient { get; }
 
-        public DeviceTwinConfiguration(ILogger<ModbusModule> logger, IDeviceConfiguration<T> deviceConfiguration, IModuleClient moduleClient)
-            : base(logger, deviceConfiguration)
+        public DeviceTwinConfiguration(MicrosoftExtensionsLog log, IDeviceConfiguration<T> deviceConfiguration, IModuleClient moduleClient)
+            : base(log, deviceConfiguration)
         {
             this.IotHubModuleClient = moduleClient;
         }
@@ -23,7 +22,8 @@
         {
             // Get desired properties from twin.
             var twin = await this.IotHubModuleClient.GetTwinAsync(cancellationToken).ConfigureAwait(false);
-            this.Logger.LogInformation($"Desired properties retrieved from twin: {Environment.NewLine}{twin.Properties.Desired}");
+
+            this.Log.DesiredPropertiesReceivedFromTwin(twin.Properties.Desired);
 
             return JsonConvert.SerializeObject(twin.Properties.Desired);
         }
