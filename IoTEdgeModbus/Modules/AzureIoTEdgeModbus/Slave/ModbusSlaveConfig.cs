@@ -19,7 +19,7 @@
             {
                 return ConnectionType.ModbusTCP;
             }
-            else if (this.SlaveConnection.Contains("COM") || this.SlaveConnection.Contains("/tty"))
+            else if (this.SlaveConnection.Contains("COM") || this.SlaveConnection.Contains("tty"))
             {
                 return ConnectionType.ModbusRTU;
             }
@@ -40,12 +40,17 @@
                 BaudRate = this.BaudRate,
                 StopBits = this.StopBits,
                 DataBits = this.DataBits,
-                Parity = this.Parity
+                Parity = this.Parity,
+                FlowControl = this.FlowControl,
+                EndianSwap = this.EndianSwap,
+                MidEndianSwap = this.MidEndianSwap
+                
+                
             };
 
             baseConfig.Operations = this.Operations.ToDictionary(
                 pair => pair.Key,
-                pair => new BaseReadOperation
+                pair => new ReadOperation
                 {
                     PollingInterval = pair.Value.PollingInterval,
                     UnitId = pair.Value.UnitId,
@@ -53,6 +58,7 @@
                     Count = pair.Value.Count,
                     DisplayName = pair.Value.DisplayName,
                     CorrelationId = pair.Value.CorrelationId,
+                    ValueType = pair.Value.ValueType,
                 });
 
 

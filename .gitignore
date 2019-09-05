@@ -30,3 +30,4 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
+/IoTEdgeModbus/Modules/Azure.IoT.Edge.Modules/obj

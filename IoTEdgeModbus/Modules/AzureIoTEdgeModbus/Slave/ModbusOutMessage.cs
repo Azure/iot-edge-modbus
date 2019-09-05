@@ -5,6 +5,6 @@
     public class ModbusOutMessage
     {
         public string PublishTimestamp { get; set; }
-        public List<object> Content { get; set; }
+        public List<ModbusOutContent> Content { get; set; }
     }
 }

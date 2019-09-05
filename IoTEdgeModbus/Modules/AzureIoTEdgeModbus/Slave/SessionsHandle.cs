@@ -68,20 +68,20 @@
             }
             this.ModbusSessionList.Clear();
         }
-        public List<object> CollectAndResetOutMessageFromSessions()
+        public List<ModbusOutContent> CollectAndResetOutMessageFromSessions()
         {
-            List<object> obj_list = new List<object>();
+            var contents = new List<ModbusOutContent>();
 
             foreach (ModbusSlaveSession session in this.ModbusSessionList)
             {
-                var obj = session.GetOutMessage();
-                if (obj != null)
+                var message = session.GetOutMessage();
+                if (message != null)
                 {
-                    obj_list.Add(obj);
+                    contents.Add(message);
                     session.ClearOutMessage();
                 }
             }
-            return obj_list;
+            return contents;
         }
         public List<object> CollectAndResetOutMessageFromSessionsV1()
         {

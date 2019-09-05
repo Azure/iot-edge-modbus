@@ -1,11 +1,11 @@
 ﻿namespace AzureIoTEdgeModbus
 {
     using AzureIoTEdgeModbus.Configuration;
+    using AzureIoTEdgeModbus.Instrumentation;
     using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Wrappers;
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Shared;
-    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
 
     using System;
@@ -19,13 +19,13 @@
         private bool sessionsRun = true;
         private Task startTask;
 
-        private ILogger Logger { get; }
+        private MicrosoftExtensionsLog Log { get; }
         private IModuleClient IotHubModuleClient { get; }
         private IDeviceConfiguration<ModuleConfig> DeviceConfiguration { get; }
 
-        public ModbusModule(ILogger<ModbusModule> logger, IModuleClient moduleClient, IDeviceConfiguration<ModuleConfig> deviceConfiguration)
+        public ModbusModule(MicrosoftExtensionsLog log, IModuleClient moduleClient, IDeviceConfiguration<ModuleConfig> deviceConfiguration)
         {
-            this.Logger = logger;
+            this.Log = log;
             this.IotHubModuleClient = moduleClient;
             this.DeviceConfiguration = deviceConfiguration;
         }
@@ -34,6 +34,7 @@
         {
             // Open a connection to the Edge.
             await this.IotHubModuleClient.OpenAsync().ConfigureAwait(false);
+            this.Log.IoTHubConnectionOpened();
 
             // Get desired properties from the configured sources.
             var config = await this.DeviceConfiguration.GetDeviceConfigurationAsync(cancellationToken).ConfigureAwait(false);
@@ -43,7 +44,6 @@
                 sessionsHandle, cancellationToken).ConfigureAwait(false);
 
             // Open connections to slaves.
-            this.Logger.LogInformation($"Initialising new sessions with twin's desired properties...");
             this.startTask = this.StartAsync(await sessionsHandle.CreateHandleFromConfiguration(config).ConfigureAwait(false), config.PublishInterval);
         }
 
@@ -52,8 +52,7 @@
         /// </summary>
         private async Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
         {
-            this.Logger.LogInformation($"New twin changes received: {desiredProperties}");
-            this.Logger.LogInformation($"Draining existing in-flight messages before using new twin changes...");
+            this.Log.DesiredPropertiesReceivedFromTwin(desiredProperties);
 
             // Drain out any existing sessions before using new twin config.
             this.sessionsRun = false;
@@ -62,13 +61,12 @@
 
             var config = this.DeviceConfiguration.DeserialiseDesiredProperties(JsonConvert.SerializeObject(desiredProperties));
 
-            this.Logger.LogInformation($"Initialising new sessions with twin's desired properties...");
             this.startTask = this.StartAsync(await ((SessionsHandle)userContext).CreateHandleFromConfiguration(config).ConfigureAwait(false), config.PublishInterval);
         }
 
         private async Task StartAsync(SessionsHandle sessionsHandle, int publishInterval)
         {
-            this.Logger.LogTrace($"Modbus sessions available: {sessionsHandle.ModbusSessionList.Count}");
+            this.Log.ModbusSessionCount(sessionsHandle.ModbusSessionList.Count);
 
             foreach (var session in sessionsHandle.ModbusSessionList)
             {

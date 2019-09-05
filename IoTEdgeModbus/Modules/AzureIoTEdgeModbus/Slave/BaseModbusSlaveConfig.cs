@@ -44,7 +44,23 @@
         [JsonProperty(Required = Required.Default)]
         public Parity? Parity { get; set; }
 
+        [DefaultValue("NONE")]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public string FlowControl { get; set; }
+
+        [JsonProperty(Required = Required.Default)]
+        public Dictionary<string, string> AdditionalProperties;
+
         [JsonProperty(Required = Required.Always)]
-        public Dictionary<string, BaseReadOperation> Operations;
+        public Dictionary<string, ReadOperation> Operations { get; set; }
+
+        //Handling complex values
+        [DefaultValue(false)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public bool EndianSwap { get; set; }
+
+        [DefaultValue(false)]
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+        public bool MidEndianSwap { get; set; }
     }
 }
