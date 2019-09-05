@@ -1,10 +1,9 @@
-﻿using AzureIoTEdgeModbus.Slave.Data;
-using AzureIoTEdgeModbus.Slave.Decoding;
-
-namespace Azure.IoT.Edge.Modbus.Tests.Data
+﻿namespace Azure.IoT.Edge.Modbus.Tests.Data
 {
     using System;
     using System.Linq;
+    using AzureIoTEdgeModbus.Slave.Data;
+    using AzureIoTEdgeModbus.Slave.Decoding;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

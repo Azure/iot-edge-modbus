@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using AzureIoTEdgeModbus.Slave.Data;
-
-namespace AzureIoTEdgeModbus.Slave.Decoding
+﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
+    using System;
+    using System.Collections.Generic;
+    using Data;
+    using static Constants;
+
     /// <summary>
     /// Handles value reading of bit values from Coils and Discrete inputs.
     /// </summary>
@@ -14,7 +15,7 @@ namespace AzureIoTEdgeModbus.Slave.Decoding
 
         public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead, SwapMode swapMode)
         {
-            if (bytes.Length * 8 < valuesToRead)
+            if (bytes.Length * BitsInByte < valuesToRead)
             {
                 throw new ArgumentException("Too few bytes to read the desired number of values (bits).");
             }
@@ -23,7 +24,7 @@ namespace AzureIoTEdgeModbus.Slave.Decoding
 
             foreach (byte b in bytes)
             {
-                for (int i = 0; i < 8; i++)
+                for (int i = 0; i < BitsInByte; i++)
                 {
                     //Get value of each bit. Start by LSB as stated in Modbus specification.
                     var value = (b >> i) & 0b1;
@@ -39,8 +40,7 @@ namespace AzureIoTEdgeModbus.Slave.Decoding
 
         }
 
-        public int GetByteCount(int valuesToRead) => valuesToRead / 8 + 1;
-
+        public int GetByteCount(int valuesToRead) => valuesToRead / BitsInByte + 1;
 
     }
 }

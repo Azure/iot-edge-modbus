@@ -6,7 +6,7 @@
     /// <summary>
     /// Swaps bytes as according to the defined Modbus swap modes.
     /// </summary>
-    public class ByteSwapper
+    public static class ByteSwapper
     {
         public static void Swap(Span<byte> bytes, SwapMode swapMode )
         {

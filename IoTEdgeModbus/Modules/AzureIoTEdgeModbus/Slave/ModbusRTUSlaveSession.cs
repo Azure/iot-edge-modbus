@@ -4,6 +4,7 @@
     using System;
     using System.Net;
     using System.Threading.Tasks;
+    using static Constants;
 
     /// <summary>
     /// This class is Modbus RTU session.
@@ -18,8 +19,7 @@
         protected override int RequestSize => 8;
         protected override int FunctionCodeOffset => 1;
         protected override int Silent => 100;
-
-        private const int NumberOfBits = 8;
+        
         private ISerialDevice serialPort;
 
         public override void ReleaseSession()
@@ -210,7 +210,7 @@
             {
                 crcFull = (UInt16)(crcFull ^ message[_byte]);
 
-                for (int bit = 0; bit < NumberOfBits; ++bit)
+                for (int bit = 0; bit < BitsInByte; ++bit)
                 {
                     byte crcLsb = (byte)(crcFull & 0x0001);
                     crcFull = (UInt16)((crcFull >> 1) & 0x7FFF);

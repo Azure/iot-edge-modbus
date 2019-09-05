@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using AzureIoTEdgeModbus.Slave.Data;
 
 namespace AzureIoTEdgeModbus.Slave.Decoding

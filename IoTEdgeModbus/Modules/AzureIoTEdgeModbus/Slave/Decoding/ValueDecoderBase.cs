@@ -17,8 +17,7 @@
                 var valueBytes = bytes.Slice(i * this.ByteSize, this.ByteSize);
 
                 ByteSwapper.Swap(valueBytes, swapMode);
-
-                // TODO: We need to test this on a BigEndian architecture
+                
                 if (BitConverter.IsLittleEndian)
                     valueBytes.Reverse();
 
