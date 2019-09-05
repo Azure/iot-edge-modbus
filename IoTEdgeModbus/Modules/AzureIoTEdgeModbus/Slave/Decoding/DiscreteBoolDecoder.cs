@@ -12,7 +12,7 @@ namespace AzureIoTEdgeModbus.Slave.Decoding
         public ModbusDataType DataType => ModbusDataType.Bool;
 
 
-        public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead)
+        public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead, SwapMode swapMode)
         {
             if (bytes.Length * 8 < valuesToRead)
             {

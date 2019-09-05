@@ -5,29 +5,17 @@ using AzureIoTEdgeModbus.Slave.Data;
 
 namespace AzureIoTEdgeModbus.Slave.Decoding
 {
-    public class FloatDecoder : IModbusDataDecoder
+    public class FloatDecoder : ValueDecoderBase, IModbusDataDecoder
     {
-        private const int ByteSize = 4;
-
         public ModbusDataType DataType => ModbusDataType.Float;
 
-        public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead)
+        protected override int ByteSize => 4;
+
+        protected override string ConvertToString(in Span<byte> valueBytes)
         {
-            var result = new List<string>();
-
             const int decimals = 3;
-            for (int i = 0; i < valuesToRead; i++)
-            {
-                var valueBytes = bytes.Slice(i * ByteSize, ByteSize);
-                
-                if (BitConverter.IsLittleEndian)
-                    valueBytes.Reverse();
-
-                var roundedValue = Math.Round(BitConverter.ToSingle(valueBytes), decimals);
-                result.Add(roundedValue.ToString(CultureInfo.InvariantCulture));
-            }
-
-            return result;
+            var roundedValue = Math.Round(BitConverter.ToSingle(valueBytes), decimals);
+            return roundedValue.ToString(CultureInfo.InvariantCulture);
         }
 
         public int GetByteCount(int valuesToRead)

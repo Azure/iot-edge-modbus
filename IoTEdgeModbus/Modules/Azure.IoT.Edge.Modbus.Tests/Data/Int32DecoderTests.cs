@@ -1,4 +1,5 @@
-﻿using AzureIoTEdgeModbus.Slave.Decoding;
+﻿using AzureIoTEdgeModbus.Slave.Data;
+using AzureIoTEdgeModbus.Slave.Decoding;
 
 namespace Azure.IoT.Edge.Modbus.Tests.Data
 {
@@ -14,7 +15,7 @@ namespace Azure.IoT.Edge.Modbus.Tests.Data
         public void CanDecodeValue(Int32 expectedValue, byte[] bytes)
         {
             var decoder = new Int32Decoder();
-            var result = decoder.GetValues(bytes.AsSpan(), 1);
+            var result = decoder.GetValues(bytes.AsSpan(), 1, SwapMode.None);
 
             Assert.AreEqual(expectedValue.ToString(), result.First());
         }

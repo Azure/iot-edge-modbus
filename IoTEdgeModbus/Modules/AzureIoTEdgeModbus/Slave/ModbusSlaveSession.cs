@@ -145,7 +145,7 @@
             var dataBytes = response.Slice(this.DataValuesOffset, operation.Count);
 
             // TODO: Fix addresses in result
-            var values = operation.Decoder.GetValues(dataBytes, byteCount)
+            var values = operation.Decoder.GetValues(dataBytes, byteCount, operation.SwapMode)
                 .Select(v => new ModbusOutValue() { DisplayName = operation.DisplayName, Address = "TODO", Value = v }).ToList();
 
             if (values.Count > 0)

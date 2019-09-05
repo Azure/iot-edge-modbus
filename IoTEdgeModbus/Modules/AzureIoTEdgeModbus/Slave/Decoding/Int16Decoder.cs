@@ -4,28 +4,15 @@ using AzureIoTEdgeModbus.Slave.Data;
 
 namespace AzureIoTEdgeModbus.Slave.Decoding
 {
-    public class Int16Decoder : IModbusDataDecoder
+    public class Int16Decoder : ValueDecoderBase, IModbusDataDecoder
     {
         public ModbusDataType DataType => ModbusDataType.Int16;
 
-        private const int ByteSize = 2;
+        protected override int ByteSize => 2;
 
-        public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead)
+        protected override string ConvertToString(in Span<byte> valueBytes)
         {
-            var result = new List<string>();
-
-            for (int i = 0; i < valuesToRead; i++)
-            {
-                var slice = bytes.Slice(i * ByteSize, ByteSize);
-
-                // TODO: We need to test this on a BigEndian architecture
-                if (BitConverter.IsLittleEndian)
-                    slice.Reverse();
-                
-                result.Add(BitConverter.ToInt16(slice).ToString());
-            }
-
-            return result;
+            return BitConverter.ToInt16(valueBytes).ToString();
         }
 
         public int GetByteCount(int valuesToRead)
