@@ -8,6 +8,7 @@
     public class ModuleConfig
     {
         [DefaultValue(5000)]
+
         [Range(1, int.MaxValue)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int PublishInterval { get; set; }

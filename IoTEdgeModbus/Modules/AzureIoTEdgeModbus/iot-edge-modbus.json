@@ -3,10 +3,11 @@
   "Version": "2",
   "SlaveConfigs": {
     "Slave01": {
-      "SlaveConnection": "127.0.0.1",
+      "SlaveConnection": "13.80.12.168",
       "HwId": "PowerMeter-0a:01:01:01:01:01",
       "RetryCount": 10,
       "RetryInterval": 50,
+      "MidEndianSwap": true,
       "Operations": {
         "Op01": {
           "PollingInterval": 1000,
@@ -14,12 +15,30 @@
           "StartAddress": "400001",
           "Count": 2,
           "DisplayName": "Voltage",
-          "CorrelationId": "MessageType1"
+          "CorrelationId": "MessageType1",
+          "ValueType": "Float"
         },
         "Op02": {
           "PollingInterval": 1000,
           "UnitId": 1,
           "StartAddress": "400002",
+          "Count": 2,
+          "DisplayName": "Current",
+          "CorrelationId": "MessageType1"
+        },
+        "Op03": {
+          "PollingInterval": 1000,
+          "UnitId": 1,
+          "StartAddress": "400003",
+          "Count": 2,
+          "DisplayName": "Voltage",
+          "CorrelationId": "MessageType1",
+          "ValueType": "Int32"
+        },
+        "Op04": {
+          "PollingInterval": 1000,
+          "UnitId": 1,
+          "StartAddress": "10002",
           "Count": 2,
           "DisplayName": "Current",
           "CorrelationId": "MessageType1"
@@ -31,8 +50,8 @@
       "HwId": "PowerMeter-0a:01:01:01:01:02",
       "BaudRate": 9600,
       "DataBits": 8,
-      "StopBits": 1,
-      "Parity": 1,
+      "StopBits": "One",
+      "Parity": "Odd",
       "FlowControl": "NONE",
       "Operations": {
         "Op01": {
