@@ -9,7 +9,7 @@ namespace Modbus.Containers
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Logging.ApplicationInsights;
-
+    using Microsoft.Extensions.Logging.Console;
     using System;
     using System.IO;
     using System.Runtime.Loader;
@@ -31,12 +31,19 @@ namespace Modbus.Containers
 
                 // Bootstrap services using dependency injection.
                 var services = new ServiceCollection();
-                services.AddLogging(cfg => cfg.AddConsole());
+
+                Enum.TryParse<LogLevel>(Environment.GetEnvironmentVariable("ApplicationInsightsLogLevel"), out LogLevel applicationInsightsLogLevel);
+                Enum.TryParse<LogLevel>(Environment.GetEnvironmentVariable("ConsoleLogLevel"), out LogLevel consoleLogLevel);
+
                 services.AddLogging(builder =>
                 {
-                    // Optional: Apply filters to configure LogLevel Trace or above is sent to
-                    // Application Insights for all categories.
-                    builder.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Trace);
+                    builder.AddFilter<ConsoleLoggerProvider>(string.Empty, consoleLogLevel);
+                    builder.AddConsole();
+                });
+
+                services.AddLogging(builder =>
+                {
+                    builder.AddFilter<ApplicationInsightsLoggerProvider>(string.Empty, applicationInsightsLogLevel);
                     builder.AddApplicationInsights(Environment.GetEnvironmentVariable("ApplicationInsightsKey"));
                 });
 
