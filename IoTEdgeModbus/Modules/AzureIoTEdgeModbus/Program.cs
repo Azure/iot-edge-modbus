@@ -8,6 +8,7 @@ namespace Modbus.Containers
     using AzureIoTEdgeModbus.Wrappers;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Extensions.Logging.ApplicationInsights;
 
     using System;
     using System.IO;
@@ -31,6 +32,13 @@ namespace Modbus.Containers
                 // Bootstrap services using dependency injection.
                 var services = new ServiceCollection();
                 services.AddLogging(cfg => cfg.AddConsole());
+                services.AddLogging(builder =>
+                {
+                    // Optional: Apply filters to configure LogLevel Trace or above is sent to
+                    // Application Insights for all categories.
+                    builder.AddFilter<ApplicationInsightsLoggerProvider>("", LogLevel.Trace);
+                    builder.AddApplicationInsights(Environment.GetEnvironmentVariable("ApplicationInsightsKey"));
+                });
 
                 services.AddSingleton(sp => new MicrosoftExtensionsLog(sp.GetService<ILogger<ModbusModule>>()));
                 services.AddSingleton<IModuleClient, ModuleClientWrapper>();
@@ -38,18 +46,17 @@ namespace Modbus.Containers
                 services.AddSingleton<ISessionsHandle, SessionsHandle>();
                 services.AddSingleton<IDeviceConfiguration<ModuleConfig>, DeviceTwinConfiguration<ModuleConfig>>(
                                         sp => new DeviceTwinConfiguration<ModuleConfig>(
-                                            sp.GetService<MicrosoftExtensionsLog>(), File.Exists(secondaryConfigFile) ? 
+                                            sp.GetService<MicrosoftExtensionsLog>(), File.Exists(secondaryConfigFile) ?
                                             new FileConfiguration<ModuleConfig>(sp.GetService<MicrosoftExtensionsLog>(), File.OpenText(secondaryConfigFile)) : null, sp.GetService<IModuleClient>()));
 
                 // Dispose method of ServiceProvider will dispose all disposable objects constructed by it as well.
                 using (var serviceProvider = services.BuildServiceProvider())
                 {
-                                        
                     // Get a new module object.
                     using (var module = serviceProvider.GetService<IEdgeModule>())
                     {
                         using (var moduleClient = serviceProvider.GetService<IModuleClient>())
-                        {                            
+                        {
                             await module.OpenConnectionAsync(serviceProvider.GetService<ISessionsHandle>(), cts.Token).ConfigureAwait(false);
 
                             await WhenCancelled(cts.Token).ConfigureAwait(false);
