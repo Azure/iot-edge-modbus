@@ -57,7 +57,10 @@
 
         private void ValidateDeviceConfiguration(string jsonString)
         {
-            var schema = new JSchemaGenerator().Generate(typeof(T));
+            var gen = new JSchemaGenerator() { DefaultRequired = Required.Default};
+            gen.GenerationProviders.Add(new StringEnumGenerationProvider());
+            var schema = gen.Generate(typeof(T));
+
             var config = JObject.Parse(jsonString);
 
             if (!config.IsValid(schema, out IList<string> messages))

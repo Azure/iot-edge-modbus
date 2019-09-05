@@ -92,7 +92,7 @@
             operation.Request[this.m_dataBodyOffset + 3] = count_byte[0];
             operation.Request[this.m_dataBodyOffset + 4] = count_byte[1];
         }
-        protected override void EncodeWrite(byte[] request, string uid, ReadOperation readOperation, string value)
+        protected override void EncodeWrite(byte[] request, WriteOperation writeOperation)
         {
             //MBAP
             //transaction id 2 bytes
@@ -106,18 +106,19 @@
             request[4] = len_byte[0];
             request[5] = len_byte[1];
             //uid
-            request[6] = Convert.ToByte(uid);
+            request[6] = Convert.ToByte(writeOperation.UnitId);
 
             //Body
             //function code
+            request[m_dataBodyOffset] = writeOperation.FunctionCode;
 
             //address
-            byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(readOperation.Address)));
+            byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(writeOperation.Address)));
             request[this.m_dataBodyOffset + 1] = address_byte[0];
             request[this.m_dataBodyOffset + 2] = address_byte[1];
             //value
-            UInt16 value_int = (UInt16)Convert.ToInt32(value);
-            if (readOperation.Entity == '0' && value_int == 1)
+            UInt16 value_int = writeOperation.IntValueToWrite;
+            if (writeOperation.Entity == '0' && value_int == 1)
             {
                 request[this.m_dataBodyOffset + 3] = 0xFF;
                 request[this.m_dataBodyOffset + 4] = 0x00;
