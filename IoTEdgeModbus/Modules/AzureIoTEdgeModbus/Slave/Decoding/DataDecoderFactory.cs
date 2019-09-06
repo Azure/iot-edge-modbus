@@ -1,8 +1,8 @@
-﻿using System;
-using AzureIoTEdgeModbus.Slave.Data;
-
-namespace AzureIoTEdgeModbus.Slave.Decoding
+﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
+    using System;
+    using Data;
+
     public static class DataDecoderFactory
     {
         public static IModbusDataDecoder CreateDecoder(FunctionCode functionCode, ModbusDataType dataType)

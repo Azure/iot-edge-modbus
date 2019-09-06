@@ -29,18 +29,18 @@
         [JsonConverter(typeof(StringEnumConverter))]
         public SwapMode SwapMode { get; set; }
 
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public byte Entity
          => (Encoding.ASCII.GetBytes(this.StartAddress, 0, 1)[0]);
 
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public ushort Address
             => ((ushort)(Convert.ToInt32(this.StartAddress.Substring(1)) - 1));
 
         /// <summary>
         /// Only Read Supported
         /// </summary>
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public FunctionCode FunctionCode
             => (char)this.Entity == (char)EntityType.CoilStatus ? FunctionCode.ReadCoils :
                 (char)this.Entity == (char)EntityType.HoldingRegister ? FunctionCode.ReadHoldingRegisters :

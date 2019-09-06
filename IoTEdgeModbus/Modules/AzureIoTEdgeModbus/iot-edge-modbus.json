@@ -16,7 +16,7 @@
           "Count": 2,
           "DisplayName": "Voltage",
           "CorrelationId": "MessageType1",
-          "ValueType": "Float"
+          "DataType": "Float"
         },
         "Op02": {
           "PollingInterval": 1000,
@@ -24,7 +24,8 @@
           "StartAddress": "400002",
           "Count": 2,
           "DisplayName": "Current",
-          "CorrelationId": "MessageType1"
+          "CorrelationId": "MessageType1",
+          "DataType": "Int32"
         },
         "Op03": {
           "PollingInterval": 1000,
@@ -33,7 +34,7 @@
           "Count": 2,
           "DisplayName": "Voltage",
           "CorrelationId": "MessageType1",
-          "ValueType": "Int32"
+          "DataType": "Int32"
         },
         "Op04": {
           "PollingInterval": 1000,
@@ -41,7 +42,8 @@
           "StartAddress": "10002",
           "Count": 2,
           "DisplayName": "Current",
-          "CorrelationId": "MessageType1"
+          "CorrelationId": "MessageType1",
+          "DataType": "Int32"
         }
       }
     },
@@ -59,14 +61,16 @@
           "UnitId": 1,
           "StartAddress": "40001",
           "Count": 1,
-          "DisplayName": "Power"
+          "DisplayName": "Power",
+          "DataType": "Int32"
         },
         "Op02": {
           "PollingInterval": 2000,
           "UnitId": 1,
           "StartAddress": "40003",
           "Count": 1,
-          "DisplayName": "Status"
+          "DisplayName": "Status",
+          "DataType": "Int32"
         }
       }
     }

@@ -22,7 +22,7 @@
                 if (BitConverter.IsLittleEndian)
                     valueBytes.Reverse();
 
-                var address = Convert.ToUInt16(operation.StartAddress) + valueIndex;
+                var address = Convert.ToInt32(operation.StartAddress) + valueIndex;
 
                 result.Add(new DecodedValue(address, this.ConvertToString(valueBytes)));
             }

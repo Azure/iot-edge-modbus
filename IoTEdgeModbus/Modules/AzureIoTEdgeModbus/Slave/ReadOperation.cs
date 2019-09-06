@@ -27,20 +27,16 @@
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public string CorrelationId { get; set; }
 
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public byte[] Request { get; set; }
 
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public byte[] Response { get; set; }
 
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public int RequestLength { get; set; }
 
-        [JsonProperty(Required = Required.Default)]
-        public string OutFormat
-            => (this.StartAddress.Length == 5 ? "{0}{1:0000}" : this.StartAddress.Length == 6 ? "{0}{1:00000}" : string.Empty);
-
-        [JsonProperty(Required = Required.Default)]
+        [JsonIgnore]
         public IModbusDataDecoder Decoder { get; set; }
     }
 }

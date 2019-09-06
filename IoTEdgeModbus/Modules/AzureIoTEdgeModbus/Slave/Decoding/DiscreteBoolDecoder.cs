@@ -28,7 +28,7 @@
 
                     var addressIncrement = byteIndex * BitsInByte + bitIndex;
 
-                    var address = Convert.ToUInt16(operation.StartAddress) + addressIncrement;
+                    var address = Convert.ToInt32(operation.StartAddress) + addressIncrement;
 
                     result.Add(new DecodedValue(address, value.ToString()));
 
