@@ -1,6 +1,5 @@
 ﻿namespace Azure.IoT.Edge.Modbus.Tests
 {
-    using System.Collections.Generic;
     using System.Linq;
     using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Slave.Decoding;
@@ -13,14 +12,12 @@
         private ModuleConfig config;
 
         private ModbusTCPSlaveSession slaveSession;
-        private Dictionary<string, ReadOperation> operations;
 
         [TestInitialize]
         public void Setup()
         {
             config = ConfigBuilder.CreateTCPOnlyConfig();
             slaveSession = new ModbusTCPSlaveSession(config.SlaveConfigs.Values.First());
-            operations = config.SlaveConfigs.Values.First().Operations;
 
         }
 
