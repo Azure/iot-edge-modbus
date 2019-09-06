@@ -24,7 +24,7 @@
         [JsonConverter(typeof(StringEnumConverter))]
         public ModbusDataType DataType { get; set; }
 
-        [DefaultValue(Data.SwapMode.None)]
+        [DefaultValue(Data.SwapMode.BigEndian)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         [JsonConverter(typeof(StringEnumConverter))]
         public SwapMode SwapMode { get; set; }

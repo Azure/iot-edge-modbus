@@ -10,13 +10,14 @@
     public class Int32DecoderTests
     {
         [DataTestMethod]
-        [DataRow(40000, new byte[] { 0x0, 0x0, 0x9C, 0x40 })]
-        public void CanDecodeValue(Int32 expectedValue, byte[] bytes)
+        [DataRow("40000", new byte[] { 0x0, 0x0, 0x9C, 0x40 })]
+        [DataRow("70000", new byte[] { 0x0, 0x1, 0x11, 0x70 })]
+        public void CanDecodeValue(string expectedValue, byte[] bytes)
         {
             var decoder = new Int32Decoder();
-            var result = decoder.GetValues(bytes.AsSpan(), 1, SwapMode.None);
+            var result = decoder.GetValues(bytes.AsSpan(), 1, SwapMode.BigEndian);
 
-            Assert.AreEqual(expectedValue.ToString(), result.First());
+            Assert.AreEqual(expectedValue, result.First());
         }
     }
 }

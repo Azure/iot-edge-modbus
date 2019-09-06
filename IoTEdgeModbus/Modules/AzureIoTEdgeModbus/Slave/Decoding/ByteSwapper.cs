@@ -17,15 +17,15 @@
 
             switch (swapMode)
             {
-                case SwapMode.None:
+                case SwapMode.BigEndian:
                     break;
-                case SwapMode.BytesAndWords:
+                case SwapMode.LittleEndian:
                     bytes.Reverse();
                     break;
-                case SwapMode.Bytes:
+                case SwapMode.BigEndianByteSwap:
                     SwapBytes(bytes);
                     break;
-                case SwapMode.Words:
+                case SwapMode.LittleEndianByteSwap:
                     bytes.Reverse();
                     SwapBytes(bytes);
                     break;

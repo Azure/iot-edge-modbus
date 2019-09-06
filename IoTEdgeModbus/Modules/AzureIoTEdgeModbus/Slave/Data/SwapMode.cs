@@ -5,9 +5,9 @@
     /// </summary>
     public enum SwapMode
     {
-        None,           // source bytes: [a b] [c d] target bytes: [a b c d]
-        BytesAndWords,    // source bytes: [a b] [c d] target bytes: [d c b a]
-        Bytes,           // source bytes: [a b] [c d] target bytes: [b a d c]
-        Words           // source bytes: [a b] [c d] target bytes: [c d a b]
+        BigEndian,              // Source bytes: [a b] [c d] target bytes: [a b c d]
+        LittleEndian,           // Source bytes: [a b] [c d] target bytes: [d c b a]
+        BigEndianByteSwap,      // Source bytes: [a b] [c d] target bytes: [b a d c]
+        LittleEndianByteSwap    // Source bytes: [a b] [c d] target bytes: [c d a b]
     }
 }
