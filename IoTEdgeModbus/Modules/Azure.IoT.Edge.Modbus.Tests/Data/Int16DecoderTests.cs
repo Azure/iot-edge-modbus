@@ -15,8 +15,7 @@
         {
             //Arrange
             var expectedValue = "1234";
-            var response = new byte[] {0x4, 0xD2};
-            var bytes = new Span<byte>(response);
+            var bytes = new byte[] {0x4, 0xD2};
             var decoder = new Int16Decoder();
             var readOperation = new ReadOperation()
             {

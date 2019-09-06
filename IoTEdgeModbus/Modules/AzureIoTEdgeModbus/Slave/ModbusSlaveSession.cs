@@ -7,6 +7,7 @@
     using System.Threading.Tasks;
     using Data;
     using Decoding;
+    using DotNetty.Common.Utilities;
 
     /// <summary>
     /// Base class of Modbus session.
@@ -16,7 +17,7 @@
         protected const int BufferSize = 512;
         protected const int ModbusExceptionCode = 0x80;
 
-        public readonly ModbusSlaveConfig config;
+        protected readonly ModbusSlaveConfig config;
 
         private ModbusOutContent outMessage = null;
         private readonly SemaphoreSlim semaphoreCollection = new SemaphoreSlim(1, 1);
@@ -146,9 +147,9 @@
             }
         }
 
-        public IList<DecodedValue> DecodeResponse(ReadOperation operation)
+        public IEnumerable<DecodedValue> DecodeResponse(ReadOperation operation)
         {
-            var response = new Span<byte>(operation.Response);
+            var response = operation.Response;
             int byteCount = response[this.ByteCountOffset];
             var dataBytes = response.Slice(this.DataValuesOffset, byteCount);
 

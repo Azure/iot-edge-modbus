@@ -12,7 +12,7 @@
         /// <remarks>
         /// Note that the byte order of the referenced bytes might be changed after completion of this method.
         /// </remarks>
-        IList<DecodedValue> GetValues(Span<byte> bytes, ReadOperation operation);
+        IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation);
 
         int GetByteCount(int valuesToRead);
     }

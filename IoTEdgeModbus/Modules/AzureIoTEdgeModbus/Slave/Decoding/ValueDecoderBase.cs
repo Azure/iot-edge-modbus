@@ -8,14 +8,15 @@
     {
         protected abstract int ByteSize { get; }
 
-        public IList<DecodedValue> GetValues(Span<byte> bytes, ReadOperation operation)
+        public IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation)
         {
+            var byteSpan = new Span<byte>(bytesToConvert);
             var result = new List<DecodedValue>();
 
             for (int i = 0; i < operation.Count; i++)
             {
                 var valueIndex = i * this.ByteSize;
-                var valueBytes = bytes.Slice(valueIndex, this.ByteSize);
+                var valueBytes = byteSpan.Slice(valueIndex, this.ByteSize);
 
                 ByteSwapper.Swap(valueBytes, operation.SwapMode);
 

@@ -25,7 +25,7 @@
 			};
 
 			//Act
-			var result = decoder.GetValues(bytes.AsSpan(), readOperation);
+			var result = decoder.GetValues(bytes, readOperation).ToList();
 
 			//Assert
 			Assert.AreEqual(expectedValue, result.First().Value);

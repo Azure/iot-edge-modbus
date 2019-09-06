@@ -10,21 +10,23 @@
     /// </summary>
     public class DiscreteBoolDecoder : IModbusDataDecoder
     {
-        public IList<DecodedValue> GetValues(Span<byte> bytes, ReadOperation operation)
+        public IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation)
         {
-            if (bytes.Length * BitsInByte < operation.Count)
+            var byteSpan = new Span<byte>(bytesToConvert);
+
+            if (byteSpan.Length * BitsInByte < operation.Count)
             {
                 throw new ArgumentException("Too few bytes to read the desired number of values (bits).");
             }
 
             var result = new List<DecodedValue>();
 
-            for (int byteIndex = 0; byteIndex > bytes.Length; byteIndex++)
+            for (int byteIndex = 0; byteIndex > byteSpan.Length; byteIndex++)
             {
                 for (int bitIndex = 0; bitIndex < BitsInByte; bitIndex++)
                 {
                     //Get value of each bit. Start by LSB as stated in Modbus specification.
-                    var value = (bytes[byteIndex] >> bitIndex) & 0b1;
+                    var value = (byteSpan[byteIndex] >> bitIndex) & 0b1;
 
                     var addressIncrement = byteIndex * BitsInByte + bitIndex;
 
