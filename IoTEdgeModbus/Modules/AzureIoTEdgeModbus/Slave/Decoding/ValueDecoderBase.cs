@@ -8,20 +8,23 @@
     {
         protected abstract int ByteSize { get; }
 
-        public IEnumerable<string> GetValues(Span<byte> bytes, int valuesToRead, SwapMode swapMode)
+        public IList<DecodedValue> GetValues(Span<byte> bytes, ReadOperation operation)
         {
-            var result = new List<string>();
+            var result = new List<DecodedValue>();
 
-            for (int i = 0; i < valuesToRead; i++)
+            for (int i = 0; i < operation.Count; i++)
             {
-                var valueBytes = bytes.Slice(i * this.ByteSize, this.ByteSize);
+                var valueIndex = i * this.ByteSize;
+                var valueBytes = bytes.Slice(valueIndex, this.ByteSize);
 
-                ByteSwapper.Swap(valueBytes, swapMode);
-                
+                ByteSwapper.Swap(valueBytes, operation.SwapMode);
+
                 if (BitConverter.IsLittleEndian)
                     valueBytes.Reverse();
 
-                result.Add(this.ConvertToString(valueBytes));
+                var address = Convert.ToUInt16(operation.StartAddress) + valueIndex;
+
+                result.Add(new DecodedValue(address, this.ConvertToString(valueBytes)));
             }
 
             return result;

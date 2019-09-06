@@ -1,12 +1,9 @@
-﻿using System;
-using AzureIoTEdgeModbus.Slave.Data;
-
-namespace AzureIoTEdgeModbus.Slave.Decoding
+﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
+    using System;
+
     public class Int16Decoder : ValueDecoderBase, IModbusDataDecoder
     {
-        public ModbusDataType DataType => ModbusDataType.Int16;
-
         protected override int ByteSize => 2;
 
         protected override string ConvertToString(in Span<byte> valueBytes)

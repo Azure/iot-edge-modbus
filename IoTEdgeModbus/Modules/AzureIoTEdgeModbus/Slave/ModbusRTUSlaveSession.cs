@@ -36,12 +36,12 @@
         {
             try
             {
-                if (this.Config.SlaveConnection.Substring(0, 3) == "COM" || this.Config.SlaveConnection.Substring(0, 8) == "/dev/tty")
+                if (this.config.SlaveConnection.Substring(0, 3) == "COM" || this.config.SlaveConnection.Substring(0, 8) == "/dev/tty")
                 {
                 
-                    Console.WriteLine($"Opening...{this.Config.SlaveConnection}");
+                    Console.WriteLine($"Opening...{this.config.SlaveConnection}");
 
-                    this.serialPort = SerialDeviceFactory.CreateSerialDevice(this.Config.SlaveConnection, (int)this.Config.BaudRate.Value, this.Config.Parity.Value, this.Config.DataBits.Value, this.Config.StopBits.Value);
+                    this.serialPort = SerialDeviceFactory.CreateSerialDevice(this.config.SlaveConnection, (int)this.config.BaudRate.Value, this.config.Parity.Value, this.config.DataBits.Value, this.config.StopBits.Value);
 
                     this.serialPort.Open();
                     //serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
@@ -119,7 +119,7 @@
         {
             byte[] response = null;
 
-            this.SemaphoreConnection.Wait();
+            this.semaphoreConnection.Wait();
 
             if (this.serialPort != null && this.serialPort.IsOpen())
             {
@@ -147,7 +147,7 @@
                 await this.ConnectSlave();
             }
 
-            this.SemaphoreConnection.Release();
+            this.semaphoreConnection.Release();
 
             return response;
         }
@@ -158,7 +158,7 @@
             int totalDataBytesRead = 0;
             int retry = 0;
 
-            while (totalHeaderBytesRead < 3 && retry < this.Config.RetryCount)
+            while (totalHeaderBytesRead < 3 && retry < this.config.RetryCount)
             {
                 var headerBytesRead = this.serialPort.Read(response, totalHeaderBytesRead, 3 - totalHeaderBytesRead);
                 if (headerBytesRead > 0)
@@ -168,13 +168,13 @@
                 else
                 {
                     retry++;
-                    Task.Delay(this.Config.RetryInterval.Value).Wait();
+                    Task.Delay(this.config.RetryInterval.Value).Wait();
                 }
             }
 
             var bytesToRead = response[1] >= ModbusExceptionCode ? 2 : response[2] + 2;
 
-            while (totalDataBytesRead < bytesToRead && retry < this.Config.RetryCount)
+            while (totalDataBytesRead < bytesToRead && retry < this.config.RetryCount)
             {
                 var dataBytesRead = this.serialPort.Read(response, 3 + totalDataBytesRead, bytesToRead - totalDataBytesRead);
                 if (dataBytesRead > 0)
@@ -184,11 +184,11 @@
                 else
                 {
                     retry++;
-                    Task.Delay(this.Config.RetryInterval.Value).Wait();
+                    Task.Delay(this.config.RetryInterval.Value).Wait();
                 }
             }
 
-            if (retry >= this.Config.RetryCount)
+            if (retry >= this.config.RetryCount)
             {
                 response = null;
             }

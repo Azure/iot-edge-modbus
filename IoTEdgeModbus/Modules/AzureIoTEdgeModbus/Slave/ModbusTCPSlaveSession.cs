@@ -35,7 +35,7 @@
 
         protected override async Task ConnectSlave()
         {
-            if (IPAddress.TryParse(this.Config.SlaveConnection, out this.address))
+            if (IPAddress.TryParse(this.config.SlaveConnection, out this.address))
             {
                 try
                 {
@@ -44,7 +44,7 @@
                         ReceiveTimeout = 100
                     };
 
-                    await this.socket.ConnectAsync(this.address, this.Config.TcpPort.Value);
+                    await this.socket.ConnectAsync(this.address, this.config.TcpPort.Value);
 
                 }
                 catch (SocketException se)
@@ -132,10 +132,10 @@
             int retryForSocketError = 0;
             bool sendSucceed = false;
 
-            while (!sendSucceed && retryForSocketError < this.Config.RetryCount)
+            while (!sendSucceed && retryForSocketError < this.config.RetryCount)
             {
                 retryForSocketError++;
-                this.SemaphoreConnection.Wait();
+                this.semaphoreConnection.Wait();
 
                 if (this.socket != null && this.socket.Connected)
                 {
@@ -180,7 +180,7 @@
                     await this.ConnectSlave();
                 }
 
-                this.SemaphoreConnection.Release();
+                this.semaphoreConnection.Release();
             }
 
             return response;
@@ -194,13 +194,13 @@
             int retry = 0;
             bool error = false;
 
-            while (this.socket.Available <= 0 && retry < this.Config.RetryCount)
+            while (this.socket.Available <= 0 && retry < this.config.RetryCount)
             {
                 retry++;
-                Task.Delay(this.Config.RetryInterval.Value).Wait();
+                Task.Delay(this.config.RetryInterval.Value).Wait();
             }
 
-            while (totalHeaderBytesRead < this.FunctionCodeOffset && retry < this.Config.RetryCount)
+            while (totalHeaderBytesRead < this.FunctionCodeOffset && retry < this.config.RetryCount)
             {
                 if (this.socket.Available > 0)
                 {
@@ -219,7 +219,7 @@
 
             var bytesToRead = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
 
-            while (totalDataBytesRead < bytesToRead && retry < this.Config.RetryCount)
+            while (totalDataBytesRead < bytesToRead && retry < this.config.RetryCount)
             {
                 if (this.socket.Available > 0)
                 {
@@ -236,7 +236,7 @@
                 }
             }
 
-            if (retry >= this.Config.RetryCount || error)
+            if (retry >= this.config.RetryCount || error)
             {
                 response = null;
             }

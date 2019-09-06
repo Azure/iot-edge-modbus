@@ -26,7 +26,6 @@ namespace Azure.IoT.Edge.Modbus.Tests
 						HwId = "PowerMeter-0a:01:01:01:01:01",
 						RetryCount = 1,
 						RetryInterval = 100,
-						MidEndianSwap = true,
 						Operations = new Dictionary<string, ReadOperation>()
 						{
 							{ "Op01", new ReadOperation{ PollingInterval = 1000, UnitId =1, StartAddress = "400001", Count = 0, DisplayName= "Voltage", CorrelationId = "MessageType1", DataType= ModbusDataType.Float } },

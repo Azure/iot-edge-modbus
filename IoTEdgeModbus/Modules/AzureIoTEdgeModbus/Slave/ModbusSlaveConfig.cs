@@ -11,7 +11,7 @@
     public class ModbusSlaveConfig : BaseModbusSlaveConfig
     {
         [JsonProperty(Required = Required.Always)]
-        public new Dictionary<string, ReadOperation> Operations = null;
+        public new Dictionary<string, ReadOperation> Operations { get; set; }
 
         public ConnectionType GetConnectionType()
         {
@@ -40,10 +40,7 @@
                 BaudRate = this.BaudRate,
                 StopBits = this.StopBits,
                 DataBits = this.DataBits,
-                Parity = this.Parity,
-                FlowControl = this.FlowControl,
-                EndianSwap = this.EndianSwap,
-                MidEndianSwap = this.MidEndianSwap
+                Parity = this.Parity
                 
                 
             };

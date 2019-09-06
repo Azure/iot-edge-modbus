@@ -1,13 +1,10 @@
-﻿using System;
-using System.Globalization;
-using AzureIoTEdgeModbus.Slave.Data;
-
-namespace AzureIoTEdgeModbus.Slave.Decoding
+﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
+    using System;
+    using System.Globalization;
+
     public class FloatDecoder : ValueDecoderBase, IModbusDataDecoder
     {
-        public ModbusDataType DataType => ModbusDataType.Float;
-
         protected override int ByteSize => 4;
 
         protected override string ConvertToString(in Span<byte> valueBytes)

@@ -1,12 +1,9 @@
-﻿using System;
-using AzureIoTEdgeModbus.Slave.Data;
-
-namespace AzureIoTEdgeModbus.Slave.Decoding
+﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
+    using System;
+
     public class Int32Decoder : ValueDecoderBase, IModbusDataDecoder
     {
-        public ModbusDataType DataType => ModbusDataType.Int32;
-
         protected override int ByteSize => 4;
 
         public int GetByteCount(int valuesToRead)

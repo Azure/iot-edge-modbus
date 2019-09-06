@@ -16,26 +16,26 @@
         protected const int BufferSize = 512;
         protected const int ModbusExceptionCode = 0x80;
 
-        public ModbusSlaveConfig Config;
+        public readonly ModbusSlaveConfig config;
 
-        protected ModbusOutContent OutMessage = null;
-        protected SemaphoreSlim SemaphoreCollection = new SemaphoreSlim(1, 1);
-        protected SemaphoreSlim SemaphoreConnection = new SemaphoreSlim(1, 1);
-        protected bool IsRunning = false;
+        private ModbusOutContent outMessage = null;
+        private readonly SemaphoreSlim semaphoreCollection = new SemaphoreSlim(1, 1);
+        protected readonly SemaphoreSlim semaphoreConnection = new SemaphoreSlim(1, 1);
+        private bool isRunning = false;
 
-        private List<Task> taskList = new List<Task>();
+        private readonly List<Task> taskList = new List<Task>();
 
         protected abstract int RequestSize { get; }
         protected abstract int FunctionCodeOffset { get; }
         protected abstract int Silent { get; }
 
-        protected int ByteCountOffset => this.FunctionCodeOffset + 1;
-        protected int DataValuesOffset => this.FunctionCodeOffset + 2;
+        private int ByteCountOffset => this.FunctionCodeOffset + 1;
+        private int DataValuesOffset => this.FunctionCodeOffset + 2;
 
 
         protected ModbusSlaveSession(ModbusSlaveConfig conf)
         {
-            this.Config = conf;
+            this.config = conf;
         }
 
         public abstract void ReleaseSession();
@@ -44,9 +44,9 @@
         {
             await this.ConnectSlave();
 
-            foreach (var operation in this.Config.Operations.Values)
+            foreach (var operation in this.config.Operations.Values)
             {
-                operation.RequestLen = this.RequestSize;
+                operation.RequestLength = this.RequestSize;
                 operation.Request = new byte[BufferSize];
                 operation.Decoder = DataDecoderFactory.CreateDecoder(operation.FunctionCode, operation.DataType);
 
@@ -90,43 +90,51 @@
 
         public void ProcessOperations()
         {
-            this.IsRunning = true;
-            foreach (var op_pair in this.Config.Operations)
+            this.isRunning = true;
+            foreach (var op_pair in this.config.Operations)
             {
                 ReadOperation x = op_pair.Value;
-                Task t = Task.Run(async () => await this.SingleOperation(x));
+                Task t = Task.Run(() =>this.SingleOperationAsync(x));
                 this.taskList.Add(t);
             }
         }
         public ModbusOutContent GetOutMessage()
         {
-            return this.OutMessage;
+            return this.outMessage;
         }
         public void ClearOutMessage()
         {
-            this.SemaphoreCollection.Wait();
+            this.semaphoreCollection.Wait();
 
-            this.OutMessage = null;
+            this.outMessage = null;
 
-            this.SemaphoreCollection.Release();
+            this.semaphoreCollection.Release();
         }
 
         protected abstract void EncodeWrite(byte[] writeRequest, WriteOperation readOperation);
         protected abstract Task<byte[]> SendRequest(byte[] request, int reqLen);
         protected abstract Task ConnectSlave();
         protected abstract void EncodeRead(ReadOperation operation);
-        protected async Task SingleOperation(ReadOperation operation)
+
+        private async Task SingleOperationAsync(ReadOperation operation)
         {
-            while (this.IsRunning)
+            while (this.isRunning)
             {
                 operation.Response = null;
-                operation.Response = await this.SendRequest(operation.Request, operation.RequestLen);
+                operation.Response = await this.SendRequest(operation.Request, operation.RequestLength);
 
                 if (operation.Response != null)
                 {
                     if (operation.Request[this.DataValuesOffset] == operation.Response[this.DataValuesOffset])
                     {
-                        this.ProcessResponse(this.Config, operation);
+                        var values = this.DecodeResponse(operation);
+
+                        if (values.Any())
+                        {
+                            this.PrepareOutMessage(
+                                operation.CorrelationId,
+                                values.Select(v => new ModbusOutValue(){Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value}));
+                        }
                     }
                     else if (operation.Request[this.DataValuesOffset] + ModbusExceptionCode == operation.Response[this.DataValuesOffset])
                     {
@@ -138,29 +146,20 @@
             }
         }
 
-        public List<ModbusOutValue> ProcessResponse(ModbusSlaveConfig config, ReadOperation operation)
+        public IList<DecodedValue> DecodeResponse(ReadOperation operation)
         {
             var response = new Span<byte>(operation.Response);
             int byteCount = response[this.ByteCountOffset];
-            var dataBytes = response.Slice(this.DataValuesOffset, operation.Count);
+            var dataBytes = response.Slice(this.DataValuesOffset, byteCount);
 
-            // TODO: Fix addresses in result
-            var values = operation.Decoder.GetValues(dataBytes, byteCount, operation.SwapMode)
-                .Select(v => new ModbusOutValue() { DisplayName = operation.DisplayName, Address = "TODO", Value = v }).ToList();
-
-            if (values.Count > 0)
-            {
-                this.PrepareOutMessage(config, operation.CorrelationId, values);
-            }
-
-            return values;
+            return operation.Decoder.GetValues(dataBytes, operation);
         }
 
-        private void PrepareOutMessage(ModbusSlaveConfig config, string correlationId, List<ModbusOutValue> valueList)
+        private void PrepareOutMessage(string correlationId, IEnumerable<ModbusOutValue> valueList)
         {  
-            this.SemaphoreCollection.Wait();
-            ModbusOutContent content = null;
-            if (this.OutMessage == null)
+            this.semaphoreCollection.Wait();
+            ModbusOutContent content;
+            if (this.outMessage == null)
             {
                 content = new ModbusOutContent
                 {
@@ -168,11 +167,11 @@
                     Data = new List<ModbusOutData>(),
                     AdditionalProperties = config.AdditionalProperties
                 };
-                this.OutMessage = content;
+                this.outMessage = content;
             }
             else
             {
-                content = this.OutMessage;
+                content = this.outMessage;
             }
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -198,12 +197,12 @@
 
             data.Values.AddRange(valueList);
 
-            this.SemaphoreCollection.Release();
+            this.semaphoreCollection.Release();
 
         }
         protected void ReleaseOperations()
         {
-            this.IsRunning = false;
+            this.isRunning = false;
             Task.WaitAll(this.taskList.ToArray());
             this.taskList.Clear();
         }
