@@ -1,13 +1,11 @@
 ﻿namespace AzureIoTEdgeModbus.Slave.Decoding
 {
-    using System;
     using System.Collections.Generic;
-    using Data;
 
     public interface IModbusDataDecoder
     {
         /// <summary>
-        /// Get values
+        /// Get decoded values from raw bytes.
         /// </summary>
         /// <remarks>
         /// Note that the byte order of the referenced bytes might be changed after completion of this method.
