@@ -58,6 +58,17 @@
             "settings": {
               "image": "${MODULEDIR<../AzureIoTEdgeModbus>}",
               "createOptions": {}
+            },
+            "env": {
+              "ApplicationInsightsKey": {
+                "value": "c676e6dc-1c54-460c-88ce-fa9ba0137d75"
+              },
+              "ApplicationInsightsLogLevel": {
+                "value": "Information"
+              },
+              "ConsoleLogLevel": {
+                "value": "Trace"
+              }
             }
           }
         }

@@ -21,7 +21,7 @@
             this.logger = logger;
         }
 
-        [Event(1000, Description = "Modbus sessions available: {0}")]
+        [Event(1000, Description = "Modbus sessions available: {sessionCount}")]
         public void ModbusSessionCount(int sessionCount)
         {
             this.LogTrace(MethodBase.GetCurrentMethod(), sessionCount);
@@ -33,31 +33,31 @@
             this.LogInformation(MethodBase.GetCurrentMethod());
         }
         
-        [Event(2002, Description = "New desired properties received: {0}.")]
+        [Event(2002, Description = "New desired properties received: {desiredProperties}.")]
         public void DesiredPropertiesReceivedFromTwin(TwinCollection twinCollection)
         {
             this.LogInformation(MethodBase.GetCurrentMethod(), twinCollection);
         }
 
-        [Event(2003, Description = "New desired properties received: {0}.")]
+        [Event(2003, Description = "New desired properties received: {desiredProperties}.")]
         public void DesiredPropertiesReceivedFromFile(string desiredProperties)
         {
             this.LogInformation(MethodBase.GetCurrentMethod(), desiredProperties);
         }
 
-        [Event(2004, Description = "Attempting to retrieve desired configuration from provider: {0}.")]
+        [Event(2004, Description = "Attempting to retrieve desired configuration from provider: {providerType}.")]
         public void RetrieveDesiredConfigurationFrom(string configurationProviderTypeName)
         {
             this.LogInformation(MethodBase.GetCurrentMethod(), configurationProviderTypeName);
         }
 
-        [Event(3000, Description = "Configuration received is invalid, JSON schema validation error: {0}.")]
+        [Event(3000, Description = "Configuration received is invalid, JSON schema validation error: {errorMessage}.")]
         public void ConfgurationValidationError(string errorMessage)
         {
             this.LogWarning(MethodBase.GetCurrentMethod(), errorMessage);
         }
 
-        [Event(4000, Description = "Could not retrieve desired properties from store, error: {0}.")]
+        [Event(4000, Description = "Could not retrieve desired properties from store.")]
         public void ConfgurationRetrivalError(Exception exception)
         {
             this.LogError(MethodBase.GetCurrentMethod(), exception);
