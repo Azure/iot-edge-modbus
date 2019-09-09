@@ -5,7 +5,7 @@
 
     public class FloatDecoder : ValueDecoderBase, IModbusDataDecoder
     {
-        protected override int ByteSize => 4;
+        protected override short ByteSize => 4;
 
         protected override string ConvertToString(in Span<byte> valueBytes)
         {
@@ -14,7 +14,8 @@
             return roundedValue.ToString(CultureInfo.InvariantCulture);
         }
 
-        public int GetByteCount(int valuesToRead)
-            => ByteSize * valuesToRead;
+        public short GetByteCount(short valuesToRead)
+        =>  checked((short)(this.ByteSize * valuesToRead));
+        
     }
 }

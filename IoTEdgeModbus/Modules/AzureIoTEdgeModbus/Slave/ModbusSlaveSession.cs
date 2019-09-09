@@ -95,7 +95,7 @@
             foreach (var op_pair in this.config.Operations)
             {
                 ReadOperation x = op_pair.Value;
-                Task t = Task.Run(() =>this.SingleOperationAsync(x));
+                Task t = Task.Run(() => this.SingleOperationAsync(x));
                 this.taskList.Add(t);
             }
         }
@@ -126,20 +126,17 @@
 
                 if (operation.Response != null)
                 {
-                    if (operation.Request[this.DataValuesOffset] == operation.Response[this.DataValuesOffset])
+                    if (operation.Request[this.FunctionCodeOffset] == operation.Response[this.FunctionCodeOffset])
                     {
-                        var values = this.DecodeResponse(operation);
+                        var values = this.DecodeResponse(operation).ToList();
 
-                        if (values.Any())
-                        {
-                            this.PrepareOutMessage(
-                                operation.CorrelationId,
-                                values.Select(v => new ModbusOutValue(){Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value}));
-                        }
+                        this.PrepareOutMessage(
+                            operation.CorrelationId,
+                            values.Select(v => new ModbusOutValue { Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value }));
                     }
-                    else if (operation.Request[this.DataValuesOffset] + ModbusExceptionCode == operation.Response[this.DataValuesOffset])
+                    else if (operation.Request[this.FunctionCodeOffset] + ModbusExceptionCode == operation.Response[this.FunctionCodeOffset])
                     {
-                        Console.WriteLine($"Modbus exception code: {operation.Response[this.DataValuesOffset + 1]}");
+                        Console.WriteLine($"Modbus exception code: {operation.Response[this.FunctionCodeOffset]}");
                     }
                 }
 
@@ -157,7 +154,7 @@
         }
 
         private void PrepareOutMessage(string correlationId, IEnumerable<ModbusOutValue> valueList)
-        {  
+        {
             this.semaphoreCollection.Wait();
             ModbusOutContent content;
             if (this.outMessage == null)

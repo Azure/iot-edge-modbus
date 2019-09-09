@@ -16,9 +16,9 @@
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
         public int PollingInterval { get; set; }
 
-        [Range(1, 20)]
+        [Range(1, 32)]
         [JsonProperty(Required = Required.Always)]
-        public UInt16 Count { get; set; }
+        public short Count { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public string DisplayName { get; set; }

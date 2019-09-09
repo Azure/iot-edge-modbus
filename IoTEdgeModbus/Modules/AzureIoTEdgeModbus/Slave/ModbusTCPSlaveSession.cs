@@ -77,7 +77,7 @@
             //function code
             operation.Request[this.FunctionCodeOffset] = (byte)operation.FunctionCode;
             //address
-            byte[] addressBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Address));
+            byte[] addressBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)operation.Address));
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count

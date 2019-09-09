@@ -4,7 +4,7 @@
 	"image": {
 		"repository": "ta01pmcdcr01.azurecr.io/modbusmodule",
 		"tag": {
-			"version": "1.0.17",
+			"version": "1.0.18",
 			"platforms": {
 				"amd64": "./Dockerfile.amd64",
 				"amd64.debug": "./Dockerfile.amd64.debug",

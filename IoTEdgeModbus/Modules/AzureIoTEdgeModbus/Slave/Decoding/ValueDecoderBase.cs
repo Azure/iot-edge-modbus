@@ -2,11 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
-    using Data;
 
     public abstract class ValueDecoderBase
     {
-        protected abstract int ByteSize { get; }
+        protected abstract short ByteSize { get; }
 
         public IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation)
         {

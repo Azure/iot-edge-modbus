@@ -44,7 +44,7 @@
 
         }
         
-        public int GetByteCount(int valuesToRead) => valuesToRead / BitsInByte + 1;
+        public short GetByteCount(short valuesToRead) => checked((short)(valuesToRead / BitsInByte + 1));
 
     }
 }
