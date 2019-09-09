@@ -32,7 +32,7 @@ namespace Modbus.Containers
                 // Bootstrap services using dependency injection.
                 var services = new ServiceCollection();
 
-                Enum.TryParse<LogLevel>(Environment.GetEnvironmentVariable("ApplicationInsightsLogLevel"), out LogLevel applicationInsightsLogLevel);
+
                 Enum.TryParse<LogLevel>(Environment.GetEnvironmentVariable("ConsoleLogLevel"), out LogLevel consoleLogLevel);
 
                 services.AddLogging(builder =>
@@ -41,12 +41,18 @@ namespace Modbus.Containers
                     builder.AddConsole();
                 });
 
-                services.AddLogging(builder =>
+                var applicationInsightsKey = Environment.GetEnvironmentVariable("ApplicationInsightsKey");
+                if (!string.IsNullOrEmpty(applicationInsightsKey))
                 {
-                    builder.AddFilter<ApplicationInsightsLoggerProvider>(string.Empty, applicationInsightsLogLevel);
-                    builder.AddApplicationInsights(Environment.GetEnvironmentVariable("ApplicationInsightsKey"));
-                });
+                    Enum.TryParse<LogLevel>(Environment.GetEnvironmentVariable("ApplicationInsightsLogLevel"), out LogLevel applicationInsightsLogLevel);
 
+                    services.AddLogging(builder =>
+                    {
+                        builder.AddFilter<ApplicationInsightsLoggerProvider>(string.Empty, applicationInsightsLogLevel);
+                        builder.AddApplicationInsights(applicationInsightsKey);
+                    });
+                }
+              
                 services.AddSingleton(sp => new MicrosoftExtensionsLog(sp.GetService<ILogger<ModbusModule>>()));
                 services.AddSingleton<IModuleClient, ModuleClientWrapper>();
                 services.AddSingleton<IEdgeModule, ModbusModule>();
