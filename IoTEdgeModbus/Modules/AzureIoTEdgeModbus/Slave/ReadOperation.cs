@@ -1,7 +1,6 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using Newtonsoft.Json;
-    using System;
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
     using Decoding;

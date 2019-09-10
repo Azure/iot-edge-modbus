@@ -13,9 +13,5 @@
             var roundedValue = Math.Round(BitConverter.ToSingle(valueBytes), decimals);
             return roundedValue.ToString(CultureInfo.InvariantCulture);
         }
-
-        public short GetByteCount(short valuesToRead)
-        =>  checked((short)(this.ByteSize * valuesToRead));
-        
     }
 }

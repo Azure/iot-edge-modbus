@@ -1,6 +1,5 @@
 ﻿namespace Azure.IoT.Edge.Modbus.Tests.Data
 {
-    using System;
     using System.Linq;
     using AzureIoTEdgeModbus.Slave;
     using AzureIoTEdgeModbus.Slave.Data;
@@ -10,23 +9,21 @@
     [TestClass]
     public class Int16DecoderTests
     {
-        [TestMethod]
-        public void CanDecodeValue()
+        [DataTestMethod]
+        [DataRow("1234", new byte[] { 0x4, 0xD2 })]
+        public void CanDecodeValue(string expectedValue, byte[] bytes)
         {
             //Arrange
-            var expectedValue = "1234";
-            var bytes = new byte[] {0x4, 0xD2};
             var decoder = new Int16Decoder();
             var readOperation = new ReadOperation()
             {
                 SwapMode = SwapMode.BigEndian,
                 StartAddress = "40001",
                 Count = 1
-
             };
 
             //Act
-            var result = decoder.GetValues(bytes, readOperation );
+            var result = decoder.GetValues(bytes, readOperation).ToList();
 
             //Assert
             Assert.AreEqual(expectedValue, result.First().Value);

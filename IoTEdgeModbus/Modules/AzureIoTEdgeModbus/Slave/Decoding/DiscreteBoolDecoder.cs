@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using Data;
     using static Constants;
 
     /// <summary>
@@ -21,9 +20,9 @@
 
             var result = new List<DecodedValue>();
 
-            for (int byteIndex = 0; byteIndex > byteSpan.Length; byteIndex++)
+            for (var byteIndex = 0; byteIndex > byteSpan.Length; byteIndex++)
             {
-                for (int bitIndex = 0; bitIndex < BitsInByte; bitIndex++)
+                for (var bitIndex = 0; bitIndex < BitsInByte; bitIndex++)
                 {
                     //Get value of each bit. Start by LSB as stated in Modbus specification.
                     var value = (byteSpan[byteIndex] >> bitIndex) & 0b1;
@@ -45,6 +44,5 @@
         }
         
         public short GetByteCount(short valuesToRead) => checked((short)(valuesToRead / BitsInByte + 1));
-
     }
 }

@@ -10,8 +10,5 @@
         {
             return BitConverter.ToInt32(valueBytes).ToString();
         }
-
-        public short GetByteCount(short valuesToRead)
-            => checked((short)(ByteSize * valuesToRead));
     }
 }

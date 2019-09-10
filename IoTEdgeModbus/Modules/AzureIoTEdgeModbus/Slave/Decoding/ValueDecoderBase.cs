@@ -12,7 +12,7 @@
             var byteSpan = new Span<byte>(bytesToConvert);
             var result = new List<DecodedValue>();
 
-            for (int i = 0; i < operation.Count; i++)
+            for (var i = 0; i < operation.Count; i++)
             {
                 var valueIndex = i * this.ByteSize;
                 var valueBytes = byteSpan.Slice(valueIndex, this.ByteSize);
@@ -29,6 +29,8 @@
 
             return result;
         }
+
+        public virtual short GetByteCount(short valuesToRead) => checked((short)(this.ByteSize * valuesToRead));
 
         protected abstract string ConvertToString(in Span<byte> valueBytes);
     }
