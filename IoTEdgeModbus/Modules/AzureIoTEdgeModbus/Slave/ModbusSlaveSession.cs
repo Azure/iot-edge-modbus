@@ -1,73 +1,67 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
-    using Microsoft.Azure.Devices.Client;
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
-    using System.Text;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Threading.Tasks.Dataflow;
+    using Data;
+    using Decoding;
+    using DotNetty.Common.Utilities;
 
     /// <summary>
     /// Base class of Modbus session.
     /// </summary>
     public abstract class ModbusSlaveSession
     {
-        public static int ModbusExceptionCode = 0x80;
+        protected const int BufferSize = 512;
+        protected const int ModbusExceptionCode = 0x80;
 
-        public ModbusSlaveConfig config;
-        protected ModbusOutContent OutMessage = null;
-        protected const int m_bufSize = 512;
-        protected SemaphoreSlim m_semaphore_collection = new SemaphoreSlim(1, 1);
-        protected SemaphoreSlim m_semaphore_connection = new SemaphoreSlim(1, 1);
-        protected bool m_run = false;
-        protected List<Task> m_taskList = new List<Task>();
-        protected virtual int m_reqSize { get; }
-        protected virtual int m_dataBodyOffset { get; }
-        protected virtual int m_silent { get; }
+        protected readonly ModbusSlaveConfig config;
 
-        #region Constructors
-        public ModbusSlaveSession(ModbusSlaveConfig conf)
+        private ModbusOutContent outMessage = null;
+        private readonly SemaphoreSlim semaphoreCollection = new SemaphoreSlim(1, 1);
+        protected readonly SemaphoreSlim semaphoreConnection = new SemaphoreSlim(1, 1);
+        private bool isRunning = false;
+
+        private readonly List<Task> taskList = new List<Task>();
+
+        protected abstract int RequestSize { get; }
+        protected abstract int FunctionCodeOffset { get; }
+        protected abstract int Silent { get; }
+
+        private int ByteCountOffset => this.FunctionCodeOffset + 1;
+        private int DataValuesOffset => this.FunctionCodeOffset + 2;
+
+
+        protected ModbusSlaveSession(ModbusSlaveConfig conf)
         {
             this.config = conf;
         }
-        #endregion
 
-        #region Public Methods
         public abstract void ReleaseSession();
 
         public async Task InitSession()
         {
             await this.ConnectSlave();
 
-            foreach (var op_pair in this.config.Operations)
+            foreach (var operation in this.config.Operations.Values)
             {
-                ReadOperation x = op_pair.Value;
+                operation.RequestLength = this.RequestSize;
+                operation.Request = new byte[BufferSize];
+                operation.Decoder = DataDecoderFactory.CreateDecoder(operation.FunctionCode, operation.DataType);
 
-                //Can't read float from coils/inputs
-                if (x.FunctionCode == (byte)FunctionCodeType.ReadCoils || x.FunctionCode == (byte)FunctionCodeType.ReadInputs)
-                    x.ValueType = ModbusValueType.Basic;
-
-                //If working with complex value we need to override count
-                if (x.ValueType != ModbusValueType.Basic)
-                    x.Count = ModbusComplexValuesHandler.GetCountForValueType(x.ValueType);
-                  
-              
-                x.RequestLen = this.m_reqSize;
-                x.Request = new byte[m_bufSize];
-
-                this.EncodeRead(x);
+                this.EncodeRead(operation);
             }
         }
 
         public async Task WriteMessage(WriteOperation operation)
         {
-            if (operation.ValueType != ModbusValueType.Basic)
+            if (operation.DataType != ModbusDataType.Int16)
             {
                 //Handling complex value
                 //Obtain value split into several int values
-                var valuesToBeWritten = ModbusComplexValuesHandler.SplitComplexValue(operation.Value, operation.ValueType);
+                var valuesToBeWritten = ModbusComplexValuesHandler.SplitComplexValue(operation.Value, operation.DataType);
 
                 //We need to write each part of complex value to separate registry
                 foreach (var v in valuesToBeWritten)
@@ -86,9 +80,9 @@
 
         public async Task WriteCB(WriteOperation operation)
         {
-            byte[] writeRequest = new byte[m_bufSize];
+            byte[] writeRequest = new byte[BufferSize];
             byte[] writeResponse = null;
-            int reqLen = this.m_reqSize;
+            int reqLen = this.RequestSize;
 
             this.EncodeWrite(writeRequest, operation);
 
@@ -97,138 +91,73 @@
 
         public void ProcessOperations()
         {
-            this.m_run = true;
+            this.isRunning = true;
             foreach (var op_pair in this.config.Operations)
             {
                 ReadOperation x = op_pair.Value;
-                Task t = Task.Run(async () => await this.SingleOperation(x));
-                this.m_taskList.Add(t);
+                Task t = Task.Run(() => this.SingleOperationAsync(x));
+                this.taskList.Add(t);
             }
         }
         public ModbusOutContent GetOutMessage()
         {
-            return this.OutMessage;
+            return this.outMessage;
         }
         public void ClearOutMessage()
         {
-            this.m_semaphore_collection.Wait();
+            this.semaphoreCollection.Wait();
 
-            this.OutMessage = null;
+            this.outMessage = null;
 
-            this.m_semaphore_collection.Release();
+            this.semaphoreCollection.Release();
         }
-        #endregion
 
-        #region Protected Methods
         protected abstract void EncodeWrite(byte[] writeRequest, WriteOperation readOperation);
         protected abstract Task<byte[]> SendRequest(byte[] request, int reqLen);
         protected abstract Task ConnectSlave();
         protected abstract void EncodeRead(ReadOperation operation);
-        protected async Task SingleOperation(ReadOperation x)
+
+        private async Task SingleOperationAsync(ReadOperation operation)
         {
-            while (this.m_run)
+            while (this.isRunning)
             {
-                x.Response = null;
-                x.Response = await this.SendRequest(x.Request, x.RequestLen);
+                operation.Response = null;
+                operation.Response = await this.SendRequest(operation.Request, operation.RequestLength);
 
-                string res = JsonConvert.SerializeObject(x);
-
-                if (x.Response != null)
+                if (operation.Response != null)
                 {
-                    if (x.Request[this.m_dataBodyOffset] == x.Response[this.m_dataBodyOffset])
+                    if (operation.Request[this.FunctionCodeOffset] == operation.Response[this.FunctionCodeOffset])
                     {
-                        this.ProcessResponse(this.config, x);
+                        var values = this.DecodeResponse(operation).ToList();
+
+                        this.PrepareOutMessage(
+                            operation.CorrelationId,
+                            values.Select(v => new ModbusOutValue { Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value }));
                     }
-                    else if (x.Request[this.m_dataBodyOffset] + ModbusExceptionCode == x.Response[this.m_dataBodyOffset])
+                    else if (operation.Request[this.FunctionCodeOffset] + ModbusExceptionCode == operation.Response[this.FunctionCodeOffset])
                     {
-                        Console.WriteLine($"Modbus exception code: {x.Response[this.m_dataBodyOffset + 1]}");
+                        Console.WriteLine($"Modbus exception code: {operation.Response[this.FunctionCodeOffset]}");
                     }
                 }
 
-                await Task.Delay(x.PollingInterval - this.m_silent);
+                await Task.Delay(operation.PollingInterval - this.Silent);
             }
         }
 
-        protected List<ModbusOutValue> ProcessResponse(ModbusSlaveConfig config, ReadOperation x)
+        public IEnumerable<DecodedValue> DecodeResponse(ReadOperation operation)
         {
-            int count = 0;
-            int step_size = 0;
-            int start_digit = 0;
-            List<ModbusOutValue> value_list = new List<ModbusOutValue>();
-            switch (x.Response[m_dataBodyOffset])//function code
-            {
-                case (byte)FunctionCodeType.ReadCoils:
-                case (byte)FunctionCodeType.ReadInputs:
-                    {
-                        count = x.Response[m_dataBodyOffset + 1] * 8;
-                        count = (count > x.Count) ? x.Count : count;
-                        step_size = 1;
-                        start_digit = x.Response[m_dataBodyOffset] - 1;
-                        break;
-                    }
-                case (byte)FunctionCodeType.ReadHoldingRegisters:
-                case (byte)FunctionCodeType.ReadInputRegisters:
-                    {
-                        count = x.Response[m_dataBodyOffset + 1];
-                        step_size = 2;
-                        start_digit = (x.Response[m_dataBodyOffset] == 3) ? 4 : 3;
-                        break;
-                    }
-            }
-            var initialCell = string.Format(x.OutFormat, (char)x.Entity, x.Address + 1);
+            var response = operation.Response;
+            int byteCount = response[this.ByteCountOffset];
+            var dataBytes = response.Slice(this.DataValuesOffset, byteCount);
 
-            if (x.ValueType == ModbusValueType.Basic)
-            {
-                for (int i = 0; i < count; i += step_size)
-                {
-                    string res = "";
-                    string cell = "";
-                    string val = "";
-                    if (step_size == 1)
-                    {
-                        cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + i + 1);
-                        val = string.Format("{0}", (x.Response[m_dataBodyOffset + 2 + (i / 8)] >> (i % 8)) & 0b1);
-                    }
-                    else if (step_size == 2)
-                    {
-                        cell = string.Format(x.OutFormat, (char)x.Entity, x.Address + (i / 2) + 1);
-                        val = string.Format("{0,00000}", ((x.Response[m_dataBodyOffset + 2 + i]) * 0x100 + x.Response[m_dataBodyOffset + 3 + i]));
-                    }
-                    res = cell + ": " + val + "\n";
-                    Console.WriteLine(res);
-
-                    ModbusOutValue value = new ModbusOutValue()
-                    { DisplayName = x.DisplayName, Address = cell, Value = val };
-                    value_list.Add(value);
-                }
-            }
-            //We need to merge complex value
-            else
-            {
-                var bytesA = x.Response.SubArray(m_dataBodyOffset + 2, step_size * x.Count);
-                var val = ModbusComplexValuesHandler.MergeComplexValue(bytesA,  x.ValueType, this.config.EndianSwap, this.config.MidEndianSwap);
-
-                ModbusOutValue value = new ModbusOutValue()
-                { DisplayName = x.DisplayName, Address = initialCell, Value = val };
-                value_list.Add(value);
-
-                var res = initialCell + " : " + val + "\n";
-                Console.WriteLine(res);
-            }
-
-            if (value_list.Count > 0)
-            {
-                this.PrepareOutMessage(config, x.CorrelationId, value_list);
-            }
-
-            return value_list;
+            return operation.Decoder.GetValues(dataBytes, operation);
         }
 
-        private void PrepareOutMessage(ModbusSlaveConfig config, string correlationId, List<ModbusOutValue> valueList)
-        {  
-            this.m_semaphore_collection.Wait();
-            ModbusOutContent content = null;
-            if (this.OutMessage == null)
+        private void PrepareOutMessage(string correlationId, IEnumerable<ModbusOutValue> valueList)
+        {
+            this.semaphoreCollection.Wait();
+            ModbusOutContent content;
+            if (this.outMessage == null)
             {
                 content = new ModbusOutContent
                 {
@@ -236,11 +165,11 @@
                     Data = new List<ModbusOutData>(),
                     AdditionalProperties = config.AdditionalProperties
                 };
-                this.OutMessage = content;
+                this.outMessage = content;
             }
             else
             {
-                content = this.OutMessage;
+                content = this.outMessage;
             }
 
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -266,15 +195,14 @@
 
             data.Values.AddRange(valueList);
 
-            this.m_semaphore_collection.Release();
+            this.semaphoreCollection.Release();
 
         }
         protected void ReleaseOperations()
         {
-            this.m_run = false;
-            Task.WaitAll(this.m_taskList.ToArray());
-            this.m_taskList.Clear();
+            this.isRunning = false;
+            Task.WaitAll(this.taskList.ToArray());
+            this.taskList.Clear();
         }
-        #endregion
     }
 }

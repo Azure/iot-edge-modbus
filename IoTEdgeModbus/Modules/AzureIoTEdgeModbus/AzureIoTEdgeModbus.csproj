@@ -38,5 +38,6 @@
 
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="Slave\Data\" />
   </ItemGroup>
 </Project>

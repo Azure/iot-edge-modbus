@@ -1,11 +1,8 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Text;
-
-namespace AzureIoTEdgeModbus.Slave
+﻿namespace AzureIoTEdgeModbus.Slave
 {
+    using System;
+    using Newtonsoft.Json;
+
     public class WriteOperation : ModbusOperation
     {
         [JsonProperty(Required = Required.Always)]

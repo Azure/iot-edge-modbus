@@ -1,7 +1,8 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
-    public enum FunctionCodeType
+    public enum FunctionCode
     {
+        Unknown = 0,
         ReadCoils = 1,
         ReadInputs = 2,
         ReadHoldingRegisters = 3,

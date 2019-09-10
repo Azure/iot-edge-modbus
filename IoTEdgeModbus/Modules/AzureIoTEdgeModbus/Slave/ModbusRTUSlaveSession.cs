@@ -1,46 +1,37 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
-    using AzureIoTEdgeModbus.SerialDevice;
+    using SerialDevice;
     using System;
     using System.Net;
     using System.Threading.Tasks;
+    using static Constants;
 
     /// <summary>
     /// This class is Modbus RTU session.
     /// </summary>
     public class ModbusRTUSlaveSession : ModbusSlaveSession
     {
-        #region Constructors
         public ModbusRTUSlaveSession(ModbusSlaveConfig conf)
             : base(conf)
         {
         }
-        #endregion
 
-        #region Protected Properties
-        protected override int m_reqSize => 8;
-        protected override int m_dataBodyOffset => 1;
-        protected override int m_silent => 100;
-        #endregion
+        protected override int RequestSize => 8;
+        protected override int FunctionCodeOffset => 1;
+        protected override int Silent => 100;
+        
+        private ISerialDevice serialPort;
 
-        #region Private Fields
-        private const int m_numOfBits = 8;
-        private ISerialDevice m_serialPort = null;
-        #endregion
-
-        #region Public Methods
         public override void ReleaseSession()
         {
             this.ReleaseOperations();
-            if (this.m_serialPort != null)
+            if (this.serialPort != null)
             {
-                this.m_serialPort.Dispose();
-                this.m_serialPort = null;
+                this.serialPort.Dispose();
+                this.serialPort = null;
             }
         }
-        #endregion
 
-        #region Private Methods
         protected override async Task ConnectSlave()
         {
             try
@@ -50,10 +41,10 @@
                 
                     Console.WriteLine($"Opening...{this.config.SlaveConnection}");
 
-                    this.m_serialPort = SerialDeviceFactory.CreateSerialDevice(this.config.SlaveConnection, (int)this.config.BaudRate.Value, this.config.Parity.Value, this.config.DataBits.Value, this.config.StopBits.Value);
+                    this.serialPort = SerialDeviceFactory.CreateSerialDevice(this.config.SlaveConnection, (int)this.config.BaudRate.Value, this.config.Parity.Value, this.config.DataBits.Value, this.config.StopBits.Value);
 
-                    this.m_serialPort.Open();
-                    //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
+                    this.serialPort.Open();
+                    //serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
                     await Task.Delay(2000); //Wait target to be ready to write the modbus package
                 }
             }
@@ -61,7 +52,7 @@
             {
                 Console.WriteLine("Connect Slave failed");
                 Console.WriteLine(e.Message);
-                this.m_serialPort = null;
+                this.serialPort = null;
             }
         }
         protected override void EncodeRead(ReadOperation operation)
@@ -71,21 +62,21 @@
 
             //Body
             //function code
-            operation.Request[this.m_dataBodyOffset] = operation.FunctionCode;
+            operation.Request[this.FunctionCodeOffset] = (byte)operation.FunctionCode;
             //address
-            byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(operation.Address)));
-            operation.Request[this.m_dataBodyOffset + 1] = address_byte[0];
-            operation.Request[this.m_dataBodyOffset + 2] = address_byte[1];
+            byte[] addressBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(operation.Address)));
+            operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
+            operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] count_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)operation.Count));
-            operation.Request[this.m_dataBodyOffset + 3] = count_byte[0];
-            operation.Request[this.m_dataBodyOffset + 4] = count_byte[1];
+            byte[] countBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetByteCount(operation.Count)));
+            operation.Request[this.FunctionCodeOffset + 3] = countBytes[0];
+            operation.Request[this.FunctionCodeOffset + 4] = countBytes[1];
 
             if (this.GetCRC(operation.Request, 6, out UInt16 crc))
             {
-                byte[] crc_byte = BitConverter.GetBytes(crc);
-                operation.Request[this.m_dataBodyOffset + 5] = crc_byte[0];
-                operation.Request[this.m_dataBodyOffset + 6] = crc_byte[1];
+                byte[] crcBytes = BitConverter.GetBytes(crc);
+                operation.Request[this.FunctionCodeOffset + 5] = crcBytes[0];
+                operation.Request[this.FunctionCodeOffset + 6] = crcBytes[1];
             }
         }
 
@@ -97,55 +88,55 @@
 
             //Body
             //function code
-            request[m_dataBodyOffset] = writeOperation.FunctionCode;
+            request[FunctionCodeOffset] = (byte)writeOperation.FunctionCode;
 
             //address
-            byte[] address_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(writeOperation.Address)));
-            request[this.m_dataBodyOffset + 1] = address_byte[0];
-            request[this.m_dataBodyOffset + 2] = address_byte[1];
+            byte[] addressByte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(writeOperation.Address)));
+            request[this.FunctionCodeOffset + 1] = addressByte[0];
+            request[this.FunctionCodeOffset + 2] = addressByte[1];
             //value
-            UInt16 value_int = writeOperation.IntValueToWrite;
-            if (writeOperation.Address == '0' && value_int == 1)
+            UInt16 valueToWrite = writeOperation.IntValueToWrite;
+            if (writeOperation.Address == '0' && valueToWrite == 1)
             {
-                request[this.m_dataBodyOffset + 3] = 0xFF;
-                request[this.m_dataBodyOffset + 4] = 0x00;
+                request[this.FunctionCodeOffset + 3] = 0xFF;
+                request[this.FunctionCodeOffset + 4] = 0x00;
             }
             else
             {
-                byte[] val_byte = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)value_int));
-                request[this.m_dataBodyOffset + 3] = val_byte[0];
-                request[this.m_dataBodyOffset + 4] = val_byte[1];
+                byte[] valueBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)valueToWrite));
+                request[this.FunctionCodeOffset + 3] = valueBytes[0];
+                request[this.FunctionCodeOffset + 4] = valueBytes[1];
             }
             if (this.GetCRC(request, 6, out UInt16 crc))
             {
-                byte[] crc_byte = BitConverter.GetBytes(crc);
-                request[this.m_dataBodyOffset + 5] = crc_byte[0];
-                request[this.m_dataBodyOffset + 6] = crc_byte[1];
+                byte[] crcBytes = BitConverter.GetBytes(crc);
+                request[this.FunctionCodeOffset + 5] = crcBytes[0];
+                request[this.FunctionCodeOffset + 6] = crcBytes[1];
             }
         }
+
         protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
         {
-            //double slient_interval = 1000 * 5 * ((double)1 / (double)config.BaudRate);
             byte[] response = null;
 
-            this.m_semaphore_connection.Wait();
+            this.semaphoreConnection.Wait();
 
-            if (this.m_serialPort != null && this.m_serialPort.IsOpen())
+            if (this.serialPort != null && this.serialPort.IsOpen())
             {
                 try
                 {
-                    this.m_serialPort.DiscardInBuffer();
-                    this.m_serialPort.DiscardOutBuffer();
-                    Task.Delay(this.m_silent).Wait();
-                    this.m_serialPort.Write(request, 0, reqLen);
+                    this.serialPort.DiscardInBuffer();
+                    this.serialPort.DiscardOutBuffer();
+                    Task.Delay(this.Silent).Wait();
+                    this.serialPort.Write(request, 0, reqLen);
                     response = this.ReadResponse();
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine("Something wrong with the connection, disposing...");
                     Console.WriteLine(e.Message);
-                    this.m_serialPort.Dispose();
-                    this.m_serialPort = null;
+                    this.serialPort.Dispose();
+                    this.serialPort = null;
                     Console.WriteLine("Connection lost, reconnecting...");
                     await this.ConnectSlave();
                 }
@@ -156,25 +147,23 @@
                 await this.ConnectSlave();
             }
 
-            this.m_semaphore_connection.Release();
+            this.semaphoreConnection.Release();
 
             return response;
         }
         private byte[] ReadResponse()
         {
-            byte[] response = new byte[m_bufSize];
-            int header_len = 0;
-            int data_len = 0;
-            int h_l = 0;
-            int d_l = 0;
+            byte[] response = new byte[BufferSize];
+            int totalHeaderBytesRead = 0;
+            int totalDataBytesRead = 0;
             int retry = 0;
 
-            while (header_len < 3 && retry < this.config.RetryCount)
+            while (totalHeaderBytesRead < 3 && retry < this.config.RetryCount)
             {
-                h_l = this.m_serialPort.Read(response, header_len, 3 - header_len);
-                if (h_l > 0)
+                var headerBytesRead = this.serialPort.Read(response, totalHeaderBytesRead, 3 - totalHeaderBytesRead);
+                if (headerBytesRead > 0)
                 {
-                    header_len += h_l;
+                    totalHeaderBytesRead += headerBytesRead;
                 }
                 else
                 {
@@ -183,13 +172,14 @@
                 }
             }
 
-            int byte_counts = response[1] >= ModbusExceptionCode ? 2 : response[2] + 2;
-            while (data_len < byte_counts && retry < this.config.RetryCount)
+            var bytesToRead = response[1] >= ModbusExceptionCode ? 2 : response[2] + 2;
+
+            while (totalDataBytesRead < bytesToRead && retry < this.config.RetryCount)
             {
-                d_l = this.m_serialPort.Read(response, 3 + data_len, byte_counts - data_len);
-                if (d_l > 0)
+                var dataBytesRead = this.serialPort.Read(response, 3 + totalDataBytesRead, bytesToRead - totalDataBytesRead);
+                if (dataBytesRead > 0)
                 {
-                    data_len += d_l;
+                    totalDataBytesRead += dataBytesRead;
                 }
                 else
                 {
@@ -205,10 +195,7 @@
 
             return response;
         }
-        //private void sp_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        //{
-        //    string data = m_serialPort.ReadExisting();
-        //}
+
         private bool GetCRC(byte[] message, int length, out UInt16 res)
         {
             UInt16 crcFull = 0xFFFF;
@@ -223,7 +210,7 @@
             {
                 crcFull = (UInt16)(crcFull ^ message[_byte]);
 
-                for (int _bit = 0; _bit < m_numOfBits; ++_bit)
+                for (int bit = 0; bit < BitsInByte; ++bit)
                 {
                     byte crcLsb = (byte)(crcFull & 0x0001);
                     crcFull = (UInt16)((crcFull >> 1) & 0x7FFF);
@@ -237,6 +224,5 @@
             res = crcFull;
             return true;
         }
-        #endregion
     }
 }

@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoFixture" Version="4.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Moq" Version="4.12.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
@@ -15,21 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AzureIoTEdgeModbus\AzureIoTEdgeModbus.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="MockData\FloatReadOperationWithResponse.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="MockData\InputReadOperationWithResponse.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="MockData\Int32ReadOperationWithResponse.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="MockData\IntReadOperationWithResponse.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
