@@ -1,9 +1,9 @@
 ﻿namespace AzureIoTEdgeModbus
 {
-    using AzureIoTEdgeModbus.Configuration;
-    using AzureIoTEdgeModbus.Instrumentation;
-    using AzureIoTEdgeModbus.Slave;
-    using AzureIoTEdgeModbus.Wrappers;
+    using Configuration;
+    using Instrumentation;
+    using Slave;
+    using Wrappers;
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Shared;
     using Newtonsoft.Json;

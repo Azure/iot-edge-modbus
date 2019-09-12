@@ -1,19 +1,19 @@
 {
-    "$schema-version": "0.0.1",
-    "description": "",
-    "image": {
-        "repository": "azureiotedge/modbus",
-        "tag": {
-            "version": "1.0.5",
-            "platforms": {
-                "amd64": "./Dockerfile.amd64", 
-                "amd64.debug": "./Dockerfile.amd64.debug",
-                "arm32v7": "./Dockerfile.arm32v7",
-                "windows-amd64": "./Dockerfile.windows-amd64",
-                "windows-arm32v7": "./Dockerfile.windows-arm32v7"
-            }
-        },
-        "buildOptions": []
-    },
-    "language": "csharp"
+	"$schema-version": "0.0.1",
+	"description": "",
+	"image": {
+		"repository": "azureiotedge/modbus",
+		"tag": {
+			"version": "1.0.5",
+			"platforms": {
+				"amd64": "./Dockerfile.amd64",
+				"amd64.debug": "./Dockerfile.amd64.debug",
+				"arm32v7": "./Dockerfile.arm32v7",
+				"windows-amd64": "./Dockerfile.windows-amd64",
+				"windows-arm32v7": "./Dockerfile.windows-arm32v7"
+			}
+		},
+		"buildOptions": []
+	},
+	"language": "csharp"
 }
