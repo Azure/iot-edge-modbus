@@ -5,6 +5,7 @@
 
     public abstract class ValueDecoderBase : IModbusDataDecoder
     {
+        private const int RegisterByteSize = 2;
         protected abstract short ByteSize { get; }
         
         public IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation)
@@ -33,7 +34,7 @@
         /// <summary>
         /// Get the number of 16 bit registers that should be read for the specified number of values to read. 
         /// </summary>
-        public virtual short GetEntityCount(short valuesToRead) => checked((short)(this.ByteSize / 2 * valuesToRead));
+        public virtual short GetEntityCount(short valuesToRead) => checked((short)(this.ByteSize / RegisterByteSize * valuesToRead));
 
         protected abstract string ConvertToString(in Span<byte> valueBytes);
     }

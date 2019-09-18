@@ -66,9 +66,9 @@
 
         private async Task StartAsync(SessionsHandle sessionsHandle, int publishInterval)
         {
-            this.Log.ModbusSessionCount(sessionsHandle.ModbusSessionList.Count);
+            this.Log.ModbusSessionCount(sessionsHandle.modbusSessionList.Count);
 
-            foreach (var session in sessionsHandle.ModbusSessionList)
+            foreach (var session in sessionsHandle.modbusSessionList)
             {
                 session.ProcessOperations();
             }
@@ -94,7 +94,7 @@
                 await Task.Delay(publishInterval).ConfigureAwait(false);
             }
 
-            sessionsHandle.Release();
+            await sessionsHandle.ReleaseAsync().ConfigureAwait(false);
         }
 
         public void Dispose()
