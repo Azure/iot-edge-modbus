@@ -2,7 +2,7 @@
 {
     using System;
 
-    public class Int32Decoder : ValueDecoderBase, IModbusDataDecoder
+    public class Int32Decoder : ValueDecoderBase
     {
         protected override short ByteSize => 4;
 

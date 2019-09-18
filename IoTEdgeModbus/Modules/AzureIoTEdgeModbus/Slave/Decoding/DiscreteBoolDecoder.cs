@@ -43,6 +43,6 @@
 
         }
         
-        public short GetByteCount(short valuesToRead) => checked((short)(valuesToRead / BitsInByte + 1));
+        public short GetRegisterCount(short valuesToRead) => checked((short)(valuesToRead / BitsInByte + 1));
     }
 }

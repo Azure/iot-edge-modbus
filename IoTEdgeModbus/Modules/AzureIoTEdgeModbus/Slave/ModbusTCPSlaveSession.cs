@@ -1,6 +1,7 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using System;
+    using System.Linq;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading.Tasks;
@@ -22,9 +23,9 @@
         private Socket socket;
         private IPAddress address;
 
-        public override void ReleaseSession()
+        public override async Task ReleaseSessionAsync()
         {
-            this.ReleaseOperations();
+            await this.ReleaseOperationsAsync().ConfigureAwait(false);
             if (this.socket != null)
             {
                 this.socket.Disconnect(false);
@@ -33,7 +34,7 @@
             }
         }
 
-        protected override async Task ConnectSlave()
+        protected override async Task ConnectSlaveAsync()
         {
             if (IPAddress.TryParse(this.config.SlaveConnection, out this.address))
             {
@@ -44,7 +45,7 @@
                         ReceiveTimeout = 100
                     };
 
-                    await this.socket.ConnectAsync(this.address, this.config.TcpPort.Value);
+                    await this.socket.ConnectAsync(this.address, this.config.TcpPort.Value).ConfigureAwait(false);
 
                 }
                 catch (SocketException se)
@@ -81,9 +82,9 @@
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] countBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetByteCount(operation.Count)));
-            operation.Request[this.FunctionCodeOffset + 3] = countBytes[0];
-            operation.Request[this.FunctionCodeOffset + 4] = countBytes[1];
+            byte[] registerCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetRegisterCount(operation.Count)));
+            operation.Request[this.FunctionCodeOffset + 3] = registerCountBytes[0];
+            operation.Request[this.FunctionCodeOffset + 4] = registerCountBytes[1];
         }
 
         protected override void EncodeWrite(byte[] request, WriteOperation writeOperation)
@@ -105,12 +106,13 @@
 
             //Body
             //function code
-            request[FunctionCodeOffset] = (byte)writeOperation.FunctionCode;
+            request[this.FunctionCodeOffset] = (byte)writeOperation.FunctionCode;
 
             //address
             byte[] addressBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder((Int16)(writeOperation.Address)));
             request[this.FunctionCodeOffset + 1] = addressBytes[0];
             request[this.FunctionCodeOffset + 2] = addressBytes[1];
+            
             //value
             UInt16 valueToWrite = writeOperation.IntValueToWrite;
             if (writeOperation.Entity == '0' && valueToWrite == 1)
@@ -125,7 +127,7 @@
                 request[this.FunctionCodeOffset + 4] = valueBytes[1];
             }
         }
-        protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
+        protected override async Task<byte[]> SendRequestAsync(byte[] request)
         {
             byte[] response = null;
             byte[] garbage = new byte[BufferSize];
@@ -135,49 +137,33 @@
             while (!sendSucceed && retryForSocketError < this.config.RetryCount)
             {
                 retryForSocketError++;
-                this.semaphoreConnection.Wait();
+                await this.semaphoreConnection.WaitAsync().ConfigureAwait(false);
 
                 if (this.socket != null && this.socket.Connected)
                 {
                     try
                     {
-                        // clear receive buffer
-                        while (this.socket.Available > 0)
-                        {
-                            int rec = this.socket.Receive(garbage, BufferSize, SocketFlags.None);
-                            Console.WriteLine("Dumping socket receive buffer...");
-                            string data = "";
-                            int cnt = 0;
-                            while (cnt < rec)
-                            {
-                                data += garbage[cnt].ToString();
-                                cnt++;
-                            }
-                            Console.WriteLine(data);
-                        }
-
                         // send request
-                        this.socket.Send(request, reqLen, SocketFlags.None);
-
+                        await this.socket.SendAsync(request, SocketFlags.None).ConfigureAwait(false);
                         // read response
-                        response = this.ReadResponse();
+                        response = await this.ReadResponseAsync().ConfigureAwait(false);
                         sendSucceed = true;
                     }
                     catch (Exception e)
                     {
                         Console.WriteLine("Something wrong with the socket, disposing...");
-                        Console.WriteLine(e.Message);
+                        Console.WriteLine(e.GetType() + e.Message);
                         this.socket.Disconnect(false);
                         this.socket.Dispose();
                         this.socket = null;
                         Console.WriteLine("Connection lost, reconnecting...");
-                        await this.ConnectSlave();
+                        await this.ConnectSlaveAsync().ConfigureAwait(false);
                     }
                 }
                 else
                 {
                     Console.WriteLine("Connection lost, reconnecting...");
-                    await this.ConnectSlave();
+                    await this.ConnectSlaveAsync().ConfigureAwait(false);
                 }
 
                 this.semaphoreConnection.Release();
@@ -186,62 +172,33 @@
             return response;
         }
 
-        private byte[] ReadResponse()
+        private async Task<byte[]> ReadResponseAsync()
         {
-            byte[] response = new byte[BufferSize];
-            int totalHeaderBytesRead = 0;
-            int totalDataBytesRead = 0;
-            int retry = 0;
-            bool error = false;
+            byte[] headerResponse = await this.ReadMBAPHeaderResponseAsync().ConfigureAwait(false);
 
-            while (this.socket.Available <= 0 && retry < this.config.RetryCount)
+            var mbapHeaderByteCountStartIndex = 4;
+            var bytesToRead = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(headerResponse, mbapHeaderByteCountStartIndex)) - 1;
+
+            var buffer = new byte[bytesToRead];
+            var dataBytesRead = await this.socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+
+            if (dataBytesRead < bytesToRead)
             {
-                retry++;
-                Task.Delay(this.config.RetryInterval.Value).Wait();
+                Console.WriteLine($"Expected to read {bytesToRead} but read {dataBytesRead} bytes.");
             }
 
-            while (totalHeaderBytesRead < this.FunctionCodeOffset && retry < this.config.RetryCount)
-            {
-                if (this.socket.Available > 0)
-                {
-                    var headerBytesRead = this.socket.Receive(response, totalHeaderBytesRead, this.FunctionCodeOffset - totalHeaderBytesRead, SocketFlags.None);
-                    if (headerBytesRead > 0)
-                    {
-                        totalHeaderBytesRead += headerBytesRead;
-                    }
-                }
-                else
-                {
-                    error = true;
-                    break;
-                }
-            }
+            return headerResponse.Concat(buffer).ToArray();
+        }
 
-            var bytesToRead = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(response, 4)) - 1;
+        private async Task<byte[]> ReadMBAPHeaderResponseAsync()
+        {
+            const int mbapHeaderLength = 7;
 
-            while (totalDataBytesRead < bytesToRead && retry < this.config.RetryCount)
-            {
-                if (this.socket.Available > 0)
-                {
-                    var dataBytesRead = this.socket.Receive(response, this.FunctionCodeOffset + totalDataBytesRead, bytesToRead - totalDataBytesRead, SocketFlags.None);
-                    if (dataBytesRead > 0)
-                    {
-                        totalDataBytesRead += dataBytesRead;
-                    }
-                }
-                else
-                {
-                    error = true;
-                    break;
-                }
-            }
+            byte[] headerResponse = new byte[mbapHeaderLength];
 
-            if (retry >= this.config.RetryCount || error)
-            {
-                response = null;
-            }
+            await this.socket.ReceiveAsync(headerResponse, SocketFlags.None).ConfigureAwait(false);
 
-            return response;
+            return headerResponse;
         }
     }
 }

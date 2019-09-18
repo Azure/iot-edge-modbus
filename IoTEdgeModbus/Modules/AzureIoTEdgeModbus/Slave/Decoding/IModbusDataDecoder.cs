@@ -12,6 +12,6 @@
         /// </remarks>
         IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation);
 
-        short GetByteCount(short valuesToRead);
+        short GetRegisterCount(short valuesToRead);
     }
 }

@@ -22,9 +22,9 @@
         
         private ISerialDevice serialPort;
 
-        public override void ReleaseSession()
+        public override async Task ReleaseSessionAsync()
         {
-            this.ReleaseOperations();
+            await this.ReleaseOperationsAsync().ConfigureAwait(false);
             if (this.serialPort != null)
             {
                 this.serialPort.Dispose();
@@ -32,7 +32,7 @@
             }
         }
 
-        protected override async Task ConnectSlave()
+        protected override async Task ConnectSlaveAsync()
         {
             try
             {
@@ -45,7 +45,7 @@
 
                     this.serialPort.Open();
                     //serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
-                    await Task.Delay(2000); //Wait target to be ready to write the modbus package
+                    await Task.Delay(2000).ConfigureAwait(false); //Wait target to be ready to write the modbus package
                 }
             }
             catch (Exception e)
@@ -68,7 +68,7 @@
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] countBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetByteCount(operation.Count)));
+            byte[] countBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetRegisterCount(operation.Count)));
             operation.Request[this.FunctionCodeOffset + 3] = countBytes[0];
             operation.Request[this.FunctionCodeOffset + 4] = countBytes[1];
 
@@ -115,11 +115,11 @@
             }
         }
 
-        protected override async Task<byte[]> SendRequest(byte[] request, int reqLen)
+        protected override async Task<byte[]> SendRequestAsync(byte[] request)
         {
             byte[] response = null;
 
-            this.semaphoreConnection.Wait();
+            await this.semaphoreConnection.WaitAsync().ConfigureAwait(false);
 
             if (this.serialPort != null && this.serialPort.IsOpen())
             {
@@ -127,9 +127,9 @@
                 {
                     this.serialPort.DiscardInBuffer();
                     this.serialPort.DiscardOutBuffer();
-                    Task.Delay(this.Silent).Wait();
-                    this.serialPort.Write(request, 0, reqLen);
-                    response = this.ReadResponse();
+                    await Task.Delay(this.Silent).ConfigureAwait(false);
+                    this.serialPort.Write(request, 0, request.Length);
+                    response = await this.ReadResponseAsync().ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
@@ -138,20 +138,20 @@
                     this.serialPort.Dispose();
                     this.serialPort = null;
                     Console.WriteLine("Connection lost, reconnecting...");
-                    await this.ConnectSlave();
+                    await this.ConnectSlaveAsync().ConfigureAwait(false);
                 }
             }
             else
             {
                 Console.WriteLine("Connection lost, reconnecting...");
-                await this.ConnectSlave();
+                await this.ConnectSlaveAsync().ConfigureAwait(false);
             }
 
             this.semaphoreConnection.Release();
 
             return response;
         }
-        private byte[] ReadResponse()
+        private async Task<byte[]> ReadResponseAsync()
         {
             byte[] response = new byte[BufferSize];
             int totalHeaderBytesRead = 0;
@@ -168,7 +168,7 @@
                 else
                 {
                     retry++;
-                    Task.Delay(this.config.RetryInterval.Value).Wait();
+                    await Task.Delay(this.config.RetryInterval).ConfigureAwait(false);
                 }
             }
 
@@ -184,7 +184,7 @@
                 else
                 {
                     retry++;
-                    Task.Delay(this.config.RetryInterval.Value).Wait();
+                    await Task.Delay(this.config.RetryInterval).ConfigureAwait(false);
                 }
             }
 

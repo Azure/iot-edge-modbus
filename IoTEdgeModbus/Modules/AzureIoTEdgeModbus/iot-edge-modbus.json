@@ -11,7 +11,7 @@
 				"Op01": {
 					"PollingInterval": 5000,
 					"UnitId": 1,
-					"StartAddress": "48006",
+					"StartAddress": "48005",
 					"DataType": "Int32",
 					"SwapMode": "BigEndian",
 					"Count": 1,
