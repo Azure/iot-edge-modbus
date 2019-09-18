@@ -33,7 +33,7 @@
         /// <summary>
         /// Get the number of 16 bit registers that should be read for the specified number of values to read. 
         /// </summary>
-        public virtual short GetRegisterCount(short valuesToRead) => checked((short)(this.ByteSize / 2 * valuesToRead));
+        public virtual short GetEntityCount(short valuesToRead) => checked((short)(this.ByteSize / 2 * valuesToRead));
 
         protected abstract string ConvertToString(in Span<byte> valueBytes);
     }

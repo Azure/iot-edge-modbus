@@ -12,6 +12,9 @@
         /// </remarks>
         IEnumerable<DecodedValue> GetValues(byte[] bytesToConvert, ReadOperation operation);
 
-        short GetRegisterCount(short valuesToRead);
+        /// <summary>
+        /// Gets the number of entities (coils, registers etc) to read for the specified number of values.
+        /// </summary>
+        short GetEntityCount(short valuesToRead);
     }
 }

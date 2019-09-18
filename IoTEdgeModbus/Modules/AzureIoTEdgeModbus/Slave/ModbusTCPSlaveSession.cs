@@ -82,7 +82,7 @@
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] registerCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetRegisterCount(operation.Count)));
+            byte[] registerCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetEntityCount(operation.Count)));
             operation.Request[this.FunctionCodeOffset + 3] = registerCountBytes[0];
             operation.Request[this.FunctionCodeOffset + 4] = registerCountBytes[1];
         }

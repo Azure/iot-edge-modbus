@@ -1,4 +1,5 @@
-﻿namespace Azure.IoT.Edge.Modbus.Tests.Data
+﻿
+namespace Azure.IoT.Edge.Modbus.Tests.Data
 {
     using System.Linq;
     using AzureIoTEdgeModbus.Slave;
@@ -7,25 +8,25 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class Int16DecoderTests
+    public class FloatDecoderTests
     {
-        private Int16Decoder decoder;
+        private FloatDecoder decoder;
         [TestInitialize]
         public void Setup()
         {
-            this.decoder = new Int16Decoder();
+            this.decoder = new FloatDecoder();
         }
 
         [TestClass]
-        public class GetValues : Int16DecoderTests
+        public class GetValues : FloatDecoderTests
         {
             [DataTestMethod]
-            [DataRow("1234", new byte[] {0x4, 0xD2})]
+            [DataRow("5.5", new byte[] {64, 176, 0, 0})]
+            [DataRow("4000.555", new byte[] { 69, 122, 8, 227 })]
             public void CanDecodeValue(string expectedValue, byte[] bytes)
             {
                 //Arrange
-                var decoder = new Int16Decoder();
-                var readOperation = new ReadOperation()
+                var readOperation = new ReadOperation
                 {
                     SwapMode = SwapMode.BigEndian,
                     StartAddress = "40001",
@@ -42,14 +43,14 @@
         }
 
         [TestClass]
-        public class GetEntityCount : Int16DecoderTests
+        public class GetEntityCount : FloatDecoderTests
         {
             [TestMethod]
             public void ReturnsCorrectNumberOfEntities()
             {
                 //Arrange
                 short valuesToRead = 5;
-                short expectedResult = 5;
+                short expectedResult = 10;
                 //Act
                 var result = this.decoder.GetEntityCount(valuesToRead);
 
@@ -59,3 +60,4 @@
         }
     }
 }
+
