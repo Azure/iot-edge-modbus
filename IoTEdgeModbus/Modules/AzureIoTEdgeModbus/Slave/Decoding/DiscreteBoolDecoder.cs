@@ -20,12 +20,12 @@
 
             var result = new List<DecodedValue>();
 
-            for (var byteIndex = 0; byteIndex > byteSpan.Length; byteIndex++)
+            for (var byteIndex = 0; byteIndex < byteSpan.Length; byteIndex++)
             {
                 for (var bitIndex = 0; bitIndex < BitsInByte; bitIndex++)
                 {
-                    //Get value of each bit. Start by LSB as stated in Modbus specification.
-                    var value = (byteSpan[byteIndex] >> bitIndex) & 0b1;
+                    //Get value of each bit as a bool. Start by LSB as stated in Modbus specification.
+                    var value = ((byteSpan[byteIndex] >> bitIndex) & 0b1) == 1;
 
                     var addressIncrement = byteIndex * BitsInByte + bitIndex;
 
@@ -43,6 +43,6 @@
 
         }
         
-        public short GetByteCount(short valuesToRead) => checked((short)(valuesToRead / BitsInByte + 1));
+        public short GetRegisterCount(short valuesToRead) => valuesToRead;
     }
 }

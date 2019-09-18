@@ -22,7 +22,7 @@
         [DefaultValue(50)]
         [Range(1, int.MaxValue)]
         [JsonProperty(Required = Required.Default, DefaultValueHandling = DefaultValueHandling.Populate)]
-        public int? RetryInterval { get; set; }
+        public int RetryInterval { get; set; }
 
         [DefaultValue(502)]
         [Range(1, int.MaxValue)]

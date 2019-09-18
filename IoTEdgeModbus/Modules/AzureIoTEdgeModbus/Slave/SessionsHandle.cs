@@ -22,7 +22,7 @@
                             sessionsHandle = sessionsHandle ?? new SessionsHandle();
 
                             ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig);
-                            await slave.InitSession();
+                            await slave.InitSessionAsync().ConfigureAwait(false);
                             sessionsHandle.ModbusSessionList.Add(slave);
                             break;
                         }
@@ -31,7 +31,7 @@
                             sessionsHandle = sessionsHandle ?? new SessionsHandle();
 
                             ModbusSlaveSession slave = new ModbusRTUSlaveSession(slaveConfig);
-                            await slave.InitSession();
+                            await slave.InitSessionAsync().ConfigureAwait(false);
                             sessionsHandle.ModbusSessionList.Add(slave);
                             break;
                         }
@@ -48,18 +48,18 @@
             return sessionsHandle;
         }
 
-        public List<ModbusSlaveSession> ModbusSessionList = new List<ModbusSlaveSession>();
+        public readonly List<ModbusSlaveSession> ModbusSessionList = new List<ModbusSlaveSession>();
 
         public void Release()
         {
             foreach (var session in this.ModbusSessionList)
             {
-                session.ReleaseSession();
+                session.ReleaseSessionAsync();
             }
             this.ModbusSessionList.Clear();
         }
 
-        public List<ModbusOutContent> CollectAndResetOutMessageFromSessions()
+        public async Task<List<ModbusOutContent>> CollectAndResetOutMessageFromSessionsAsync()
         {
             var contents = new List<ModbusOutContent>();
 
@@ -69,7 +69,7 @@
                 if (message != null)
                 {
                     contents.Add(message);
-                    session.ClearOutMessage();
+                    await session.ClearOutMessageAsync().ConfigureAwait(false);
                 }
             }
             return contents;

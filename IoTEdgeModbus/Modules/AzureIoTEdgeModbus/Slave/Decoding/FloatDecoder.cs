@@ -3,7 +3,7 @@
     using System;
     using System.Globalization;
 
-    public class FloatDecoder : ValueDecoderBase, IModbusDataDecoder
+    public class FloatDecoder : ValueDecoderBase
     {
         protected override short ByteSize => 4;
 

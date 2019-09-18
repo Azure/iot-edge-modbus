@@ -39,23 +39,23 @@
             this.config = conf;
         }
 
-        public abstract void ReleaseSession();
+        public abstract Task ReleaseSessionAsync();
 
-        public async Task InitSession()
+        public async Task InitSessionAsync()
         {
-            await this.ConnectSlave();
+            await this.ConnectSlaveAsync().ConfigureAwait(false);
 
             foreach (var operation in this.config.Operations.Values)
             {
                 operation.RequestLength = this.RequestSize;
-                operation.Request = new byte[BufferSize];
+                operation.Request = new byte[this.RequestSize];
                 operation.Decoder = DataDecoderFactory.CreateDecoder(operation.FunctionCode, operation.DataType);
 
                 this.EncodeRead(operation);
             }
         }
 
-        public async Task WriteMessage(WriteOperation operation)
+        public async Task WriteMessageAsync(WriteOperation operation)
         {
             if (operation.DataType != ModbusDataType.Int16)
             {
@@ -67,45 +67,42 @@
                 foreach (var v in valuesToBeWritten)
                 {
                     operation.IntValueToWrite = Convert.ToUInt16(operation.Value);
-                    await WriteCB(operation);
+                    await this.WriteCBAsync(operation).ConfigureAwait(false);
                     operation.StartAddress = (Convert.ToInt32(operation.StartAddress) + 1).ToString();
                 }
             }
             else
             {
                 operation.IntValueToWrite = Convert.ToUInt16(operation.Value);
-                await WriteCB(operation);
+                await this.WriteCBAsync(operation).ConfigureAwait(false);
             }
         }
 
-        public async Task WriteCB(WriteOperation operation)
+        private async Task WriteCBAsync(WriteOperation operation)
         {
-            byte[] writeRequest = new byte[BufferSize];
-            byte[] writeResponse = null;
-            int reqLen = this.RequestSize;
+            byte[] writeRequest = new byte[this.RequestSize];
 
             this.EncodeWrite(writeRequest, operation);
 
-            writeResponse = await this.SendRequest(writeRequest, reqLen);
+            await this.SendRequestAsync(writeRequest).ConfigureAwait(false);
         }
 
         public void ProcessOperations()
         {
             this.isRunning = true;
-            foreach (var op_pair in this.config.Operations)
+            foreach (var operation in this.config.Operations.Values)
             {
-                ReadOperation x = op_pair.Value;
-                Task t = Task.Run(() => this.SingleOperationAsync(x));
-                this.taskList.Add(t);
+                var task = Task.Run(() => this.SingleOperationAsync(operation));
+                this.taskList.Add(task);
             }
         }
         public ModbusOutContent GetOutMessage()
         {
             return this.outMessage;
         }
-        public void ClearOutMessage()
+        public async Task ClearOutMessageAsync()
         {
-            this.semaphoreCollection.Wait();
+            await this.semaphoreCollection.WaitAsync().ConfigureAwait(false);
 
             this.outMessage = null;
 
@@ -113,8 +110,8 @@
         }
 
         protected abstract void EncodeWrite(byte[] writeRequest, WriteOperation readOperation);
-        protected abstract Task<byte[]> SendRequest(byte[] request, int reqLen);
-        protected abstract Task ConnectSlave();
+        protected abstract Task<byte[]> SendRequestAsync(byte[] request);
+        protected abstract Task ConnectSlaveAsync();
         protected abstract void EncodeRead(ReadOperation operation);
 
         private async Task SingleOperationAsync(ReadOperation operation)
@@ -122,7 +119,7 @@
             while (this.isRunning)
             {
                 operation.Response = null;
-                operation.Response = await this.SendRequest(operation.Request, operation.RequestLength);
+                operation.Response = await this.SendRequestAsync(operation.Request).ConfigureAwait(false);
 
                 if (operation.Response != null)
                 {
@@ -130,9 +127,10 @@
                     {
                         var values = this.DecodeResponse(operation).ToList();
 
-                        this.PrepareOutMessage(
+                        await this.PrepareOutMessageAsync(
                             operation.CorrelationId,
-                            values.Select(v => new ModbusOutValue { Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value }));
+                            values.Select(v => new ModbusOutValue { Address = v.Address.ToString(), DisplayName = operation.DisplayName, Value = v.Value }))
+                            .ConfigureAwait(false);
                     }
                     else if (operation.Request[this.FunctionCodeOffset] + ModbusExceptionCode == operation.Response[this.FunctionCodeOffset])
                     {
@@ -140,7 +138,7 @@
                     }
                 }
 
-                await Task.Delay(operation.PollingInterval - this.Silent);
+                await Task.Delay(operation.PollingInterval - this.Silent).ConfigureAwait(false);
             }
         }
 
@@ -153,17 +151,17 @@
             return operation.Decoder.GetValues(dataBytes, operation);
         }
 
-        private void PrepareOutMessage(string correlationId, IEnumerable<ModbusOutValue> valueList)
+        private async Task PrepareOutMessageAsync(string correlationId, IEnumerable<ModbusOutValue> valueList)
         {
-            this.semaphoreCollection.Wait();
+            await this.semaphoreCollection.WaitAsync().ConfigureAwait(false);
             ModbusOutContent content;
             if (this.outMessage == null)
             {
                 content = new ModbusOutContent
                 {
-                    HwId = config.HwId,
+                    HwId = this.config.HwId,
                     Data = new List<ModbusOutData>(),
-                    AdditionalProperties = config.AdditionalProperties
+                    AdditionalProperties = this.config.AdditionalProperties
                 };
                 this.outMessage = content;
             }
@@ -198,10 +196,10 @@
             this.semaphoreCollection.Release();
 
         }
-        protected void ReleaseOperations()
+        protected async Task ReleaseOperationsAsync()
         {
             this.isRunning = false;
-            Task.WaitAll(this.taskList.ToArray());
+            await Task.WhenAll(this.taskList.ToArray()).ConfigureAwait(false);
             this.taskList.Clear();
         }
     }

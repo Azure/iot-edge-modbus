@@ -75,17 +75,17 @@
 
             while (this.sessionsRun)
             {
-                var result = sessionsHandle.CollectAndResetOutMessageFromSessions();
+                var result = await sessionsHandle.CollectAndResetOutMessageFromSessionsAsync().ConfigureAwait(false);
 
                 if (result.Count > 0)
                 {
-                    var out_message = new ModbusOutMessage
+                    var outMessage = new ModbusOutMessage
                     {
                         PublishTimestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
                         Content = result
                     };
 
-                    var message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
+                    var message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(outMessage)));
                     message.Properties.Add("content-type", "application/edge-modbus-json");
 
                     await this.IotHubModuleClient.SendEventAsync("modbusOutput", message).ConfigureAwait(false);
