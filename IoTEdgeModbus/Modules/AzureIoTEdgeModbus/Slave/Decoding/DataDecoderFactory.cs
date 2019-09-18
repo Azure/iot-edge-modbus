@@ -9,7 +9,7 @@
         {
             switch (dataType)
             {
-                case var _ when functionCode == FunctionCode.ReadCoils:
+                case var _ when functionCode == FunctionCode.ReadCoils || functionCode == FunctionCode.ReadInputs:
                     return new DiscreteBoolDecoder();
                 case ModbusDataType.Int16:
                     return new Int16Decoder();
