@@ -11,14 +11,23 @@
 				"Op01": {
 					"PollingInterval": 5000,
 					"UnitId": 1,
-					"StartAddress": "48006",
+					"StartAddress": "48005",
 					"DataType": "Int32",
 					"SwapMode": "BigEndian",
 					"Count": 1,
 					"CorrelationId": "CorrelationId1",
 					"DisplayName": "VoltageLine1(mV)"
+				},
+				"Op02": {
+					"PollingInterval": 5000,
+					"UnitId": 1,
+					"StartAddress": "00001",
+					"DataType": "Bool",
+					"SwapMode": "BigEndian",
+					"Count": 10,
+					"CorrelationId": "CorrelationId2",
+					"DisplayName": "OnOff"
 				}
-
 			}
 		}
 	}

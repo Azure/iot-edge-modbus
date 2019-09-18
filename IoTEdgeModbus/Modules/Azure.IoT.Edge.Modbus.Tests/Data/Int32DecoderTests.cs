@@ -9,26 +9,53 @@
     [TestClass]
     public class Int32DecoderTests
     {
-        [DataTestMethod]
-        [DataRow("40000", new byte[] { 0x0, 0x0, 0x9C, 0x40 })]
-        [DataRow("70000", new byte[] { 0x0, 0x1, 0x11, 0x70 })]
-        public void CanDecodeValue(string expectedValue, byte[] bytes)
+        private Int32Decoder decoder;
+        [TestInitialize]
+        public void Setup()
         {
-            //Arrange
-            var decoder = new Int32Decoder();
-            var readOperation = new ReadOperation()
+            this.decoder = new Int32Decoder();
+        }
+
+        [TestClass]
+        public class GetValues : Int32DecoderTests
+        {
+            [DataTestMethod]
+            [DataRow("40000", new byte[] { 0x0, 0x0, 0x9C, 0x40 })]
+            [DataRow("70000", new byte[] { 0x0, 0x1, 0x11, 0x70 })]
+            public void CanDecodeValue(string expectedValue, byte[] bytes)
             {
-                SwapMode = SwapMode.BigEndian,
-                StartAddress = "40001",
-                Count = 1
-            };
+                //Arrange
+                var readOperation = new ReadOperation()
+                {
+                    SwapMode = SwapMode.BigEndian,
+                    StartAddress = "40001",
+                    Count = 1
+                };
 
-            //Act
-            var result = decoder.GetValues(bytes, readOperation).ToList();
+                //Act
+                var result = this.decoder.GetValues(bytes, readOperation).ToList();
 
-            //Assert
-            Assert.AreEqual(expectedValue, result.First().Value);
-            Assert.AreEqual(readOperation.StartAddress, result.First().Address.ToString());
+                //Assert
+                Assert.AreEqual(expectedValue, result.First().Value);
+                Assert.AreEqual(readOperation.StartAddress, result.First().Address.ToString());
+            }
+        }
+
+        [TestClass]
+        public class GetEntityCount : Int32DecoderTests
+        {
+            [TestMethod]
+            public void ReturnsCorrectNumberOfEntities()
+            {
+                //Arrange
+                short valuesToRead = 5;
+                short expectedResult = 10;
+                //Act
+                var result = this.decoder.GetEntityCount(valuesToRead);
+
+                //Assert
+                Assert.AreEqual(expectedResult, result);
+            }
         }
     }
 }

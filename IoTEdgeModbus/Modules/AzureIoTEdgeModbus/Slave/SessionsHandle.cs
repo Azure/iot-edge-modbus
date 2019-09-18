@@ -1,6 +1,7 @@
 ﻿namespace AzureIoTEdgeModbus.Slave
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -22,8 +23,8 @@
                             sessionsHandle = sessionsHandle ?? new SessionsHandle();
 
                             ModbusSlaveSession slave = new ModbusTCPSlaveSession(slaveConfig);
-                            await slave.InitSession();
-                            sessionsHandle.ModbusSessionList.Add(slave);
+                            await slave.InitSessionAsync().ConfigureAwait(false);
+                            sessionsHandle.modbusSessionList.Add(slave);
                             break;
                         }
                     case ConnectionType.ModbusRTU:
@@ -31,8 +32,8 @@
                             sessionsHandle = sessionsHandle ?? new SessionsHandle();
 
                             ModbusSlaveSession slave = new ModbusRTUSlaveSession(slaveConfig);
-                            await slave.InitSession();
-                            sessionsHandle.ModbusSessionList.Add(slave);
+                            await slave.InitSessionAsync().ConfigureAwait(false);
+                            sessionsHandle.modbusSessionList.Add(slave);
                             break;
                         }
                     case ConnectionType.ModbusASCII:
@@ -48,28 +49,26 @@
             return sessionsHandle;
         }
 
-        public List<ModbusSlaveSession> ModbusSessionList = new List<ModbusSlaveSession>();
+        public readonly List<ModbusSlaveSession> modbusSessionList = new List<ModbusSlaveSession>();
 
-        public void Release()
+        public async Task ReleaseAsync()
         {
-            foreach (var session in this.ModbusSessionList)
-            {
-                session.ReleaseSession();
-            }
-            this.ModbusSessionList.Clear();
+            await Task.WhenAll(this.modbusSessionList.Select(s => s.ReleaseSessionAsync())).ConfigureAwait(false);
+            
+            this.modbusSessionList.Clear();
         }
 
-        public List<ModbusOutContent> CollectAndResetOutMessageFromSessions()
+        public async Task<List<ModbusOutContent>> CollectAndResetOutMessageFromSessionsAsync()
         {
             var contents = new List<ModbusOutContent>();
 
-            foreach (ModbusSlaveSession session in this.ModbusSessionList)
+            foreach (ModbusSlaveSession session in this.modbusSessionList)
             {
                 var message = session.GetOutMessage();
                 if (message != null)
                 {
                     contents.Add(message);
-                    session.ClearOutMessage();
+                    await session.ClearOutMessageAsync().ConfigureAwait(false);
                 }
             }
             return contents;
