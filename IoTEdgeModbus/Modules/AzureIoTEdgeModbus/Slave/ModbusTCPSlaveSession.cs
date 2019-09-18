@@ -45,7 +45,7 @@
                         ReceiveTimeout = 100
                     };
 
-                    await this.socket.ConnectAsync(this.address, this.config.TcpPort.Value).ConfigureAwait(false);
+                    await this.socket.ConnectAsync(this.address, this.config.TcpPort).ConfigureAwait(false);
 
                 }
                 catch (SocketException se)
@@ -82,9 +82,9 @@
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] registerCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetRegisterCount(operation.Count)));
-            operation.Request[this.FunctionCodeOffset + 3] = registerCountBytes[0];
-            operation.Request[this.FunctionCodeOffset + 4] = registerCountBytes[1];
+            byte[] entityCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetEntityCount(operation.Count)));
+            operation.Request[this.FunctionCodeOffset + 3] = entityCountBytes[0];
+            operation.Request[this.FunctionCodeOffset + 4] = entityCountBytes[1];
         }
 
         protected override void EncodeWrite(byte[] request, WriteOperation writeOperation)
@@ -130,9 +130,8 @@
         protected override async Task<byte[]> SendRequestAsync(byte[] request)
         {
             byte[] response = null;
-            byte[] garbage = new byte[BufferSize];
-            int retryForSocketError = 0;
-            bool sendSucceed = false;
+            var retryForSocketError = 0;
+            var sendSucceed = false;
 
             while (!sendSucceed && retryForSocketError < this.config.RetryCount)
             {
@@ -175,9 +174,10 @@
         private async Task<byte[]> ReadResponseAsync()
         {
             byte[] headerResponse = await this.ReadMBAPHeaderResponseAsync().ConfigureAwait(false);
-
-            var mbapHeaderByteCountStartIndex = 4;
-            var bytesToRead = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(headerResponse, mbapHeaderByteCountStartIndex)) - 1;
+            
+            const int bytesInMbapHeaderAfterCountByte = 1;
+            const int mbapHeaderByteCountStartIndex = 4;
+            var bytesToRead = IPAddress.NetworkToHostOrder((Int16)BitConverter.ToUInt16(headerResponse, mbapHeaderByteCountStartIndex)) - bytesInMbapHeaderAfterCountByte;
 
             var buffer = new byte[bytesToRead];
             var dataBytesRead = await this.socket.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);

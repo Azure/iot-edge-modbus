@@ -43,6 +43,6 @@
 
         }
         
-        public short GetRegisterCount(short valuesToRead) => valuesToRead;
+        public short GetEntityCount(short valuesToRead) => valuesToRead;
     }
 }

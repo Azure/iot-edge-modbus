@@ -68,9 +68,9 @@
             operation.Request[this.FunctionCodeOffset + 1] = addressBytes[0];
             operation.Request[this.FunctionCodeOffset + 2] = addressBytes[1];
             //count
-            byte[] countBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetRegisterCount(operation.Count)));
-            operation.Request[this.FunctionCodeOffset + 3] = countBytes[0];
-            operation.Request[this.FunctionCodeOffset + 4] = countBytes[1];
+            byte[] entityCountBytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(operation.Decoder.GetEntityCount(operation.Count)));
+            operation.Request[this.FunctionCodeOffset + 3] = entityCountBytes[0];
+            operation.Request[this.FunctionCodeOffset + 4] = entityCountBytes[1];
 
             if (this.GetCRC(operation.Request, 6, out UInt16 crc))
             {
