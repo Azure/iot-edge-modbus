@@ -3,8 +3,6 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 **/Properties/launchSettings.json
-*/modules/*/out
-*/.vscode/settings.json
 
 *_i.c
 *_p.c
@@ -30,4 +28,7 @@ artifacts/
 *.pidb
 *.svclog
 *.scc
-/IoTEdgeModbus/Modules/Azure.IoT.Edge.Modules/obj
+.vs
+
+[Bb]in/
+[Oo]bj/
