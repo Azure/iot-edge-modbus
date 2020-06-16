@@ -4,7 +4,7 @@
     "image": {
         "repository": "azureiotedge/modbus",
         "tag": {
-            "version": "1.0.5",
+            "version": "1.0.8",
             "platforms": {
                 "amd64": "./Dockerfile.amd64", 
                 "amd64.debug": "./Dockerfile.amd64.debug",
