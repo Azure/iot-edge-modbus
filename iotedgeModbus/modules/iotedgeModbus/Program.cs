@@ -321,7 +321,7 @@ namespace Modbus.Containers
 
                         if (resultV1.Count > 0)
                         {
-                            message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(resultV1)));
+                            message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(resultV1)));
                             message.Properties.Add("content-type", "application/edge-modbus-json");
                         }
 
@@ -338,7 +338,7 @@ namespace Modbus.Containers
                                 Content = result
                             };
 
-                            message = new Message(Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(out_message)));
+                            message = new Message(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(out_message)));
                             message.Properties.Add("content-type", "application/edge-modbus-json");
                         }
 
@@ -347,6 +347,8 @@ namespace Modbus.Containers
 
                 if (message != null)
                 {
+                    message.ContentType = "application/json";
+                    message.ContentEncoding = "utf-8";
                     await ioTHubModuleClient.SendEventAsync("modbusOutput", message);
                 }
 
