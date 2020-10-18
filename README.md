@@ -31,12 +31,12 @@ Azure IoT Edge is designed to be used with a broad range of operating system pla
 - [Linux](https://docs.microsoft.com/en-us/azure/iot-edge/quickstart-linux)
 
 ## Build Environment Setup ##
-Modbus module is a .NET Core 2.1 application, which is developed and built based on the guidelines in Azure IoT Edge document.
+Modbus module is a .NET Core 3.1 application, which is developed and built based on the guidelines in Azure IoT Edge document.
 Please follow [this link](https://docs.microsoft.com/en-us/azure/iot-edge/tutorial-csharp-module) to setup the build environment. 
 
 Basic requirement:
-- Docker CE
-- .NET Core 2.1 SDK
+- Moby / Docker CE 
+- .NET Core 3.1 SDK
 
 ## HowTo Build ##
 In this section, the Modbus module we be built as an IoT Edge module.

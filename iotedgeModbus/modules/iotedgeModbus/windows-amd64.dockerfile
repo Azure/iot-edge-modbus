@@ -11,4 +11,4 @@ FROM mcr.microsoft.com/dotnet/core/runtime:3.1-nanoserver-1809
 WORKDIR /app
 COPY --from=build-env /app/out ./
 
-ENTRYPOINT ["dotnet", "iotedgeSerial.dll"]
+ENTRYPOINT ["dotnet", "iotedgeModbus.dll"]

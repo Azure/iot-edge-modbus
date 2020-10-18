@@ -14,4 +14,4 @@ COPY --from=build-env /app/out ./
 RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 
-ENTRYPOINT ["dotnet", "iotedgeSerial.dll"]`
+ENTRYPOINT ["dotnet", "iotedgeModbus.dll"]
