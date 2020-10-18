@@ -361,12 +361,4 @@ namespace Modbus.Containers
             moduleHandle.Release();
         }
     }
-    
-    class SQLiteCommandMessage
-    {
-        public int RequestId;
-        public string RequestModule;
-        public string DbName;
-        public string Command;
-    }
 }
