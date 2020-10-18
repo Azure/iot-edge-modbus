@@ -612,7 +612,7 @@
 
         #region Private Fields
         private const int m_numOfBits = 8;
-        private ISerialDevice m_serialPort = null;
+        private SerialDevice m_serialPort = null;
         #endregion
 
         #region Public Methods
@@ -636,7 +636,7 @@
                 {
                     Console.WriteLine($"Opening...{config.SlaveConnection}");
 
-                    m_serialPort = SerialDeviceFactory.CreateSerialDevice(config.SlaveConnection, (int)config.BaudRate.Value, config.Parity.Value, (int)config.DataBits.Value, config.StopBits.Value);
+                    m_serialPort = new SerialDevice(config.SlaveConnection, (int)config.BaudRate.Value, config.Parity.Value, (int)config.DataBits.Value, config.StopBits.Value);
                     
                     m_serialPort.Open();
                     //m_serialPort.DataReceived += new SerialDataReceivedEventHandler(sp_DataReceived);
