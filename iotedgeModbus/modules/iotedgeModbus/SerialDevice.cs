@@ -1,34 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
+using System.IO.Ports;
 
 namespace tempSerialPort
 {
-    using System.IO.Ports;
-
-    // public interface ISerialDevice
-    // {
-    //     void Open();
-    //     void Close();
-    //     void Write(byte[] buf, int offset, int len);
-    //     int Read(byte[] buf, int offset, int len);
-    //     bool IsOpen();
-    //     void DiscardInBuffer();
-    //     void DiscardOutBuffer();
-    //     void Dispose();
-    // }
-
-    // public static class SerialDeviceFactory
-    // {
-    //     public static ISerialDevice CreateSerialDevice(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
-    //     {
-    //         return SerialDevice.CreateDevice(portName, baudRate, parity, dataBits, stopBits);
-    //     }
-    // }
-
-    public class SerialDevice //: ISerialDevice
+    public class SerialDevice : IDisposable
     {
         private SerialPort serialPort = null;
 
