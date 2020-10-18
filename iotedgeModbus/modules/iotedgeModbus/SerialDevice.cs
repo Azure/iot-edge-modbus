@@ -22,18 +22,10 @@ namespace tempSerialPort
     {
         public static ISerialDevice CreateSerialDevice(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits)
         {
-            ISerialDevice device = null;
-         //   if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-         //   {
-                device = WinSerialDevice.CreateDevice(portName, baudRate, parity, dataBits, stopBits);
-          //  }
-          //  else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-          //  {
-           //     device = UnixSerialDevice.CreateDevice(portName, baudRate, parity, dataBits, stopBits);
-            //}
-            return device;
+            return WinSerialDevice.CreateDevice(portName, baudRate, parity, dataBits, stopBits);
         }
     }
+
     public class WinSerialDevice : ISerialDevice
     {
         private SerialPort serialPort = null;
@@ -42,15 +34,15 @@ namespace tempSerialPort
             List<string> serial_ports = new List<string>();
 
             // Are we on Windows?
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
+         //   if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+         //   {
                 return new WinSerialDevice(portName, baudRate, parity, dataBits, stopBits);
-            }
-            else
-            {
-                Console.WriteLine("WinSerialDevice only supports Windows system");
-                return null;
-            }
+            // }
+            // else
+            // {
+            //     Console.WriteLine("WinSerialDevice only supports Windows system");
+            //     return null;
+            // }
         }
 
         public void Open()
